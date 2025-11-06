@@ -1,6 +1,6 @@
-// script.js
+// script.js (v8.0 - Abordagem Estável)
 
-// === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO, NAVEGAÇÃO) ===
+// === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
 // Função utilitária para gerar a tag de imagem
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -24,17 +24,6 @@ const glossaryTerms = {
     'spi q': 'Sistema de Proteção Individual contra Quedas.',
     'pnrs': 'Política Nacional de Resíduos Sólidos.'
 };
-
-// Dados de navegação (Índice)
-const topicButtonsData = [
-    { target: 'conceitos-basicos', text: '1. Definições, Termos e Técnicas' },
-    { target: 'planejamento-inspecao', text: '2.1. Planejamento e Inspeção (Risco)' },
-    { target: 'autorizacao-legal', text: '1.5. e 2.1.9. Termos Legais e ASV' },
-    { target: 'preparacao-e-isolamento', text: '2.2. Preparação e Isolamento (PT)' },
-    { target: 'operacoes-e-tecnicas', text: '2.3. Operações, Poda e Supressão' },
-    { target: 'riscos-e-epis', text: '2.4. e 2.5. Análise de Risco e EPIs' },
-    { target: 'gestao-e-desmobilizacao', text: '2.3.4. Gestão de Resíduos e Desmobilização' }
-];
 
 // Dados do Manual (Conteúdo das seções)
 const manualContent = {
@@ -84,3 +73,216 @@ const manualContent = {
         `
     },
     'preparacao-e-isolamento': {
+        titulo: '2.2. Preparação do Local e Isolamento',
+        html: `
+            <h3>2.2.2. Isolamento e Sinalização</h3>
+            <p>O isolamento é **obrigatório**.</p>
+            <h4>Delimitação do Perímetro de Exclusão (Raio de Perigo)</h4>
+            ${imgTag('isolamento-perimetro.jpg', 'Diagrama de perímetro de segurança')}
+            <ul><li><strong>Galhos isolados:</strong> Comprimento do galho **+ 50%**.</li><li><strong>Árvore inteira:</strong> Altura total **+ 50%**.</li></ul>
+            <p><strong>⛔ Proibição:</strong> Uso de fita zebrada (salvo emergências).</p>
+            <h3>2.2.3. Desligamento de Linhas de Energia</h3>
+            <p><strong>É proibido</strong> realizar podas em contato com redes ativas.</p>
+            <h3>2.2.4. Liberação de Permissão de Trabalho (PT)</h3>
+            <p>A PT é **obrigatória**. Qualquer alteração no escopo exige **revalidação da PT**.</p>
+        `
+    },
+    'operacoes-e-tecnicas': {
+        titulo: '2.3. Operações de Poda e Corte',
+        html: `
+            <h3>2.3.2. Técnicas de Poda</h3>
+            <ul><li><strong>Desbaste da copa:</strong> Limite de **até 25% da copa viva** por intervenção.</li><li><strong>Elevação da copa:</strong> Manter pelo menos **2/3 da altura total** com copa viva.</li><li><strong>Redução da copa:</strong> Preservar ramos laterais com diâmetro **≥ 1/3** do ramo removido.</li></ul>
+            
+            <h4>Técnica de Corte: Poda em Três Cortes</h4>
+            ${imgTag('corte-tres-passos.jpg', 'Sequência dos 3 passos para a poda segura')}
+            <p>Aplicar o método para preservar <span class="glossary-term" data-term-key="crista da casca">crista da casca</span> e <span class="glossary-term" data-term-key="colar do galho">colar do galho</span>:</p>
+            <ol><li><strong>Corte inferior (alívio):</strong> Fora do colar.</li><li><strong>Corte superior:</strong> Destaca o galho.</li><li><strong>Corte de acabamento:</strong> Rente à crista, preservando o colar.</li></ol>
+            
+            <p><strong>⛔ Práticas Proibidas:</strong></p>
+            <ul>
+                <li><span class="glossary-term" data-term-key="poda drástica">Poda drástica</span> (<span class="glossary-term" data-term-key="topping">topping</span>). ${imgTag('topping-errado.jpg', 'Exemplo de Poda Drástica')}</li>
+                <li>Cortes rentes. ${imgTag('corte-rente-lesao.jpg', 'Lesão por corte rente')}</li>
+            </ul>
+            ${imgTag('poda-drastica-vs-correta.jpg', 'Comparação visual: Poda Drástica vs Correta')}
+            
+            <h3>2.3.2.5. Supressão (Corte de Árvore)</h3>
+            <p>Corte direcional deixando a **"dobradiça" de 10%** do diâmetro.</p>
+            <h4>Segurança Crítica: Rota de Fuga</h4>
+            ${imgTag('rota-fuga-45graus.jpg', 'Diagrama das rotas de fuga')}
+            <p>Planejar **duas rotas de fuga** livres (ângulo de **45°**).</p>
+            <h4>⚠️ Atenção a Troncos Tensionados</h4>
+            ${imgTag('corte-tronco-tensionado.jpg', 'Técnica de corte em tronco tensionado')}
+            <h4>⚠️ Efeito Rebote (Motosserra)</h4>
+            ${imgTag('perigo-rebote.jpg', 'Diagrama do Efeito Rebote')}
+            <p>Ocorre ao usar a ponta superior do sabre. **NUNCA use a ponta superior da lâmina para cortar.**</p>
+        `
+    },
+    'riscos-e-epis': {
+        titulo: '2.4. e 2.5. Análise de Risco e EPIs',
+        html: `
+            <h3>2.4. Análise de Risco (Perigos Recorrentes)</h3>
+            <p>Queda de altura, Queda de ferramentas, Choque elétrico, Corte, Efeito Rebote.</p>
+            <h3>2.5. Equipamento de Proteção Individual (EPIs)</h3>
+            ${imgTag('epis-motoserra.jpg', 'Operador com EPIs completos')}
+            <h4>EPIs Anticorte e Impacto</h4>
+            <ul><li>Capacete com jugular</li><li>Calça/Blusão/Luva de motoserrista</li><li>Viseira/protetor facial</li><li>Perneira</li></ul>
+            <h4>EPIs para Trabalho em Altura (SPIQ)</h4>
+            <p>Uso de <span class="glossary-term" data-term-key="spi q">SPIQ</span> (Cinto, Talabarte, Trava-queda).</p>
+            <p><strong>⚠️ Proibição:</strong> **escalada livre** ou ancoragem nos galhos a serem cortados.</p>
+        `
+    },
+    'gestao-e-desmobilizacao': {
+        titulo: '2.3.4. Gestão de Resíduos e Desmobilização',
+        html: `
+            <h3>2.3.4. Gestão de Resíduos Arbóreos (PNRS)</h3>
+            ${imgTag('segregacao-residuos.jpg', 'Segregação de resíduos')}
+            <ul><li><strong>Princípios:</strong> Não geração, redução, reutilização e reciclagem.</li><li><strong>Rastreabilidade:</strong> Emissão de <span class="glossary-term" data-term-key="mtr">Manifesto de Transporte de Resíduos (MTR)</span>.</li></ul>
+            
+            <h4>Abastecimento Seguro</h4>
+            ${imgTag('abastecimento-seguro.jpg', 'Abastecimento seguro com bacia de contenção')}
+            <ul><li>Realizar em área ventilada, com <strong>bacia de contenção</strong> e <strong>Kit de Mitigação Ambiental</strong>.</li></ul>
+            
+            <h3>2.3.6. Desmobilização</h3>
+            <p>Remover todos os resíduos. Retirar isolamento **somente após liberação formal** do responsável técnico.</p>
+        `
+    }
+};
+
+
+// === 3. LÓGICA DE INICIALIZAÇÃO (ABORDAGEM 100% ESTÁVEL) ===
+
+// Aguarda o HTML ser totalmente carregado
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Encontra os elementos DOM essenciais
+    const detailView = document.getElementById('detalhe-view');
+    // CRÍTICO: Encontra os botões que JÁ EXISTEM no HTML
+    const activeTopicButtons = document.querySelectorAll('.topico-btn');
+    let currentTooltip = null; // Referência ao tooltip ativo
+
+    // 2. Função para carregar o conteúdo principal
+    function loadContent(targetKey) {
+        if (!detailView) return; 
+        
+        const content = manualContent[targetKey];
+        if (content) {
+            detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
+            setupGlossaryInteractions(); 
+        } else {
+            detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
+        }
+    }
+
+    // 3. Função para lidar com o clique no botão do índice
+    function handleTopicClick(button) {
+        const target = button.getAttribute('data-target');
+        
+        activeTopicButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        loadContent(target);
+    }
+
+    // 4. Lógica de inicialização (Vincula os cliques)
+    if (activeTopicButtons.length > 0) {
+        
+        // Vincula o clique a cada botão
+        activeTopicButtons.forEach(button => {
+            button.addEventListener('click', () => handleTopicClick(button));
+        });
+
+        // Carrega o conteúdo inicial (o primeiro botão, que já tem a classe .active no HTML)
+        loadContent(activeTopicButtons[0].getAttribute('data-target'));
+
+    } else {
+        console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
+    }
+
+    // === 5. LÓGICA DO GLOSSÁRIO INTERATIVO (SEM ALTERAÇÕES) ===
+
+    function setupGlossaryInteractions() {
+        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
+
+        glossaryTermsElements.forEach(termElement => {
+            termElement.addEventListener('mouseenter', showTooltip);
+            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('click', toggleTooltip); 
+        });
+    }
+
+    function createTooltip() {
+        let tooltip = document.getElementById('glossary-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'glossary-tooltip';
+            document.body.appendChild(tooltip); 
+        }
+        return tooltip;
+    }
+
+    function showTooltip(event) {
+        const termElement = event.currentTarget;
+        const termKey = termElement.getAttribute('data-term-key');
+        const definition = glossaryTerms[termKey];
+
+        if (!definition) return;
+
+        currentTooltip = createTooltip(); 
+        
+        currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
+        
+        const rect = termElement.getBoundingClientRect();
+        const scrollY = window.scrollY;
+        const scrollX = window.scrollX;
+        
+        const tooltipWidth = currentTooltip.offsetWidth;
+        const tooltipHeight = currentTooltip.offsetHeight;
+        
+        let topPos;
+        if (rect.top > tooltipHeight + 10) { 
+            topPos = rect.top + scrollY - tooltipHeight - 10;
+        } else { 
+            topPos = rect.bottom + scrollY + 10;
+        }
+        
+        let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
+        
+        if (leftPos < scrollX + 10) leftPos = scrollX + 10; 
+        if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { 
+            leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
+        }
+        
+        currentTooltip.style.top = `${topPos}px`;
+        currentTooltip.style.left = `${leftPos}px`;
+        currentTooltip.style.opacity = '1';
+        currentTooltip.style.visibility = 'visible';
+        currentTooltip.dataset.currentElement = termElement.textContent;
+    }
+
+    function hideTooltip() {
+        if (currentTooltip) {
+            currentTooltip.style.opacity = '0';
+            currentTooltip.style.visibility = 'hidden';
+            delete currentTooltip.dataset.currentElement;
+        }
+    }
+
+    function toggleTooltip(event) {
+        event.preventDefault(); 
+        
+        const tooltip = document.getElementById('glossary-tooltip');
+        
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showTooltip(event);
+            
+            document.addEventListener('click', function globalHide(e) {
+                if (e.target !== event.currentTarget && (tooltip && !tooltip.contains(e.target))) {
+                    hideTooltip();
+                    document.removeEventListener('click', globalHide);
+                }
+            }, { once: true });
+        }
+    }
+});

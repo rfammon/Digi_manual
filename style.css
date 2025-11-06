@@ -143,7 +143,7 @@ main {
     visibility: hidden;
     text-align: left;
     font-size: 0.9em;
-    /* CORREÇÃO: Posição (left, top, transform) é 100% controlada pelo JavaScript */
+    /* Posição (left, top) é 100% controlada pelo JavaScript */
 }
 
 #glossary-tooltip strong {
@@ -197,4 +197,55 @@ main {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1.1
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    width: 100%; /* Botão de largura total no mobile */
+}
+
+.send-btn:hover {
+    background-color: #00695c;
+}
+
+.contact-note {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* -------------------------------------- */
+/* 6. MEDIA QUERIES (Desktop Layout) */
+/* -------------------------------------- */
+
+@media (min-width: 768px) {
+    /* Aplica o container ao <main> */
+    main {
+        max-width: 1000px; 
+        margin: 20px auto; 
+    }
+
+    /* Aplica o flex ao wrapper #app-content */
+    #app-content {
+        display: flex; 
+        gap: 20px;
+    }
+
+    .mapa-navegacao {
+        flex: 1; 
+        min-width: 280px;
+    }
+
+    .conteudo-detalhe {
+        flex: 2; 
+    }
+    
+    #glossary-tooltip {
+        max-width: 350px; /* Limite maior no desktop */
+    }
+    
+    .send-btn {
+        width: auto; /* Botão menor em desktop */
+        float: right;
+    }
+}
