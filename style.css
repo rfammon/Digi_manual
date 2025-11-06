@@ -1,0 +1,175 @@
+/* -------------------------------------- */
+/* 1. RESET, BASE E LAYOUT PRINCIPAL */
+/* -------------------------------------- */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; 
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif; /* Fonte mais profissional */
+    line-height: 1.6;
+    background-color: #f4f4f9; 
+    color: #333; 
+    position: relative; /* CRÍTICO para o posicionamento do Tooltip */
+    min-height: 100vh; /* Para garantir que o footer vá para o final em telas pequenas */
+}
+
+.header-manual, 
+.footer-manual {
+    background-color: #004d40; 
+    color: #fff;
+    padding: 1rem;
+    text-align: center;
+}
+
+.header-manual h1 {
+    font-size: 1.5rem; 
+    margin-bottom: 0.2rem;
+}
+
+#main-content {
+    padding: 1rem;
+    max-width: 100%; 
+}
+
+/* -------------------------------------- */
+/* 2. ESTILOS DO ÍNDICE (BOTÕES) */
+/* -------------------------------------- */
+
+.topicos-container {
+    display: flex;
+    flex-direction: column; /* Força empilhamento vertical no mobile */
+    gap: 10px; 
+    margin-bottom: 20px;
+}
+
+.topico-btn {
+    padding: 1rem;
+    background-color: #00796b; 
+    color: #fff;
+    border: none;
+    border-radius: 8px; 
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: left; 
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.topico-btn:hover {
+    background-color: #00695c; 
+    transform: translateY(-1px);
+}
+
+.topico-btn.active {
+    background-color: #ffb300; 
+    color: #333;
+}
+
+/* -------------------------------------- */
+/* 3. ESTILOS DO CONTEÚDO E IMAGENS */
+/* -------------------------------------- */
+
+.conteudo-detalhe {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+#detalhe-view h3 {
+    color: #004d40;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #ffb300;
+    padding-bottom: 5px;
+    font-size: 1.3rem;
+}
+
+#detalhe-view p, #detalhe-view li {
+    margin-bottom: 15px;
+    font-size: 1em;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.manual-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    margin: 15px 0;
+    display: block; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+}
+
+/* -------------------------------------- */
+/* 4. GLOSSÁRIO INTERATIVO (TOOLTIP) */
+/* -------------------------------------- */
+
+.glossary-term {
+    color: #ff6f00; 
+    font-weight: bold;
+    cursor: help; 
+    border-bottom: 1px dashed #ff6f00; 
+}
+
+#glossary-tooltip {
+    position: absolute;
+    background-color: #333; 
+    color: #fff;
+    border-radius: 5px;
+    padding: 10px;
+    max-width: 90vw; /* Ajuste crítico para mobile: limite a 90% da largura da tela */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000; 
+    transition: opacity 0.2s, visibility 0.2s;
+    opacity: 0;
+    visibility: hidden;
+    text-align: left;
+    font-size: 0.9em;
+    transform: translateX(-50%); /* Garante que ele se centralize */
+    left: 50%; /* Faz a centralização funcionar */
+}
+
+#glossary-tooltip strong {
+    color: #ffb300; 
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* -------------------------------------- */
+/* 5. MEDIA QUERIES (Desktop Layout) */
+/* -------------------------------------- */
+
+@media (min-width: 768px) {
+    #main-content {
+        max-width: 1000px; 
+        margin: 20px auto; 
+        display: flex; 
+        gap: 20px;
+    }
+
+    .mapa-navegacao {
+        flex: 1; 
+        min-width: 280px;
+    }
+
+    .conteudo-detalhe {
+        flex: 2; 
+    }
+}
