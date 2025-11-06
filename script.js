@@ -1,6 +1,7 @@
-// script.js (v8.0 - Abordagem Estável)
+// script.js (v9.2 - Abordagem Estável, Mailto e Chat)
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
+// (O conteúdo não é mostrado aqui para economizar espaço, mas é o mesmo da v8.0/v9.0)
 
 // Função utilitária para gerar a tag de imagem
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -123,9 +124,9 @@ const manualContent = {
             <h3>2.4. Análise de Risco (Perigos Recorrentes)</h3>
             <p>Queda de altura, Queda de ferramentas, Choque elétrico, Corte, Efeito Rebote.</p>
             <h3>2.5. Equipamento de Proteção Individual (EPIs)</h3>
-            ${imgTag('epis-motoserra.jpg', 'Operador com EPIs completos')}
+            ${imgTag('epis-motosserra.jpg', 'Operador com EPIs completos')}
             <h4>EPIs Anticorte e Impacto</h4>
-            <ul><li>Capacete com jugular</li><li>Calça/Blusão/Luva de motoserrista</li><li>Viseira/protetor facial</li><li>Perneira</li></ul>
+            <ul><li>Capacete com jugular</li><li>Calça/Blusão/Luva de motosserista</li><li>Viseira/protetor facial</li><li>Perneira</li></ul>
             <h4>EPIs para Trabalho em Altura (SPIQ)</h4>
             <p>Uso de <span class="glossary-term" data-term-key="spi q">SPIQ</span> (Cinto, Talabarte, Trava-queda).</p>
             <p><strong>⚠️ Proibição:</strong> **escalada livre** ou ancoragem nos galhos a serem cortados.</p>
@@ -149,18 +150,15 @@ const manualContent = {
 };
 
 
-// === 3. LÓGICA DE INICIALIZAÇÃO (ABORDAGEM 100% ESTÁVEL) ===
+// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v9.2) ===
 
 // Aguarda o HTML ser totalmente carregado
 document.addEventListener('DOMContentLoaded', () => {
     
-    // 1. Encontra os elementos DOM essenciais
+    // --- MÓDULO DE NAVEGAÇÃO ---
     const detailView = document.getElementById('detalhe-view');
-    // CRÍTICO: Encontra os botões que JÁ EXISTEM no HTML
-    const activeTopicButtons = document.querySelectorAll('.topico-btn');
-    let currentTooltip = null; // Referência ao tooltip ativo
-
-    // 2. Função para carregar o conteúdo principal
+    const activeTopicButtons = document.querySelectorAll('.topico-btn'); // Encontra botões do HTML
+    
     function loadContent(targetKey) {
         if (!detailView) return; 
         
@@ -173,36 +171,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. Função para lidar com o clique no botão do índice
     function handleTopicClick(button) {
         const target = button.getAttribute('data-target');
-        
         activeTopicButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
-        
         loadContent(target);
     }
 
-    // 4. Lógica de inicialização (Vincula os cliques)
+    // Inicialização da Navegação
     if (activeTopicButtons.length > 0) {
-        
-        // Vincula o clique a cada botão
         activeTopicButtons.forEach(button => {
             button.addEventListener('click', () => handleTopicClick(button));
         });
-
-        // Carrega o conteúdo inicial (o primeiro botão, que já tem a classe .active no HTML)
+        // Carrega o conteúdo do primeiro botão (que tem .active no HTML)
         loadContent(activeTopicButtons[0].getAttribute('data-target'));
-
     } else {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
     }
 
-    // === 5. LÓGICA DO GLOSSÁRIO INTERATIVO (SEM ALTERAÇÕES) ===
+    // --- MÓDULO DE GLOSSÁRIO ---
+    let currentTooltip = null; 
 
     function setupGlossaryInteractions() {
         const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
-
         glossaryTermsElements.forEach(termElement => {
             termElement.addEventListener('mouseenter', showTooltip);
             termElement.addEventListener('mouseleave', hideTooltip);
@@ -224,34 +215,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const termElement = event.currentTarget;
         const termKey = termElement.getAttribute('data-term-key');
         const definition = glossaryTerms[termKey];
-
         if (!definition) return;
-
         currentTooltip = createTooltip(); 
-        
         currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
         
         const rect = termElement.getBoundingClientRect();
         const scrollY = window.scrollY;
         const scrollX = window.scrollX;
-        
         const tooltipWidth = currentTooltip.offsetWidth;
         const tooltipHeight = currentTooltip.offsetHeight;
-        
         let topPos;
         if (rect.top > tooltipHeight + 10) { 
             topPos = rect.top + scrollY - tooltipHeight - 10;
         } else { 
             topPos = rect.bottom + scrollY + 10;
         }
-        
         let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
-        
         if (leftPos < scrollX + 10) leftPos = scrollX + 10; 
         if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { 
             leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
         }
-        
         currentTooltip.style.top = `${topPos}px`;
         currentTooltip.style.left = `${leftPos}px`;
         currentTooltip.style.opacity = '1';
@@ -269,14 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function toggleTooltip(event) {
         event.preventDefault(); 
-        
         const tooltip = document.getElementById('glossary-tooltip');
-        
         if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
         } else {
             showTooltip(event);
-            
             document.addEventListener('click', function globalHide(e) {
                 if (e.target !== event.currentTarget && (tooltip && !tooltip.contains(e.target))) {
                     hideTooltip();
@@ -285,4 +265,87 @@ document.addEventListener('DOMContentLoaded', () => {
             }, { once: true });
         }
     }
-});
+    
+    
+    // --- MÓDULO DO FORMULÁRIO (MAILTO:) ---
+    const contactForm = document.getElementById('contact-form');
+    
+    if (contactForm) {
+        contactForm.addEventListener('submit', (event) => {
+            event.preventDefault(); 
+            
+            const targetEmail = "rafael.ammon.prestserv@petrobras.com.br";
+            
+            const nome = document.getElementById('nome').value;
+            const emailRetorno = document.getElementById('email').value;
+            const assunto = document.getElementById('assunto').value;
+            const mensagem = document.getElementById('mensagem').value;
+            
+            const emailBody = `
+Prezado(a),
+
+Esta é uma dúvida enviada através do Manual Digital de Poda e Corte.
+---------------------------------------------------
+Enviado por: ${nome}
+Email de Retorno: ${emailRetorno}
+---------------------------------------------------
+
+Mensagem:
+${mensagem}
+            `;
+            
+            const encodedSubject = encodeURIComponent(assunto);
+            const encodedBody = encodeURIComponent(emailBody);
+            const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
+            
+            window.location.href = mailtoLink;
+        });
+    }
+
+    // --- MÓDULO DE CHAT GEMINI (ESQUELETO) ---
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatResponseBox = document.getElementById('chat-response-box');
+
+    if (chatSendBtn) {
+        chatSendBtn.addEventListener('click', handleChatSend);
+        chatInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleChatSend();
+            }
+        });
+    }
+
+    async function handleChatSend() {
+        const userQuery = chatInput.value.trim();
+        if (userQuery === "") return; 
+
+        chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
+        chatInput.value = ""; 
+
+        try {
+            // (A Fase 2 começa aqui)
+            const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI"; 
+            
+            if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
+                 throw new Error("A função de back-end (Google Cloud Function) ainda não foi configurada. Esta é a Fase 2.");
+            }
+            
+            const response = await fetch(PONTESEGURA_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: userQuery })
+            });
+
+            if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+
+            const data = await response.json();
+            chatResponseBox.innerHTML = `<p class="chat-response-text">${data.response}</p>`;
+
+        } catch (error) {
+            console.error('Erro na API Gemini:', error);
+            chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: red;"><strong>Erro:</strong> ${error.message}</p>`;
+        }
+    }
+
+}); // Fim do DOMContentLoaded

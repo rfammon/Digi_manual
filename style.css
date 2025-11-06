@@ -15,6 +15,8 @@ body {
     color: #333; 
     position: relative; /* Contexto para o Tooltip */
     min-height: 100vh; 
+    overflow-wrap: break-word; /* Impede estouro de texto global */
+    word-wrap: break-word;
 }
 
 .header-manual, 
@@ -30,44 +32,54 @@ body {
     margin-bottom: 0.2rem;
 }
 
-/* O Main agora é o contêiner de largura total */
 main {
     padding: 1rem;
     width: 100%;
 }
 
 /* -------------------------------------- */
-/* 2. ESTILOS DO ÍNDICE (BOTÕES) */
+/* 2. ESTILOS DO ÍNDICE (MAPA MENTAL) */
 /* -------------------------------------- */
 
+.mapa-navegacao h2 {
+    color: #004d40;
+    margin-bottom: 15px;
+}
+
 .topicos-container {
-    display: flex;
-    flex-direction: column; 
-    gap: 10px; 
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px; 
     margin-bottom: 20px;
 }
 
 .topico-btn {
-    padding: 1rem;
+    padding: 1rem 0.5rem;
     background-color: #00796b; 
     color: #fff;
     border: none;
     border-radius: 8px; 
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem; 
     font-weight: bold;
-    text-align: left; 
+    text-align: center; 
     transition: background-color 0.2s, transform 0.1s;
+    min-height: 60px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .topico-btn:hover {
     background-color: #00695c; 
-    transform: translateY(-1px);
+    transform: translateY(-2px); 
 }
 
 .topico-btn.active {
     background-color: #ffb300; 
     color: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 /* -------------------------------------- */
@@ -93,6 +105,7 @@ main {
 #detalhe-view p, #detalhe-view li {
     margin-bottom: 15px;
     font-size: 1em;
+    overflow-wrap: break-word; /* Impede quebra de layout */
 }
 
 .data-table {
@@ -143,6 +156,7 @@ main {
     visibility: hidden;
     text-align: left;
     font-size: 0.9em;
+    overflow-wrap: break-word; /* Impede quebra de layout */
     /* Posição (left, top) é 100% controlada pelo JavaScript */
 }
 
@@ -200,7 +214,7 @@ main {
     font-size: 1.1rem;
     font-weight: bold;
     transition: background-color 0.3s;
-    width: 100%; /* Botão de largura total no mobile */
+    width: 100%; 
 }
 
 .send-btn:hover {
@@ -209,43 +223,3 @@ main {
 
 .contact-note {
     font-size: 0.85rem;
-    color: #666;
-    margin-top: 15px;
-    text-align: center;
-}
-
-/* -------------------------------------- */
-/* 6. MEDIA QUERIES (Desktop Layout) */
-/* -------------------------------------- */
-
-@media (min-width: 768px) {
-    /* Aplica o container ao <main> */
-    main {
-        max-width: 1000px; 
-        margin: 20px auto; 
-    }
-
-    /* Aplica o flex ao wrapper #app-content */
-    #app-content {
-        display: flex; 
-        gap: 20px;
-    }
-
-    .mapa-navegacao {
-        flex: 1; 
-        min-width: 280px;
-    }
-
-    .conteudo-detalhe {
-        flex: 2; 
-    }
-    
-    #glossary-tooltip {
-        max-width: 350px; /* Limite maior no desktop */
-    }
-    
-    .send-btn {
-        width: auto; /* Botão menor em desktop */
-        float: right;
-    }
-}

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manual de Poda e Corte Interativo - Guia Rápido</title>
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="style.css?v=9.2"> 
 </head>
 <body>
 
@@ -27,7 +27,7 @@
                     <button class="topico-btn" data-target="operacoes-e-tecnicas">2.3. Poda e Supressão</button>
                     <button class="topico-btn" data-target="riscos-e-epis">2.4. EPIs e Análise de Risco</button>
                     <button class="topico-btn" data-target="gestao-e-desmobilizacao">2.3.4. Resíduos (MTR)</button>
-                    </nav>
+                </nav>
             </section>
 
             <section class="conteudo-detalhe">
@@ -36,28 +36,42 @@
             </section>
         </div>
 
+        <section id="gemini-chat">
+            <h2>🤖 Assistente Digital (Baseado no Manual)</h2>
+            <div class="chat-container">
+                <div id="chat-response-box">
+                    <p class="chat-placeholder">Faça uma pergunta específica sobre o manual (ex: "Qual a diferença entre poda drástica e redução?" ou "Quais EPIs são necessários para motosserra?").</p>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Digite sua pergunta aqui...">
+                    <button id="chat-send-btn">Enviar</button>
+                </div>
+            </div>
+        </section>
+
         <section id="fale-conosco">
             <h2>📧 Dúvidas e Sugestões</h2>
             <div class="contact-form-container">
-                <form action="https://formsubmit.co/rafael.ammon.prestserv@petrobras.com.br" method="POST" class="contact-form">
+                
+                <form id="contact-form" class="contact-form">
                     
                     <label for="nome">Seu Nome:</label>
                     <input type="text" id="nome" name="Nome" required placeholder="Seu nome completo">
                     
-                    <label for="email">Email de Retorno:</label>
-                    <input type="email" id="email" name="_replyto" required placeholder="seu.email@exemplo.com.br">
+                    <label for="email">Seu Email (para retorno):</label>
+                    <input type="email" id="email" name="Email_de_Retorno" required placeholder="seu.email@exemplo.com.br">
                     
                     <label for="assunto">Assunto:</label>
-                    <input type="text" id="assunto" name="_subject" required placeholder="Dúvida sobre o manual / Sugestão">
+                    <input type="text" id="assunto" name="Assunto" required placeholder="Dúvida sobre o manual / Sugestão">
 
                     <label for="mensagem">Sua Dúvida ou Mensagem:</label>
                     <textarea id="mensagem" name="Mensagem" rows="5" required placeholder="Escreva aqui sua pergunta ou feedback sobre o manual."></textarea>
                     
-                    <input type="hidden" name="_next" value="https://rfammon.github.io/Digi_manual/thanks.html">
-                    
-                    <button type="submit" class="send-btn">Enviar Mensagem</button>
+                    <button type="submit" class="send-btn">Enviar via Cliente de E-mail</button>
                 </form>
             </div>
+            <p class="contact-note">Atenção: Este botão abrirá seu cliente de e-mail padrão (Ex: Outlook, Gmail App).</p>
         </section>
 
     </main>
@@ -66,6 +80,6 @@
         <p>&copy; 2025 Manual Digital. Desenvolvido com Site Builder.</p>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=9.2"></script>
 </body>
 </html>
