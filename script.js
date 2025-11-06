@@ -1,7 +1,11 @@
 // script.js
 
-// Função utilitária para gerar a tag de imagem de forma limpa e responsiva
+// Funções utilitárias
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
+
+// Elementos DOM principais
+const detailView = document.getElementById('detalhe-view');
+let activeTopicButtons; // Variável global para referenciar os botões
 
 // === 1. ESTRUTURA DE DADOS DO GLOSSÁRIO ===
 const glossaryTerms = {
@@ -22,6 +26,17 @@ const glossaryTerms = {
     'spi q': 'Sistema de Proteção Individual contra Quedas (ex: cinto, talabarte, trava-queda).',
     'pnrs': 'Política Nacional de Resíduos Sólidos. Lei nº 12.305/2010 sobre manejo adequado de resíduos.'
 };
+
+// Dados de navegação (Índice)
+const topicButtonsData = [
+    { target: 'conceitos-basicos', text: '1. Definições, Termos e Técnicas' },
+    { target: 'planejamento-inspecao', text: '2.1. Planejamento e Inspeção (Risco)' },
+    { target: 'autorizacao-legal', text: '1.5. e 2.1.9. Termos Legais e ASV' },
+    { target: 'preparacao-e-isolamento', text: '2.2. Preparação e Isolamento (PT)' },
+    { target: 'operacoes-e-tecnicas', text: '2.3. Operações, Poda e Supressão' },
+    { target: 'riscos-e-epis', text: '2.4. e 2.5. Análise de Risco e EPIs' },
+    { target: 'gestao-e-desmobilizacao', text: '2.3.4. Gestão de Resíduos e Desmobilização' }
+];
 
 // === 2. ESTRUTURA DE DADOS DO MANUAL (Conteúdo Final) ===
 // (Mantido idêntico à versão anterior para preservar o seu conteúdo e a marcação do glossário)
@@ -266,52 +281,40 @@ const manualContent = {
 
 // === 3. FUNÇÕES PRINCIPAIS DE NAVEGAÇÃO ===
 
-const detailView = document.getElementById('detalhe-view');
-let activeTopicButtons; // Declarada fora para ser acessível globalmente
-
-// Define os dados dos botões
-const topicButtonsData = [
-    { target: 'conceitos-basicos', text: '1. Definições, Termos e Técnicas' },
-    { target: 'planejamento-inspecao', text: '2.1. Planejamento e Inspeção (Risco)' },
-    { target: 'autorizacao-legal', text: '1.5. e 2.1.9. Termos Legais e ASV' },
-    { target: 'preparacao-e-isolamento', text: '2.2. Preparação e Isolamento (PT)' },
-    { target: 'operacoes-e-tecnicas', text: '2.3. Operações, Poda e Supressão' },
-    { target: 'riscos-e-epis', text: '2.4. e 2.5. Análise de Risco e EPIs' },
-    { target: 'gestao-e-desmobilizacao', text: '2.3.4. Gestão de Resíduos e Desmobilização' }
-];
+function handleTopicClick(button) {
+    const target = button.getAttribute('data-target');
+            
+    // Remove a classe 'active' de todos os botões
+    activeTopicButtons.forEach(btn => btn.classList.remove('active'));
+    
+    // Adiciona a classe 'active' ao botão clicado
+    button.classList.add('active');
+    
+    // Carrega o novo conteúdo
+    loadContent(target);
+}
 
 function initializeNavigation() {
     const navContainer = document.querySelector('.topicos-container');
     navContainer.innerHTML = ''; 
     
-    // Cria os botões dinamicamente
+    // 1. Cria os botões dinamicamente e vincula o clique
     topicButtonsData.forEach(item => {
         const button = document.createElement('button');
         button.classList.add('topico-btn');
         button.setAttribute('data-target', item.target);
         button.textContent = item.text;
+
+        // Vincula a função de clique
+        button.addEventListener('click', () => handleTopicClick(button));
+
         navContainer.appendChild(button);
     });
 
-    // CRÍTICO: Seleciona os botões APÓS a criação e vincula o clique
+    // 2. Seleciona os botões para operações globais (como remover a classe 'active')
     activeTopicButtons = document.querySelectorAll('.topico-btn');
 
-    activeTopicButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const target = button.getAttribute('data-target');
-            
-            // Remove a classe 'active' de todos os botões
-            activeTopicButtons.forEach(btn => btn.classList.remove('active'));
-            
-            // Adiciona a classe 'active' ao botão clicado
-            button.classList.add('active');
-            
-            // Carrega o novo conteúdo
-            loadContent(target);
-        });
-    });
-
-    // Carrega o conteúdo inicial
+    // 3. Carrega o conteúdo inicial
     if (activeTopicButtons.length > 0) {
         const defaultTarget = activeTopicButtons[0].getAttribute('data-target');
         activeTopicButtons[0].classList.add('active');
@@ -327,4 +330,104 @@ function loadContent(targetKey) {
             <h3>${content.titulo}</h3>
             ${content.html}
         `;
-        // Vincula a interação do glossário APÓS carregar
+        // Vincula a interação do glossário APÓS carregar o HTML
+        setupGlossaryInteractions(); 
+    } else {
+        detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3><p class="placeholder-texto">O conteúdo para esta chave não está definido.</p>`;
+    }
+}
+
+// === 4. LÓGICA DO GLOSSÁRIO INTERATIVO ===
+
+function setupGlossaryInteractions() {
+    const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
+
+    glossaryTermsElements.forEach(termElement => {
+        // Desktop (Hover)
+        termElement.addEventListener('mouseenter', showTooltip);
+        termElement.addEventListener('mouseleave', hideTooltip);
+
+        // Mobile (Click/Touch)
+        termElement.addEventListener('click', toggleTooltip); 
+    });
+}
+
+function showTooltip(event) {
+    const termElement = event.currentTarget;
+    const termKey = termElement.getAttribute('data-term-key');
+    const definition = glossaryTerms[termKey];
+
+    if (!definition) return;
+
+    let tooltip = document.getElementById('glossary-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'glossary-tooltip';
+        document.body.appendChild(tooltip); 
+    }
+    
+    tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
+    
+    const rect = termElement.getBoundingClientRect();
+    const tooltipHeight = tooltip.offsetHeight || 50; 
+    let topPosition;
+
+    // Lógica para posicionar acima ou abaixo (melhora a visualização mobile)
+    if (rect.top > tooltipHeight + 10) { 
+        topPosition = rect.top - tooltipHeight - 10;
+    } else {
+        topPosition = rect.bottom + 5;
+    }
+    
+    tooltip.style.top = `${topPosition + window.scrollY}px`; 
+    
+    // Posicionamento horizontal (deixa o CSS lidar com a centralização no mobile)
+    // No desktop (com media query), este left/transform pode ser ajustado
+    if (window.innerWidth < 768) {
+        // Mobile: Centraliza na tela
+        tooltip.style.left = '50%';
+        tooltip.style.transform = 'translateX(-50%)';
+    } else {
+        // Desktop: Posiciona próximo ao termo (sem a centralização fixa)
+        tooltip.style.left = `${rect.left}px`;
+        tooltip.style.transform = 'none';
+    }
+    
+    tooltip.style.opacity = '1';
+    tooltip.style.visibility = 'visible';
+    tooltip.dataset.currentElement = termElement.textContent;
+}
+
+function hideTooltip() {
+    const tooltip = document.getElementById('glossary-tooltip');
+    if (tooltip) {
+        tooltip.style.opacity = '0';
+        tooltip.style.visibility = 'hidden';
+        delete tooltip.dataset.currentElement;
+    }
+}
+
+function toggleTooltip(event) {
+    event.preventDefault(); 
+    
+    const tooltip = document.getElementById('glossary-tooltip');
+    
+    if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+        hideTooltip();
+    } else {
+        showTooltip(event);
+        
+        // Listener para fechar no clique fora (mobile)
+        document.addEventListener('click', function globalHide(e) {
+            if (e.target !== event.currentTarget && (tooltip && !tooltip.contains(e.target))) {
+                hideTooltip();
+                document.removeEventListener('click', globalHide);
+            }
+        }, { once: true });
+    }
+}
+
+
+// === 5. INICIALIZAÇÃO FINAL ===
+// A função initializeNavigation é chamada assim que o HTML base é carregado
+document.addEventListener('DOMContentLoaded', initializeNavigation);

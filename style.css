@@ -14,7 +14,7 @@ body {
     background-color: #f4f4f9; 
     color: #333; 
     position: relative; /* CRÍTICO para o posicionamento do Tooltip */
-    min-height: 100vh; /* Para garantir que o footer vá para o final em telas pequenas */
+    min-height: 100vh; 
 }
 
 .header-manual, 
@@ -134,7 +134,7 @@ body {
     color: #fff;
     border-radius: 5px;
     padding: 10px;
-    max-width: 90vw; /* Ajuste crítico para mobile: limite a 90% da largura da tela */
+    max-width: 90vw; /* CRÍTICO: Limita a largura no mobile */
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     z-index: 1000; 
     transition: opacity 0.2s, visibility 0.2s;
@@ -142,8 +142,8 @@ body {
     visibility: hidden;
     text-align: left;
     font-size: 0.9em;
-    transform: translateX(-50%); /* Garante que ele se centralize */
-    left: 50%; /* Faz a centralização funcionar */
+    left: 50%; /* Faz a centralização horizontal funcionar */
+    transform: translateX(-50%); /* Centraliza perfeitamente */
 }
 
 #glossary-tooltip strong {
@@ -171,5 +171,13 @@ body {
 
     .conteudo-detalhe {
         flex: 2; 
+    }
+    
+    /* Remove a centralização fixa do tooltip em desktop para melhor posicionamento */
+    #glossary-tooltip {
+        max-width: 350px;
+        transform: none; /* Desativa a centralização para o posicionamento lateral no desktop */
+        left: unset;
+        /* A lógica JS irá posicioná-lo com base no cursor/termo */
     }
 }
