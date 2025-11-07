@@ -1,7 +1,6 @@
-// script.js (v9.2 - Abordagem Estável, Mailto e Chat)
+// script.js (v9.5 - Tooltip de Equipamentos)
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
-// (O conteúdo não é mostrado aqui para economizar espaço, mas é o mesmo da v8.0/v9.0)
 
 // Função utilitária para gerar a tag de imagem
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -26,23 +25,73 @@ const glossaryTerms = {
     'pnrs': 'Política Nacional de Resíduos Sólidos.'
 };
 
+// NOVO (Site Builder): Dados dos Equipamentos para o Tooltip
+const equipmentData = {
+    'serrote-manual': {
+        description: 'Utilizado para galhos com diâmetro entre 3 e 12 cm. Permite cortes precisos em locais de difícil acesso.',
+        img: imgTag('serrote-manual.jpg', 'Serrote manual de poda')
+    },
+    'motosserra': {
+        description: 'Recomendada para galhos com diâmetro superior a 12 cm e para supressão de árvores. Exige treinamento e EPIs específicos devido ao alto risco.',
+        img: imgTag('motosserra.jpg', 'Motosserra em uso')
+    },
+    'motopoda': {
+        description: 'Ferramenta com haste extensível que alcança até 6 metros, ideal para podar galhos altos sem a necessidade de escadas ou plataformas.',
+        img: imgTag('motopoda.jpg', 'Motopoda em operação')
+    },
+    'podao': {
+        description: 'Semelhante à motopoda em funcionalidade de longo alcance, mas operado manualmente, oferecendo precisão em galhos finos e médios em altura.',
+        img: imgTag('podao.jpg', 'Podador de haste manual (podão)')
+    },
+    'tesourao': {
+        description: 'Utilizada para galhos com diâmetro de 3 a 7 cm. Ideal para cortes limpos e rápidos em ramos mais finos.',
+        img: imgTag('tesourao-poda.jpg', 'Tesourão de poda')
+    },
+    'bypass': {
+        description: 'Específico para galhos com até 3 a 7 cm de diâmetro. Seu mecanismo de "tesoura" garante um corte limpo que minimiza danos ao tecido vegetal.',
+        img: imgTag('tesoura-by-pass.jpg', 'Podador manual bypass')
+    },
+    'comum': {
+        description: 'Para galhos com até 3 a 7 cm de diâmetro. Versátil para a maioria das podas leves e médias.',
+        img: imgTag('podador.jpg', 'Podador manual comum')
+    }
+};
+
+
 // Dados do Manual (Conteúdo das seções)
 const manualContent = {
     'conceitos-basicos': {
-        titulo: '1. Definições, Termos e Técnicas',
+        titulo: '1.0. Definições, Termos e Técnicas',
         html: `
             <h3>1.1. Termos Estruturais e Anatômicos</h3>
             <p>A correta identificação das partes da árvore é vital. Use o <span class="glossary-term" data-term-key="colar do galho">colar do galho</span> e a <span class="glossary-term" data-term-key="crista da casca">crista da casca</span> como guias.</p>
             ${imgTag('anatomia-corte.jpg', 'Anatomia correta do corte de galho')}
             <p>Termos como <span class="glossary-term" data-term-key="lenho de cicatrização">lenho de cicatrização</span>, <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span> e <span class="glossary-term" data-term-key="lenho de reação">lenho de reação</span> são importantes para a inspeção.</p>
+            
+            <h3>Compartimentalização de Árvores</h3>
+            <p>As árvores possuem defesas naturais que protegem cortes e ferimentos, como os causados pela poda. Na casca, os ferimentos formam uma camada protetora chamada periderme necrofilática, que impede a entrada de microrganismos. Na madeira, ocorre um processo chamado compartimentalização, que isola a área danificada para evitar que o problema se espalhe pelo restante da árvore.</p>
+            ${imgTag('compartimentalização.jpg', 'Diagrama do processo de compartimentalização')}
+
             <h3>1.2. Instrumentos e Equipamentos</h3>
-            <ul><li>Podão</li><li>Tesourão de poda</li><li>Motosserra</li><li>Podador manual tipo bypass</li><li>Hipsômetro</li></ul>
+            <!-- CONTEÚDO ATUALIZADO (SITE BUILDER) -->
+            <!-- Agora é uma lista interativa que usa a classe "equipment-term" -->
+            <ul class="equipment-list">
+                <li><span class="equipment-term" data-term-key="serrote-manual">Serrote Manual</span></li>
+                <li><span class="equipment-term" data-term-key="motosserra">Motosserra</span></li>
+                <li><span class="equipment-term" data-term-key="motopoda">Motopoda</span></li>
+                <li><span class="equipment-term" data-term-key="podao">Podador de Haste Manual (Podão)</span></li>
+                <li><span class="equipment-term" data-term-key="tesourao">Tesoura de Poda (Tesourão)</span></li>
+                <li><span class="equipment-term" data-term-key="bypass">Podador Manual Bypass</span></li>
+                <li><span class="equipment-term" data-term-key="comum">Podador Manual Comum</span></li>
+            </ul>
+            <!-- FIM DA ATUALIZAÇÃO -->
+
             <h3>1.3. Técnicas de Poda Essenciais</h3>
             <ul><li>Poda de limpeza</li><li>Poda de adequação</li><li>Poda de redução</li><li>Poda em três cortes</li><li>⚠️ Prática NÃO RecomendADA: <span class="glossary-term" data-term-key="poda drástica">Poda drástica</span> (<span class="glossary-term" data-term-key="topping">topping</span>).</li></ul>
         `
     },
     'planejamento-inspecao': {
-        titulo: '2. Procedimentos: Planejamento e Inspeção',
+        titulo: '2.1. Procedimentos: Planejamento e Inspeção',
         html: `
             <h3>2.1. Planejamento</h3>
             <p>Etapa fundamental para garantir a execução **segura e eficiente**.</p>
@@ -58,7 +107,7 @@ const manualContent = {
         `
     },
     'autorizacao-legal': {
-        titulo: '1.5. e 2.1.9. Termos Legais e Autorização (ASV)',
+        titulo: '1.5. Termos Legais e Autorização (ASV)',
         html: `
             <h3>1.5. Termos Legais e Normativos</h3>
             <ul>
@@ -119,7 +168,7 @@ const manualContent = {
         `
     },
     'riscos-e-epis': {
-        titulo: '2.4. e 2.5. Análise de Risco e EPIs',
+        titulo: '2.4. Análise de Risco e EPIs',
         html: `
             <h3>2.4. Análise de Risco (Perigos Recorrentes)</h3>
             <p>Queda de altura, Queda de ferramentas, Choque elétrico, Corte, Efeito Rebote.</p>
@@ -133,7 +182,7 @@ const manualContent = {
         `
     },
     'gestao-e-desmobilizacao': {
-        titulo: '2.3.4. Gestão de Resíduos e Desmobilização',
+        titulo: '2.5. Gestão de Resíduos e Desmobilização',
         html: `
             <h3>2.3.4. Gestão de Resíduos Arbóreos (PNRS)</h3>
             ${imgTag('segregacao-residuos.jpg', 'Segregação de resíduos')}
@@ -150,14 +199,13 @@ const manualContent = {
 };
 
 
-// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v9.2) ===
+// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v9.5) ===
 
-// Aguarda o HTML ser totalmente carregado
 document.addEventListener('DOMContentLoaded', () => {
     
     // --- MÓDULO DE NAVEGAÇÃO ---
     const detailView = document.getElementById('detalhe-view');
-    const activeTopicButtons = document.querySelectorAll('.topico-btn'); // Encontra botões do HTML
+    const activeTopicButtons = document.querySelectorAll('.topico-btn'); 
     
     function loadContent(targetKey) {
         if (!detailView) return; 
@@ -165,7 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = manualContent[targetKey];
         if (content) {
             detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
+            // ATUALIZADO (Site Builder): Carrega os dois tipos de interações
             setupGlossaryInteractions(); 
+            setupEquipmentInteractions(); // Adicionada a inicialização dos equipamentos
         } else {
             detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
         }
@@ -183,42 +233,121 @@ document.addEventListener('DOMContentLoaded', () => {
         activeTopicButtons.forEach(button => {
             button.addEventListener('click', () => handleTopicClick(button));
         });
-        // Carrega o conteúdo do primeiro botão (que tem .active no HTML)
-        loadContent(activeTopicButtons[0].getAttribute('data-target'));
+        
+        const firstActiveButton = document.querySelector('.topico-btn.active');
+        if (firstActiveButton) {
+            loadContent(firstActiveButton.getAttribute('data-target'));
+        } else {
+            loadContent(activeTopicButtons[0].getAttribute('data-target'));
+            activeTopicButtons[0].classList.add('active');
+        }
+        
     } else {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
     }
 
-    // --- MÓDULO DE GLOSSÁRIO ---
+    // --- MÓDULO DE TOOLTIP (GLOSSÁRIO E EQUIPAMENTOS) ---
+    // (Site Builder): Lógica de Tooltip refatorada para suportar ambos
+    
     let currentTooltip = null; 
 
-    function setupGlossaryInteractions() {
-        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
-        glossaryTermsElements.forEach(termElement => {
-            termElement.addEventListener('mouseenter', showTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
-            termElement.addEventListener('click', toggleTooltip); 
-        });
-    }
-
+    // Função genérica para criar o elemento tooltip (reutilizada)
     function createTooltip() {
         let tooltip = document.getElementById('glossary-tooltip');
         if (!tooltip) {
             tooltip = document.createElement('div');
-            tooltip.id = 'glossary-tooltip';
+            tooltip.id = 'glossary-tooltip'; // Reutiliza o mesmo ID e estilo
             document.body.appendChild(tooltip); 
         }
         return tooltip;
     }
 
-    function showTooltip(event) {
+    // Função genérica para esconder o tooltip (reutilizada)
+    function hideTooltip() {
+        if (currentTooltip) {
+            currentTooltip.style.opacity = '0';
+            currentTooltip.style.visibility = 'hidden';
+            delete currentTooltip.dataset.currentElement;
+        }
+    }
+
+    // -- Lógica do GLOSSÁRIO --
+    function setupGlossaryInteractions() {
+        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
+        glossaryTermsElements.forEach(termElement => {
+            termElement.addEventListener('mouseenter', showGlossaryTooltip);
+            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('click', toggleGlossaryTooltip); 
+        });
+    }
+
+    function showGlossaryTooltip(event) {
         const termElement = event.currentTarget;
         const termKey = termElement.getAttribute('data-term-key');
         const definition = glossaryTerms[termKey];
         if (!definition) return;
         currentTooltip = createTooltip(); 
         currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
-        
+        positionTooltip(termElement);
+    }
+
+    function toggleGlossaryTooltip(event) {
+        event.preventDefault(); 
+        const tooltip = document.getElementById('glossary-tooltip');
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showGlossaryTooltip(event);
+            document.addEventListener('click', function globalHide(e) {
+                if (e.target !== event.currentTarget && (tooltip && !tooltip.contains(e.target))) {
+                    hideTooltip();
+                    document.removeEventListener('click', globalHide);
+                }
+            }, { once: true });
+        }
+    }
+
+    // -- Lógica de EQUIPAMENTOS (NOVO) --
+    function setupEquipmentInteractions() {
+        const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
+        equipmentTermsElements.forEach(termElement => {
+            termElement.addEventListener('mouseenter', showEquipmentTooltip);
+            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('click', toggleEquipmentTooltip);
+        });
+    }
+
+    function showEquipmentTooltip(event) {
+        const termElement = event.currentTarget;
+        const termKey = termElement.getAttribute('data-term-key');
+        const data = equipmentData[termKey];
+        if (!data) return;
+        currentTooltip = createTooltip();
+        // Formato de HTML diferente, com descrição e imagem
+        currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.description}</p>${data.img}`;
+        positionTooltip(termElement);
+    }
+
+    function toggleEquipmentTooltip(event) {
+        event.preventDefault();
+        const tooltip = document.getElementById('glossary-tooltip');
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showEquipmentTooltip(event);
+            document.addEventListener('click', function globalHide(e) {
+                if (e.target !== event.currentTarget && (tooltip && !tooltip.contains(e.target))) {
+                    hideTooltip();
+                    document.removeEventListener('click', globalHide);
+                }
+            }, { once: true });
+        }
+    }
+
+    // Função genérica para posicionar o tooltip
+    function positionTooltip(termElement) {
+        if (!currentTooltip) return;
+
         const rect = termElement.getBoundingClientRect();
         const scrollY = window.scrollY;
         const scrollX = window.scrollX;
@@ -242,30 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTooltip.dataset.currentElement = termElement.textContent;
     }
 
-    function hideTooltip() {
-        if (currentTooltip) {
-            currentTooltip.style.opacity = '0';
-            currentTooltip.style.visibility = 'hidden';
-            delete currentTooltip.dataset.currentElement;
-        }
-    }
-
-    function toggleTooltip(event) {
-        event.preventDefault(); 
-        const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-            hideTooltip();
-        } else {
-            showTooltip(event);
-            document.addEventListener('click', function globalHide(e) {
-                if (e.target !== event.currentTarget && (tooltip && !tooltip.contains(e.target))) {
-                    hideTooltip();
-                    document.removeEventListener('click', globalHide);
-                }
-            }, { once: true });
-        }
-    }
-    
     
     // --- MÓDULO DO FORMULÁRIO (MAILTO:) ---
     const contactForm = document.getElementById('contact-form');

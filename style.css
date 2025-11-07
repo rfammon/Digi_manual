@@ -108,6 +108,11 @@ main {
     overflow-wrap: break-word; /* Impede quebra de layout */
 }
 
+/* (Site Builder) Estilo para a lista de equipamentos */
+.equipment-list li {
+    margin-bottom: 10px; /* Espaçamento entre os itens da lista */
+}
+
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -166,8 +171,31 @@ main {
     margin-bottom: 5px;
 }
 
+/* NOVO (Site Builder): Estilos para o conteúdo do tooltip */
+#glossary-tooltip p {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+#glossary-tooltip .manual-img {
+    max-width: 100%; /* Garante que a imagem não estoure o tooltip */
+    height: auto;
+    border-radius: 4px;
+    margin: 10px 0 5px 0; /* Espaçamento ajustado */
+}
+
 /* -------------------------------------- */
-/* 5. FORMULÁRIO DE CONTATO */
+/* 5. EQUIPAMENTOS INTERATIVOS (NOVO) */
+/* -------------------------------------- */
+.equipment-term {
+    color: #00695c; /* Tom de verde um pouco diferente do glossário */
+    font-weight: bold;
+    cursor: help;
+    border-bottom: 1px dashed #00695c;
+}
+
+/* -------------------------------------- */
+/* 6. FORMULÁRIO DE CONTATO (Era 5) */
 /* -------------------------------------- */
 
 #fale-conosco {
@@ -223,3 +251,92 @@ main {
 
 .contact-note {
     font-size: 0.85rem;
+    margin-top: 15px;
+    color: #555;
+    text-align: center;
+}
+
+/* -------------------------------------- */
+/* 7. CHAT (Seção não estava no CSS) */
+/* -------------------------------------- */
+#gemini-chat {
+    padding: 20px;
+    background-color: #e8f5e9; /* Fundo verde claro */
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-top: 5px solid #00796b; 
+    margin-top: 20px;
+}
+
+#gemini-chat h2 {
+    color: #004d40;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#chat-response-box {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    min-height: 100px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.chat-placeholder {
+    color: #757575;
+    font-style: italic;
+}
+
+.chat-response-text {
+    color: #333;
+    white-space: pre-wrap; /* Preserva quebras de linha da resposta */
+}
+
+.chat-response-text.loading {
+    color: #00796b;
+    font-weight: bold;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 10px;
+}
+
+#chat-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+#chat-send-btn {
+    background-color: #00796b;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+#chat-send-btn:hover {
+    background-color: #00695c;
+}
+
+/* -------------------------------------- */
+/* 8. FOOTER */
+/* -------------------------------------- */
+.footer-manual {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    font-size: 0.9rem;
+}
