@@ -145,6 +145,13 @@ main {
     font-weight: bold;
     cursor: help; 
     border-bottom: 1px dashed #ff6f00; 
+    
+    /* NOVO (Site Builder v9.7) - Correção Mobile */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE */
+    user-select: none; /* Padrão */
+    -webkit-tap-highlight-color: transparent; /* Remove flash cinza no toque */
 }
 
 #glossary-tooltip {
@@ -192,6 +199,13 @@ main {
     font-weight: bold;
     cursor: help;
     border-bottom: 1px dashed #00695c;
+
+    /* NOVO (Site Builder v9.7) - Correção Mobile */
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE */
+    user-select: none; /* Padrão */
+    -webkit-tap-highlight-color: transparent; /* Remove flash cinza no toque */
 }
 
 /* -------------------------------------- */

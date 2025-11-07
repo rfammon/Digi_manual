@@ -1,4 +1,4 @@
-// script.js (v9.5 - Tooltip de Equipamentos)
+// script.js (v9.6 - Correção para Tooltip Mobile)
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
@@ -199,10 +199,14 @@ const manualContent = {
 };
 
 
-// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v9.5) ===
+// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v9.6) ===
 
 document.addEventListener('DOMContentLoaded', () => {
     
+    // NOVO (Site Builder v9.6): Detecção de dispositivo de toque
+    // Isso é crucial para evitar o conflito de hover/clique no mobile
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
     // --- MÓDULO DE NAVEGAÇÃO ---
     const detailView = document.getElementById('detalhe-view');
     const activeTopicButtons = document.querySelectorAll('.topico-btn'); 
@@ -275,8 +279,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupGlossaryInteractions() {
         const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
         glossaryTermsElements.forEach(termElement => {
-            termElement.addEventListener('mouseenter', showGlossaryTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            
+            // ATUALIZADO (Site Builder v9.6): Adiciona hover APENAS em desktops
+            if (!isTouchDevice) {
+                termElement.addEventListener('mouseenter', showGlossaryTooltip);
+                termElement.addEventListener('mouseleave', hideTooltip);
+            }
+            // 'click' (ou toque no mobile) é o evento principal
             termElement.addEventListener('click', toggleGlossaryTooltip); 
         });
     }
@@ -311,8 +320,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupEquipmentInteractions() {
         const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
         equipmentTermsElements.forEach(termElement => {
-            termElement.addEventListener('mouseenter', showEquipmentTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            
+            // ATUALIZADO (Site Builder v9.6): Adiciona hover APENAS em desktops
+            if (!isTouchDevice) {
+                termElement.addEventListener('mouseenter', showEquipmentTooltip);
+                termElement.addEventListener('mouseleave', hideTooltip);
+            }
+            // 'click' (ou toque no mobile) é o evento principal
             termElement.addEventListener('click', toggleEquipmentTooltip);
         });
     }
