@@ -109,7 +109,8 @@ main {
 }
 
 /* (Site Builder) Estilo para a lista de equipamentos */
-.equipment-list li {
+.equipment-list li,
+.purpose-list li { /* NOVO v10.0 */
     margin-bottom: 10px; /* Espaçamento entre os itens da lista */
 }
 
@@ -192,7 +193,7 @@ main {
 }
 
 /* -------------------------------------- */
-/* 5. EQUIPAMENTOS INTERATIVOS (NOVO) */
+/* 5. EQUIPAMENTOS INTERATIVOS */
 /* -------------------------------------- */
 .equipment-term {
     color: #00695c; /* Tom de verde um pouco diferente do glossário */
@@ -207,6 +208,22 @@ main {
     user-select: none; /* Padrão */
     -webkit-tap-highlight-color: transparent; /* Remove flash cinza no toque */
 }
+
+/* NOVO (v10.0): FINALIDADE DA PODA */
+.purpose-term {
+    color: #A62A00; /* Laranja-avermelhado escuro */
+    font-weight: bold;
+    cursor: help;
+    border-bottom: 1px dashed #A62A00;
+
+    /* Correção Mobile (v9.7) */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
 
 /* -------------------------------------- */
 /* 6. FORMULÁRIO DE CONTATO (Era 5) */

@@ -1,4 +1,4 @@
-// script.js (v9.9 - Completo: Restaura v9.6 + Correção v9.8)
+// script.js (v10.0 - Adiciona Finalidade da Poda interativa)
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
@@ -57,6 +57,38 @@ const equipmentData = {
     }
 };
 
+// NOVO (v10.0): Dados das Finalidades de Poda
+const podaPurposeData = {
+    'conducao': {
+        desc: 'Direcionar eixo de crescimento, remover ramos baixos/indesejáveis.',
+        img: 'poda-conducao.jpg'
+    },
+    'limpeza': {
+        desc: 'Remover ramos mortos, secos, doentes, parasitas, tocos - Risco sanitário e queda.',
+        img: 'poda-limpeza.jpg'
+    },
+    'correcao': {
+        desc: 'Remover ramos com defeito estrutural (cruzados, codominantes, V) - Com objetivo de aumentar a estabilidade do indivíduo.',
+        img: 'poda-correcao.jpg'
+    },
+    'adequacao': {
+        desc: 'Resolver conflitos com estruturas urbanas/edificações. Priorizar realocação de equipamentos quando possível.',
+        img: 'poda-adequacao.jpg'
+    },
+    'levantamento': {
+        desc: 'Remover ramos baixos para desobstrução. Podar apenas o mínimo necessário. Diâmetro máximo: 1/3 do ramo origem. Evitar excesso e desbalanceamento da copa.',
+        img: 'poda-levantamento.jpg'
+    },
+    'emergencia': {
+        desc: 'Risco iminente (quedas de pós-evento climático). Minimizar danos futuros quando possível.',
+        img: 'poda-emergencia.jpg'
+    },
+    'raizes': {
+        desc: 'Este tipo de poda deve ser evitado por causar perda estrutural na árvore e aumentar o risco de queda. Sempre que possível, alternativas devem ser estudadas. Para realizar a poda de raízes sempre consulte um profissional habilitado.',
+        img: 'poda-raizes-evitar.jpg'
+    }
+};
+
 // Dados do Manual (Conteúdo das seções)
 const manualContent = {
     'conceitos-basicos': {
@@ -82,8 +114,17 @@ const manualContent = {
                 <li><span class="equipment-term" data-term-key="podador-comum">Podador Manual Comum</span></li>
             </ul>
 
-            <h3>1.3. Técnicas de Poda Essenciais</h3>
-            <ul><li>Poda de limpeza</li><li>Poda de adequação</li><li>Poda de redução</li><li>Poda em três cortes</li><li>⚠️ Prática NÃO RecomendADA: <span class="glossary-term" data-term-key="poda drástica">Poda drástica</span> (<span class="glossary-term" data-term-key="topping">topping</span>).</li></ul>
+            <!-- ATUALIZADO (v10.0): Substitui 1.3 antigo -->
+            <h3>1.3. Finalidade da Poda</h3>
+            <ul class="purpose-list">
+                <li><span class="purpose-term" data-term-key="conducao">Condução</span></li>
+                <li><span class="purpose-term" data-term-key="limpeza">Limpeza</span></li>
+                <li><span class="purpose-term" data-term-key="correcao">Correção</span></li>
+                <li><span class="purpose-term" data-term-key="adequacao">Adequação</span></li>
+                <li><span class="purpose-term" data-term-key="levantamento">Levantamento</span></li>
+                <li><span class="purpose-term" data-term-key="emergencia">Emergência</span></li>
+                <li><span class="purpose-term" data-term-key="raizes">⚠️ Poda de Raízes (Evitar)</span></li>
+            </ul>
         `
     },
     'planejamento-inspecao': {
@@ -195,7 +236,7 @@ const manualContent = {
 };
 
 
-// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v9.9) ===
+// === 3. LÓGICA DE INICIALIZAÇÃO (CONSOLIDADA v10.0) ===
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -215,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-vincular os eventos para o novo conteúdo carregado
             setupGlossaryInteractions(); 
             setupEquipmentInteractions();
+            setupPurposeInteractions(); // NOVO (v10.0)
         } else {
             detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
         }
@@ -246,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
     }
 
-    // --- MÓDULO DE TOOLTIP (GLOSSÁRIO E EQUIPAMENTOS) ---
+    // --- MÓDULO DE TOOLTIP (GLOSSÁRIO, EQUIPAMENTOS E FINALIDADES) ---
     let currentTooltip = null; 
 
     function createTooltip() {
@@ -370,6 +412,61 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 0);
         }
     }
+
+    // NOVO (v10.0): -- Lógica de FINALIDADE DA PODA --
+    function setupPurposeInteractions() {
+        const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
+        purposeTermsElements.forEach(termElement => {
+            
+            if (!isTouchDevice) {
+                termElement.addEventListener('mouseenter', showPurposeTooltip);
+                termElement.addEventListener('mouseleave', hideTooltip);
+            }
+            termElement.addEventListener('click', togglePurposeTooltip);
+        });
+    }
+
+    function showPurposeTooltip(event) {
+        const termElement = event.currentTarget;
+        const termKey = termElement.getAttribute('data-term-key');
+        const data = podaPurposeData[termKey]; // Usa o novo objeto de dados
+        if (!data) return;
+
+        currentTooltip = createTooltip();
+        currentTooltip.innerHTML = `
+            <strong>${termElement.textContent}</strong>
+            <p>${data.desc}</p>
+            ${imgTag(data.img, termElement.textContent)}
+        `;
+        
+        positionTooltip(termElement);
+        currentTooltip.style.opacity = '1';
+        currentTooltip.style.visibility = 'visible';
+        currentTooltip.dataset.currentElement = termElement.textContent;
+    }
+
+    function togglePurposeTooltip(event) {
+        event.preventDefault();
+        event.stopPropagation(); // Impede o clique de borbulhar
+
+        const tooltip = document.getElementById('glossary-tooltip');
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showPurposeTooltip(event);
+            
+            // Correção v9.8: Adiciona o listener de fechamento *depois* do evento atual
+            setTimeout(() => {
+                document.addEventListener('click', function globalHide(e) {
+                    if (e.target !== event.currentTarget && (currentTooltip && !currentTooltip.contains(e.target))) {
+                        hideTooltip();
+                        document.removeEventListener('click', globalHide);
+                    }
+                }, { once: true });
+            }, 0);
+        }
+    }
+
 
     // Função genérica para posicionar o tooltip
     function positionTooltip(termElement) {
