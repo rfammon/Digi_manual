@@ -1,4 +1,4 @@
-// script.js (v10.3 - Sintaxe Limpa)
+// script.js (v10.5 - Novo Fechamento de Tooltip: Clicar no Popup + Navegação)
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
@@ -311,8 +311,7 @@ const manualContent = {
                     <tr><td>Motopoda</td><td>Ferramenta motorizada com haste para galhos altos.</td></tr>
                     <tr><td>Podador manual tipo bypass</td><td>Lâmina deslizante que realiza cortes limpos.</td></tr>
                     <tr><td>Podador tipo bigorna</td><td>Lâmina que pressiona o galho contra superfície plana.</td></tr>
-                    <tr><td>Hipsômetro</td><td>Instrumento para medir altura de árvores.</td></tr>
-
+                    <tr><td>Hipsômetro</td><td>Instrumento para medir altura de árv
                     <tr><td colspan="2" class="glossary-category-header">1.3. Técnicas de Poda</td></tr>
                     <tr><td>Poda de condução</td><td>Direciona crescimento da árvore.</td></tr>
                     <tr><td>Poda de formação</td><td>Define estrutura arquitetônica futura.</td></tr>
@@ -383,6 +382,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleTopicClick(button) {
+        // NOVO v10.5: Fecha qualquer tooltip aberto ao navegar
+        hideTooltip(); 
+        
         const target = button.getAttribute('data-target');
         activeTopicButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
@@ -418,6 +420,19 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltip.id = 'glossary-tooltip';
             document.body.appendChild(tooltip); 
         }
+
+        // NOVO v10.5: Adiciona o fechamento ao clicar/tocar NO PRÓPRIO popup
+        // Usa um 'dataset' para garantir que o listener seja adicionado apenas uma vez.
+        if (!tooltip.dataset.clickToCloseAdded) {
+            const closeEvent = isTouchDevice ? 'touchend' : 'click';
+            tooltip.addEventListener(closeEvent, (e) => {
+                // Impede que o clique "vaze" para o 'document' (se houver outros listeners)
+                e.stopPropagation(); 
+                hideTooltip();
+            });
+            tooltip.dataset.clickToCloseAdded = 'true';
+        }
+        
         return tooltip;
     }
 
@@ -467,15 +482,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             showGlossaryTooltip(event);
             
-            // Correção v9.8: Adiciona o listener de fechamento *depois* do evento atual
-            setTimeout(() => {
-                document.addEventListener('click', function globalHide(e) {
-                    if (e.target !== event.currentTarget && (currentTooltip && !currentTooltip.contains(e.target))) {
-                        hideTooltip();
-                        document.removeEventListener('click', globalHide);
-                    }
-                }, { once: true });
-            }, 0); 
+            // REMOVIDO v10.5: O bloco 'setTimeout' com 'globalHide' foi removido
+            // A lógica de fechamento agora está no createTooltip() e handleTopicClick()
         }
     }
 
@@ -521,15 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             showEquipmentTooltip(event);
             
-            // Correção v9.8: Adiciona o listener de fechamento *depois* do evento atual
-            setTimeout(() => {
-                document.addEventListener('click', function globalHide(e) {
-                    if (e.target !== event.currentTarget && (currentTooltip && !currentTooltip.contains(e.target))) {
-                        hideTooltip();
-                        document.removeEventListener('click', globalHide);
-                    }
-                }, { once: true });
-            }, 0);
+            // REMOVIDO v10.5: O bloco 'setTimeout' com 'globalHide' foi removido
         }
     }
 
@@ -575,15 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             showPurposeTooltip(event);
             
-            // Correção v9.8: Adiciona o listener de fechamento *depois* do evento atual
-            setTimeout(() => {
-                document.addEventListener('click', function globalHide(e) {
-                    if (e.target !== event.currentTarget && (currentTooltip && !currentTooltip.contains(e.target))) {
-                        hideTooltip();
-                        document.removeEventListener('click', globalHide);
-                    }
-                }, { once: true });
-            }, 0);
+            // REMOVIDO v10.5: O bloco 'setTimeout' com 'globalHide' foi removido
         }
     }
 
