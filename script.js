@@ -137,7 +137,7 @@ const podaPurposeData = {
 // Dados do Manual (Conteúdo das seções)
 const manualContent = {
     'conceitos-basicos': {
-        titulo: '1.0. Definições, Termos e Técnicas',
+        titulo: '💡 Definições, Termos e Técnicas',
         html: `
             <h3>1.1. Termos Estruturais e Anatômicos</h3>
             <p>A correta identificação das partes da árvore é vital. Use o <span class="glossary-term" data-term-key="colar do galho">colar do galho</span> e a <span class="glossary-term" data-term-key="crista da casca">crista da casca</span> como guias.</p>
@@ -172,7 +172,7 @@ const manualContent = {
         `
     },
     'planejamento-inspecao': {
-        titulo: '2.1. Procedimentos: Planejamento e Inspeção',
+        titulo: '📋 Planejamento e Inspeção',
         html: `
             <h3>2.1. Planejamento</h3>
             <p>Etapa fundamental para garantir a execução **segura e eficiente**.</p>
@@ -188,7 +188,7 @@ const manualContent = {
         `
     },
     'autorizacao-legal': {
-        titulo: '1.5. Termos Legais e Autorização (ASV)',
+        titulo: '📜 Termos Legais e Autorização',
         html: `
             <h3>1.5. Termos Legais e Normativos</h3>
             <ul>
@@ -204,7 +204,7 @@ const manualContent = {
         `
     },
     'preparacao-e-isolamento': {
-        titulo: '2.2. Preparação do Local e Isolamento',
+        titulo: '🚧 Preparação do Local e Isolamento',
         html: `
             <h3>2.2.2. Isolamento e Sinalização</h3>
             <p>O isolamento é **obrigatório**.</p>
@@ -219,7 +219,7 @@ const manualContent = {
         `
     },
     'operacoes-e-tecnicas': {
-        titulo: '2.3. Operações de Poda e Corte',
+        titulo: '✂️ Operações de Poda e Corte',
         html: `
             <h3>2.3.2. Técnicas de Poda</h3>
             <ul><li><strong>Desbaste da copa:</strong> Limite de **até 25% da copa viva** por intervenção.</li><li><strong>Elevação da copa:</strong> Manter pelo menos **2/3 da altura total** com copa viva.</li><li><strong>Redução da copa:</strong> Preservar ramos laterais com diâmetro **≥ 1/3** do ramo removido.</li></ul>
@@ -249,7 +249,7 @@ const manualContent = {
         `
     },
     'riscos-e-epis': {
-        titulo: '2.4. Análise de Risco e EPIs',
+        titulo: '🛡️ Análise de Risco e EPIs',
         html: `
             <h3>2.4. Análise de Risco (Perigos Recorrentes)</h3>
             <p>Queda de altura, Queda de ferramentas, Choque elétrico, Corte, Efeito Rebote.</p>
@@ -263,7 +263,7 @@ const manualContent = {
         `
     },
     'gestao-e-desmobilizacao': {
-        titulo: '2.5. Gestão de Resíduos e Desmobilização',
+        titulo: '♻️ Gestão de Resíduos e Desmobilização',
         html: `
             <h3>2.3.4. Gestão de Resíduos Arbóreos (PNRS)</h3>
             ${imgTag('segregacao-residuos.jpg', 'Segregação de resíduos')}
