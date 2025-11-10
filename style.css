@@ -408,9 +408,9 @@ main {
 
 /* Cabeçalho da Categoria (Ex: 1.1. Termos) */
 .glossary-category-header {
-    background-color: #00796b; /* Cor de destaque */
-    color: #fff;
+    background-color: #ffffdc; /* Cor de destaque */
+    color: #ffff;
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 2.1em;
     text-align: center !important; /* Centraliza o título da categoria */
 }

@@ -292,7 +292,7 @@ const manualContent = {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="2" class="glossary-category-header">1.1. Termos Estruturais e Anatômicos</td></tr>
+                    <tr><td colspan="2" class="glossary-category-header">Termos Estruturais e Anatômicos</td></tr>
                     <tr><td>Colar do galho</td><td>Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.</td></tr>
                     <tr><td>Crista da casca</td><td>Elevação cortical paralela ao ângulo de inserção do galho, indicadora da zona de união.</td></tr>
                     <tr><td>Lenho de cicatrização</td><td>Tecido formado para selar ferimentos, também conhecido como callus.</td></tr>
@@ -303,7 +303,7 @@ const manualContent = {
                     <tr><td>Nó</td><td>Ponto de inserção de folhas, gemas ou ramos.</td></tr>
                     <tr><td>Lenho</td><td>Tecido vegetal com função de sustentação e condução de seiva.</td></tr>
                     
-                    <tr><td colspan="2" class="glossary-category-header">1.2. Instrumentos e Equipamentos</td></tr>
+                    <tr><td colspan="2" class="glossary-category-header">Instrumentos e Equipamentos</td></tr>
                     <tr><td>Podão</td><td>Tesoura de poda de haste longa para alcance elevado.</td></tr>
                     <tr><td>Tesourão de poda</td><td>Ferramenta para galhos de até 7 cm de diâmetro.</td></tr>
                     <tr><td>Serra de poda</td><td>Serra com dentes especiais para madeira verde.</td></tr>
@@ -313,7 +313,7 @@ const manualContent = {
                     <tr><td>Podador tipo bigorna</td><td>Lâmina que pressiona o galho contra superfície plana.</td></tr>
                     <tr><td>Hipsômetro</td><td>Instrumento para medir altura de árvores.</td></tr>
                     
-                    <tr><td colspan="2" class="glossary-category-header">1.3. Técnicas de Poda</td></tr>
+                    <tr><td colspan="2" class="glossary-category-header">Técnicas de Poda</td></tr>
                     <tr><td>Poda de condução</td><td>Direciona crescimento da árvore.</td></tr>
                     <tr><td>Poda de formação</td><td>Define estrutura arquitetônica futura.</td></tr>
                     <tr><td>Poda de limpeza</td><td>Remove galhos mortos, doentes ou mal orientados.</td></tr>
@@ -331,7 +331,7 @@ const manualContent = {
                     <tr><td>Elevação da copa</td><td>Remoção de galhos inferiores.</td></tr>
                     <tr><td>Redução da copa</td><td>Corte seletivo para adequação ao espaço.</td></tr>
 
-                    <tr><td colspan="2" class="glossary-category-header">1.4. Parâmetros de Avaliação</td></tr>
+                    <tr><td colspan="2" class="glossary-category-header">Parâmetros de Avaliação</td></tr>
                     <tr><td>Diâmetro à Altura do Peito (DAP)</td><td>Medida padrão a 1,30 m do solo.</td></tr>
                     <tr><td>Projeção da copa</td><td>Área de sombreamento da copa.</td></tr>
                     <tr><td>Índice de vitalidade</td><td>Avaliação do estado fitossanitário.</td></tr>
@@ -340,7 +340,7 @@ const manualContent = {
                     <tr><td>Nível 2 (Avaliação de Árvores)</td><td>Inspeção 360º.</td></tr>
                     <tr><td>Nível 3 (Avaliação de Árvores)</td><td>Métodos avançados para avaliar defeitos.</td></tr>
 
-                    <tr><td colspan="2" class="glossary-category-header">1.5. Termos Legais e Normativos</td></tr>
+                    <tr><td colspan="2" class="glossary-category-header">Termos Legais e Normativos</td></tr>
                     <tr><td>ASV (Autorização de Supressão de Vegetação)</td><td>Documento emitido pelo órgão ambiental competente que autoriza o corte ou supressão de vegetação nativa ou árvores isoladas, mediante justificativa técnica e compensação ambiental.</td></tr>
                     <tr><td>APP (Área de Preservação Permanente)</td><td>Espaço protegido por lei, com função ambiental de preservar recursos hídricos, biodiversidade e estabilidade geológica. Intervenções são permitidas apenas em casos de utilidade pública, interesse social ou baixo impacto ambiental.</td></tr>
                     <tr><td>CTF (Cadastro Técnico Federal)</td><td>Registro obrigatório no IBAMA para pessoas físicas ou jurídicas que realizam atividades potencialmente poluidoras ou utilizadoras de recursos naturais.</td></tr>
