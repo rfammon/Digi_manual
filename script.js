@@ -1,28 +1,73 @@
-// script.js (v10.0 - Adiciona Finalidade da Poda interativa)
+// script.js (v10.3 - Sintaxe Limpa)
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
 // Função utilitária para gerar a tag de imagem
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
-// Dados do Glossário
+// Dados do Glossário (ATUALIZADO E EXPANDIDO v10.1)
 const glossaryTerms = {
+    // 1.1 Termos Estruturais e Anatômicos
     'colar do galho': 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.',
     'crista da casca': 'Elevação cortical paralela ao ângulo de inserção do galho, indicadora da zona de união.',
-    'lenho de cicatrização': 'Tecido formado para selar ferimentos (callus).',
-    'casca inclusa': 'Tecido cortical aprisionado em uniões de ângulo agudo (ponto de fraqueza).',
+    'lenho de cicatrização': 'Tecido formado para selar ferimentos, também conhecido como callus.',
+    'casca inclusa': 'Tecido cortical aprisionado em uniões de ângulo agudo.',
     'lenho de reação': 'Madeira com propriedades alteradas por resposta a tensões.',
     'gemas epicórmicas': 'Brotos dormentes no tronco ou galhos principais.',
-    'asv': 'Autorização de Supressão de Vegetação.',
-    'app': 'Área de Preservação Permanente.',
-    'art': 'Anotação de Responsabilidade Técnica.',
-    'mtr': 'Manifesto de Transporte de Resíduos.',
-    'dap': 'Diâmetro à Altura do Peito (1,30 m do solo).',
-    'rcr': 'Raio Crítico Radicular (RCR = 1,5 × DAP).',
-    'poda drástica': 'Corte indiscriminado (topping). Prática NÃO recomendada.',
-    'topping': 'Sinônimo de Poda Drástica.',
-    'spi q': 'Sistema de Proteção Individual contra Quedas.',
-    'pnrs': 'Política Nacional de Resíduos Sólidos.'
+    'entreno': 'Espaço entre dois nós consecutivos no ramo.',
+    'no': 'Ponto de inserção de folhas, gemas ou ramos.',
+    'lenho': 'Tecido vegetal com função de sustentação e condução de seiva.',
+    
+    // 1.2 Instrumentos e Equipamentos (para o glossário)
+    'podao': 'Tesoura de poda de haste longa para alcance elevado.',
+    'tesourao-poda': 'Ferramenta para galhos de até 7 cm de diâmetro.',
+    'serra-poda': 'Serra com dentes especiais para madeira verde.',
+    'motosserra-glossario': 'Equipamento motorizado para corte de galhos e troncos.',
+    'motopoda-glossario': 'Ferramenta motorizada com haste para galhos altos.',
+    'podador-bypass-glossario': 'Lâmina deslizante que realiza cortes limpos.',
+    'podador-bigorna': 'Lâmina que pressiona o galho contra superfície plana.',
+    'hipsometro': 'Instrumento para medir altura de árvores.',
+
+    // 1.3 Técnicas de Poda
+    'poda-conducao': 'Direciona crescimento da árvore.',
+    'poda-formacao': 'Define estrutura arquitetônica futura.',
+    'poda-limpeza': 'Remove galhos mortos, doentes ou mal orientados.',
+    'poda-adequacao': 'Adapta a árvore ao espaço urbano ou industrial.',
+    'poda-reducao': 'Diminui volume da copa.',
+    'poda-emergencia': 'Elimina riscos iminentes.',
+    'poda-raizes': 'Deve ser evitada; requer profissional habilitado.',
+    'poda-cabecote': 'Poda severa para estimular brotação.',
+    'poda drástica': 'Corte indiscriminado com remoção total ou parcial da copa (não recomendada).',
+    'poda-reducao-garfo': 'Preserva estrutura natural.',
+    'corte-rente': 'Remove o colar do galho (inadequado).',
+    'corte-toco': 'Retarda cicatrização.',
+    'poda-tres-cortes': 'Técnica que preserva tecidos vitais.',
+    'desbaste-copa': 'Remoção seletiva para luz e ventilação.',
+    'elevacao-copa': 'Remoção de galhos inferiores.',
+    'reducao-copa': 'Corte seletivo para adequação ao espaço.',
+    'topping': 'Sinônimo de Poda Drástica.', // (Mantido)
+
+    // 1.4 Parâmetros de Avaliação
+    'dap': 'Diâmetro à Altura do Peito (DAP): Medida padrão a 1,30 m do solo.',
+    'projecao-copa': 'Área de sombreamento da copa.',
+    'indice-vitalidade': 'Avaliação do estado fitossanitário.',
+    'rcr': 'Raio Crítico Radicular (RCR): Área de influência e sustentação mecânica das raízes.',
+    'nivel-1-avaliacao': 'Nível 1: Análise visual.',
+    'nivel-2-avaliacao': 'Nível 2: Inspeção 360º.',
+    'nivel-3-avaliacao': 'Nível 3: Métodos avançados para avaliar defeitos.',
+
+    // 1.5 Termos Legais
+    'asv': 'Autorização de Supressão de Vegetação (ASV): Documento emitido pelo órgão ambiental competente que autoriza o corte ou supressão de vegetação nativa ou árvores isoladas, mediante justificativa técnica e compensação ambiental.',
+    'app': 'Área de Preservação Permanente (APP): Espaço protegido por lei, com função ambiental de preservar recursos hídricos, biodiversidade e estabilidade geológica. Intervenções são permitidas apenas em casos de utilidade pública, interesse social ou baixo impacto ambiental.',
+    'ctf': 'Cadastro Técnico Federal (CTF): Registro obrigatório no IBAMA para pessoas físicas ou jurídicas que realizam atividades potencialmente poluidoras ou utilizadoras de recursos naturais.',
+    'art': 'Anotação de Responsabilidade Técnica (ART): Documento que formaliza a responsabilidade técnica de um profissional habilitado sobre determinado serviço ou estudo ambiental.',
+    'tcra': 'Termo de Compromisso de Recuperação Ambiental (TCRA): Instrumento legal que formaliza a obrigação de compensação ambiental por meio de ações de recuperação ou preservação.',
+    'compensacao-ambiental': 'Medida obrigatória para mitigar os impactos causados pela supressão de vegetação, podendo incluir restauração ecológica, preservação de áreas remanescentes ou compensação em propriedades de terceiros.',
+    'pnrs': 'Política Nacional de Resíduos Sólidos (PNRS): Lei nº 12.305/2010 que estabelece diretrizes para o manejo adequado dos resíduos sólidos, incluindo os gerados por poda e corte de árvores.',
+    'mtr': 'Manifesto de Transporte de Resíduos (MTR): Documento que garante a rastreabilidade dos resíduos desde a origem até a destinação final, exigido em operações de transporte de resíduos sólidos.',
+    
+    // Termos antigos mantidos
+    'spi q': 'Sistema de Proteção Individual contra Quedas.'
 };
 
 // Dados dos Equipamentos
@@ -114,7 +159,6 @@ const manualContent = {
                 <li><span class="equipment-term" data-term-key="podador-comum">Podador Manual Comum</span></li>
             </ul>
 
-            <!-- ATUALIZADO (v10.0): Substitui 1.3 antigo -->
             <h3>1.3. Finalidade da Poda</h3>
             <ul class="purpose-list">
                 <li><span class="purpose-term" data-term-key="conducao">Condução</span></li>
@@ -231,6 +275,82 @@ const manualContent = {
             
             <h3>2.3.6. Desmobilização</h3>
             <p>Remover todos os resíduos. Retirar isolamento **somente após liberação formal** do responsável técnico.</p>
+        `
+    },
+
+    // NOVO CONTEÚDO DO GLOSSÁRIO GERAL (v10.1)
+    'glossario-geral': {
+        titulo: '📘 Glossário Geral de Termos',
+        html: `
+            <p>Navegue por todos os termos técnicos, legais e de equipamentos usados neste manual, organizados por categoria.</p>
+            
+            <table class="glossary-table">
+                <thead>
+                    <tr>
+                        <th>Termo</th>
+                        <th>Definição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="2" class="glossary-category-header">1.1. Termos Estruturais e Anatômicos</td></tr>
+                    <tr><td>Colar do galho</td><td>Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.</td></tr>
+                    <tr><td>Crista da casca</td><td>Elevação cortical paralela ao ângulo de inserção do galho, indicadora da zona de união.</td></tr>
+                    <tr><td>Lenho de cicatrização</td><td>Tecido formado para selar ferimentos, também conhecido como callus.</td></tr>
+                    <tr><td>Casca inclusa</td><td>Tecido cortical aprisionado em uniões de ângulo agudo.</td></tr>
+                    <tr><td>Lenho de reação</td><td>Madeira com propriedades alteradas por resposta a tensões.</td></tr>
+                    <tr><td>Gemas epicórmicas</td><td>Brotos dormentes no tronco ou galhos principais.</td></tr>
+                    <tr><td>Entrenó</td><td>Espaço entre dois nós consecutivos no ramo.</td></tr>
+                    <tr><td>Nó</td><td>Ponto de inserção de folhas, gemas ou ramos.</td></tr>
+                    <tr><td>Lenho</td><td>Tecido vegetal com função de sustentação e condução de seiva.</td></tr>
+                    
+                    <tr><td colspan="2" class="glossary-category-header">1.2. Instrumentos e Equipamentos</td></tr>
+                    <tr><td>Podão</td><td>Tesoura de poda de haste longa para alcance elevado.</td></tr>
+                    <tr><td>Tesourão de poda</td><td>Ferramenta para galhos de até 7 cm de diâmetro.</td></tr>
+                    <tr><td>Serra de poda</td><td>Serra com dentes especiais para madeira verde.</td></tr>
+                    <tr><td>Motosserra</td><td>Equipamento motorizado para corte de galhos e troncos.</td></tr>
+                    <tr><td>Motopoda</td><td>Ferramenta motorizada com haste para galhos altos.</td></tr>
+                    <tr><td>Podador manual tipo bypass</td><td>Lâmina deslizante que realiza cortes limpos.</td></tr>
+                    <tr><td>Podador tipo bigorna</td><td>Lâmina que pressiona o galho contra superfície plana.</td></tr>
+                    <tr><td>Hipsômetro</td><td>Instrumento para medir altura de árvores.</td></tr>
+
+                    <tr><td colspan="2" class="glossary-category-header">1.3. Técnicas de Poda</td></tr>
+                    <tr><td>Poda de condução</td><td>Direciona crescimento da árvore.</td></tr>
+                    <tr><td>Poda de formação</td><td>Define estrutura arquitetônica futura.</td></tr>
+                    <tr><td>Poda de limpeza</td><td>Remove galhos mortos, doentes ou mal orientados.</td></tr>
+                    <tr><td>Poda de adequação</td><td>Adapta a árvore ao espaço urbano ou industrial.</td></tr>
+                    <tr><td>Poda de redução</td><td>Diminui volume da copa.</td></tr>
+                    <tr><td>Poda de emergência</td><td>Elimina riscos iminentes.</td></tr>
+                    <tr><td>Poda de raízes</td><td>Deve ser evitada; requer profissional habilitado.</td></tr>
+                    <tr><td>Poda em cabeçote</td><td>Poda severa para estimular brotação.</td></tr>
+                    <tr><td>Poda drástica</td><td>Corte indiscriminado com remoção total ou parcial da copa (não recomendada).</td></tr>
+                    <tr><td>Poda de redução por corte no garfo</td><td>Preserva estrutura natural.</td></tr>
+                    <tr><td>Corte rente</td><td>Remove o colar do galho (inadequado).</td></tr>
+                    <tr><td>Corte com toco</td><td>Retarda cicatrização.</td></tr>
+                    <tr><td>Poda em três cortes</td><td>Técnica que preserva tecidos vitais.</td></tr>
+                    <tr><td>Desbaste da copa</td><td>Remoção seletiva para luz e ventilação.</td></tr>
+                    <tr><td>Elevação da copa</td><td>Remoção de galhos inferiores.</td></tr>
+                    <tr><td>Redução da copa</td><td>Corte seletivo para adequação ao espaço.</td></tr>
+
+                    <tr><td colspan="2" class="glossary-category-header">1.4. Parâmetros de Avaliação</td></tr>
+                    <tr><td>Diâmetro à Altura do Peito (DAP)</td><td>Medida padrão a 1,30 m do solo.</td></tr>
+                    <tr><td>Projeção da copa</td><td>Área de sombreamento da copa.</td></tr>
+                    <tr><td>Índice de vitalidade</td><td>Avaliação do estado fitossanitário.</td></tr>
+                    <tr><td>Raio Crítico Radicular (RCR)</td><td>Área de influência e sustentação mecânica das raízes.</td></tr>
+                    <tr><td>Nível 1 (Avaliação de Árvores)</td><td>Análise visual.</td></tr>
+                    <tr><td>Nível 2 (Avaliação de Árvores)</td><td>Inspeção 360º.</td></tr>
+                    <tr><td>Nível 3 (Avaliação de Árvores)</td><td>Métodos avançados para avaliar defeitos.</td></tr>
+
+                    <tr><td colspan="2" class="glossary-category-header">1.5. Termos Legais e Normativos</td></tr>
+                    <tr><td>ASV (Autorização de Supressão de Vegetação)</td><td>Documento emitido pelo órgão ambiental competente que autoriza o corte ou supressão de vegetação nativa ou árvores isoladas, mediante justificativa técnica e compensação ambiental.</td></tr>
+                    <tr><td>APP (Área de Preservação Permanente)</td><td>Espaço protegido por lei, com função ambiental de preservar recursos hídricos, biodiversidade e estabilidade geológica. Intervenções são permitidas apenas em casos de utilidade pública, interesse social ou baixo impacto ambiental.</td></tr>
+                    <tr><td>CTF (Cadastro Técnico Federal)</td><td>Registro obrigatório no IBAMA para pessoas físicas ou jurídicas que realizam atividades potencialmente poluidoras ou utilizadoras de recursos naturais.</td></tr>
+                    <tr><td>ART (Anotação de Responsabilidade Técnica)</td><td>Documento que formaliza a responsabilidade técnica de um profissional habilitado sobre determinado serviço ou estudo ambiental.</td></tr>
+                    <tr><td>TCRA (Termo de Compromisso de Recuperação Ambiental)</td><td>Instrumento legal que formaliza a obrigação de compensação ambiental por meio de ações de recuperação ou preservação.</td></tr>
+                    <tr><td>Compensação Ambiental</td><td>Medida obrigatória para mitigar os impactos causados pela supressão de vegetação, podendo incluir restauração ecológica, preservação de áreas remanescentes ou compensação em propriedades de terceiros.</td></tr>
+                    <tr><td>PNRS (Política Nacional de Resíduos Sólidos)</td><td>Lei nº 12.305/2010 que estabelece diretrizes para o manejo adequado dos resíduos sólidos, incluindo os gerados por poda e corte de árvores.</td></tr>
+                    <tr><td>MTR (Manifesto de Transporte de Resíduos)</td><td>Documento que garante a rastreabilidade dos resíduos desde a origem até a destinação final, exigido em operações de transporte de resíduos sólidos.</td></tr>
+                </tbody>
+            </table>
         `
     }
 };
