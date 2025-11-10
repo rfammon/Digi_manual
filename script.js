@@ -1,4 +1,4 @@
-// script.js (v10.5 - Novo Fechamento de Tooltip: Clicar no Popup + Navegação)
+// script.js (v10.6 - Correção de Sintaxe e Lógica Mobile 'touchend')
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
@@ -311,7 +311,8 @@ const manualContent = {
                     <tr><td>Motopoda</td><td>Ferramenta motorizada com haste para galhos altos.</td></tr>
                     <tr><td>Podador manual tipo bypass</td><td>Lâmina deslizante que realiza cortes limpos.</td></tr>
                     <tr><td>Podador tipo bigorna</td><td>Lâmina que pressiona o galho contra superfície plana.</td></tr>
-                    <tr><td>Hipsômetro</td><td>Instrumento para medir altura de árv
+                    <tr><td>Hipsômetro</td><td>Instrumento para medir altura de árvores.</td></tr>
+                    
                     <tr><td colspan="2" class="glossary-category-header">1.3. Técnicas de Poda</td></tr>
                     <tr><td>Poda de condução</td><td>Direciona crescimento da árvore.</td></tr>
                     <tr><td>Poda de formação</td><td>Define estrutura arquitetônica futura.</td></tr>
@@ -361,6 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Detecção de dispositivo de toque
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    // NOVO v10.6: Define o evento de clique correto para o dispositivo
+    const termClickEvent = isTouchDevice ? 'touchend' : 'click';
+    const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
+
 
     // --- MÓDULO DE NAVEGAÇÃO ---
     const detailView = document.getElementById('detalhe-view');
@@ -375,14 +380,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Re-vincular os eventos para o novo conteúdo carregado
             setupGlossaryInteractions(); 
             setupEquipmentInteractions();
-            setupPurposeInteractions(); // NOVO (v10.0)
+            setupPurposeInteractions();
         } else {
             detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
         }
     }
 
     function handleTopicClick(button) {
-        // NOVO v10.5: Fecha qualquer tooltip aberto ao navegar
+        // Lógica v10.5: Fecha qualquer tooltip aberto ao navegar
         hideTooltip(); 
         
         const target = button.getAttribute('data-target');
@@ -421,12 +426,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(tooltip); 
         }
 
-        // NOVO v10.5: Adiciona o fechamento ao clicar/tocar NO PRÓPRIO popup
-        // Usa um 'dataset' para garantir que o listener seja adicionado apenas uma vez.
+        // Lógica v10.5: Adiciona o fechamento ao clicar/tocar NO PRÓPRIO popup
         if (!tooltip.dataset.clickToCloseAdded) {
-            const closeEvent = isTouchDevice ? 'touchend' : 'click';
-            tooltip.addEventListener(closeEvent, (e) => {
-                // Impede que o clique "vaze" para o 'document' (se houver outros listeners)
+            tooltip.addEventListener(popupCloseEvent, (e) => { // Usa a variável popupCloseEvent
                 e.stopPropagation(); 
                 hideTooltip();
             });
@@ -453,7 +455,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 termElement.addEventListener('mouseenter', showGlossaryTooltip);
                 termElement.addEventListener('mouseleave', hideTooltip);
             }
-            termElement.addEventListener('click', toggleGlossaryTooltip); 
+            // NOVO v10.6: Usa o evento de clique correto (touchend ou click)
+            termElement.addEventListener(termClickEvent, toggleGlossaryTooltip); 
         });
     }
 
@@ -481,9 +484,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hideTooltip();
         } else {
             showGlossaryTooltip(event);
-            
-            // REMOVIDO v10.5: O bloco 'setTimeout' com 'globalHide' foi removido
-            // A lógica de fechamento agora está no createTooltip() e handleTopicClick()
         }
     }
 
@@ -496,7 +496,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 termElement.addEventListener('mouseenter', showEquipmentTooltip);
                 termElement.addEventListener('mouseleave', hideTooltip);
             }
-            termElement.addEventListener('click', toggleEquipmentTooltip);
+            // NOVO v10.6: Usa o evento de clique correto (touchend ou click)
+            termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
         });
     }
 
@@ -528,8 +529,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hideTooltip();
         } else {
             showEquipmentTooltip(event);
-            
-            // REMOVIDO v10.5: O bloco 'setTimeout' com 'globalHide' foi removido
         }
     }
 
@@ -542,7 +541,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 termElement.addEventListener('mouseenter', showPurposeTooltip);
                 termElement.addEventListener('mouseleave', hideTooltip);
             }
-            termElement.addEventListener('click', togglePurposeTooltip);
+            // NOVO v10.6: Usa o evento de clique correto (touchend ou click)
+            termElement.addEventListener(termClickEvent, togglePurposeTooltip);
         });
     }
 
@@ -574,8 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hideTooltip();
         } else {
             showPurposeTooltip(event);
-            
-            // REMOVIDO v10.5: O bloco 'setTimeout' com 'globalHide' foi removido
         }
     }
 
