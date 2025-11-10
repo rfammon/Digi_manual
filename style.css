@@ -108,9 +108,9 @@ main {
     overflow-wrap: break-word; /* Impede quebra de layout */
 }
 
-/* (Site Builder) Estilo para a lista de equipamentos */
+/* Estilo para a lista de equipamentos */
 .equipment-list li,
-.purpose-list li { /* NOVO v10.0 */
+.purpose-list li { /* v10.0 */
     margin-bottom: 10px; /* Espaçamento entre os itens da lista */
 }
 
@@ -147,7 +147,7 @@ main {
     cursor: help; 
     border-bottom: 1px dashed #ff6f00; 
     
-    /* NOVO (Site Builder v9.7) - Correção Mobile */
+    /* (Site Builder v9.7) - Correção Mobile */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE */
@@ -173,13 +173,36 @@ main {
     /* Posição (left, top) é 100% controlada pelo JavaScript */
 }
 
+/* NOVO (v10.1): Botão de Fechar do Tooltip */
+.tooltip-close-btn {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 1.4rem; /* Tamanho do 'X' */
+    color: #ccc; /* Cor sutil */
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-weight: bold;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1001; /* Garante que fique sobre o conteúdo */
+}
+
+.tooltip-close-btn:hover {
+    color: #fff; /* Cor mais clara ao passar o mouse */
+}
+
 #glossary-tooltip strong {
     color: #ffb300; 
     display: block;
     margin-bottom: 5px;
+    /* ATUALIZADO (v10.1): Adiciona espaço para o botão 'X' */
+    padding-right: 20px; 
 }
 
-/* NOVO (Site Builder): Estilos para o conteúdo do tooltip */
+/* Estilos para o conteúdo do tooltip */
 #glossary-tooltip p {
     margin-top: 5px;
     margin-bottom: 10px;
@@ -201,7 +224,7 @@ main {
     cursor: help;
     border-bottom: 1px dashed #00695c;
 
-    /* NOVO (Site Builder v9.7) - Correção Mobile */
+    /* (Site Builder v9.7) - Correção Mobile */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE */
@@ -209,7 +232,7 @@ main {
     -webkit-tap-highlight-color: transparent; /* Remove flash cinza no toque */
 }
 
-/* NOVO (v10.0): FINALIDADE DA PODA */
+/* (v10.0): FINALIDADE DA PODA */
 .purpose-term {
     color: #A62A00; /* Laranja-avermelhado escuro */
     font-weight: bold;
