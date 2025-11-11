@@ -1,7 +1,10 @@
-// script.js (v13.7 - GPS Embutido)
+// script.js (v13.9 - Persistência com localStorage)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
+
+// (NOVO v13.9) Chave para o localStorage
+const STORAGE_KEY = 'manualPodaData';
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
@@ -579,7 +582,34 @@ const manualContent = {
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // --- (NOVO v13.9) FUNÇÕES DE ARMAZENAMENTO ---
+    function saveDataToStorage() {
+        try {
+            // Converte a lista de árvores em texto JSON e salva
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredTrees));
+        } catch (e) {
+            console.error("Erro ao salvar no localStorage:", e);
+            // Opcional: alertar o usuário que o armazenamento falhou
+        }
+    }
+
+    function loadDataFromStorage() {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            // Se houver dados, converte-os de volta para um array
+            if (data) {
+                registeredTrees = JSON.parse(data);
+            }
+        } catch (e) {
+            console.error("Erro ao ler do localStorage:", e);
+        }
+    }
+
+    // --- (NOVO v13.9) CARREGA OS DADOS IMEDIATAMENTE ---
+    loadDataFromStorage();
     
+    // --- O resto do seu script começa aqui ---
     // Detecção de dispositivo de toque
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const termClickEvent = isTouchDevice ? 'touchend' : 'click';
@@ -811,10 +841,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================
-    // INÍCIO DA MODIFICAÇÃO (v13.7) - GPS EMBUTIDO
+    // INÍCIO DA MODIFICAÇÃO (v13.9) - GPS EMBUTIDO E LOCALSTORAGE
     // ==========================================================
 
-    // (v13.7) --- MÓDULO DA CALCULADORA DE RISCO ---
+    // (v13.9) --- MÓDULO DA CALCULADORA DE RISCO ---
     function setupRiskCalculator() {
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
@@ -873,6 +903,10 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             registeredTrees.push(newTree);
+            
+            // --- (NOVO v13.9) SALVA OS DADOS ---
+            saveDataToStorage();
+            
             renderSummaryTable();
             form.reset();
             try {
@@ -890,25 +924,27 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 2. Lógica do Botão Limpar (v12.6 CORRIGIDO)
         const resetBtn = document.getElementById('reset-risk-form-btn');
-        resetBtn.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            form.reset(); 
-             try {
-                document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-            } catch(e) { /* ignora erro */ }
-            // Limpa o status do GPS
-            const gpsStatus = document.getElementById('gps-status');
-            if (gpsStatus) {
-                gpsStatus.textContent = '';
-                gpsStatus.className = '';
-            }
-        });
+        if (resetBtn) { // Adicionada verificação de segurança
+            resetBtn.addEventListener('click', (e) => {
+                e.preventDefault(); 
+                form.reset(); 
+                 try {
+                    document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+                } catch(e) { /* ignora erro */ }
+                // Limpa o status do GPS
+                const gpsStatus = document.getElementById('gps-status');
+                if (gpsStatus) {
+                    gpsStatus.textContent = '';
+                    gpsStatus.className = '';
+                }
+            });
+        }
 
         // 3. Lógica dos Botões de Exportação
         if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
         if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
         
-        // 4. Renderiza a tabela ao carregar
+        // 4. Renderiza a tabela ao carregar (importante para o localStorage)
         renderSummaryTable();
         
         // 5. (v12.6) Event Listener para Excluir
@@ -924,7 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Converte Lat/Lon (WGS84) para coordenadas UTM.
+     * (v13.7) Converte Lat/Lon (WGS84) para coordenadas UTM.
      * Esta função substitui a biblioteca externa utm-latlon.min.js
      * @param {number} lat Latitude
      * @param {number} lon Longitude
@@ -1006,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Função principal que captura o GPS e usa o conversor embutido.
+     * (v13.7) Função principal que captura o GPS e usa o conversor embutido.
      */
     function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
@@ -1089,9 +1125,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         registeredTrees = registeredTrees.filter(tree => tree.id !== id);
         
+        // Re-indexa os IDs
         registeredTrees.forEach((tree, index) => {
             tree.id = index + 1;
         });
+
+        // --- (NOVO v13.9) SALVA OS DADOS ---
+        saveDataToStorage();
         
         renderSummaryTable();
     }
