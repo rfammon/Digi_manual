@@ -707,26 +707,39 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
     }
 	
-// --- (NOVO v14.1) LÓGICA DO BOTÃO VOLTAR AO TOPO ---
+// --- (NOVO v14.2) LÓGICA DO BOTÃO VOLTAR AO TOPO (IntersectionObserver) ---
     
     const backToTopButton = document.getElementById('back-to-top-btn');
+    // O nosso "alvo" para observar é o header (que tem o ID 'page-top')
+    const headerElement = document.getElementById('page-top'); 
 
-    if (backToTopButton) {
-        // Função que decide se o botão aparece
-        const scrollFunction = () => {
-            // Mostra o botão após 300px de scroll
-            if (window.scrollY > 300 || document.documentElement.scrollTop > 300) {
+    if (backToTopButton && headerElement) {
+        
+        // 1. A função que é chamada quando o header entra ou sai do ecrã
+        const observerCallback = (entries) => {
+            const [entry] = entries; // Pegamos a primeira (e única) entrada
+            
+            // 'isIntersecting' é true se o header estiver visível
+            if (!entry.isIntersecting) {
+                // Se o header NÃO está visível (o utilizador rolou para baixo)
                 backToTopButton.classList.add('show');
             } else {
+                // Se o header ESTÁ visível (o utilizador está no topo)
                 backToTopButton.classList.remove('show');
             }
         };
 
-        // Adiciona o listener de scroll
-        window.onscroll = scrollFunction;
-        
-        // O clique já é tratado pelo <a href="#page-top"> e pelo CSS 'scroll-behavior: smooth'.
-        // Não precisamos de JS para o clique, tornando-o mais leve.
+        // 2. As opções para o observador
+        const observerOptions = {
+            root: null, // Observa em relação ao viewport principal
+            threshold: 0 // Dispara assim que o elemento sai (0% visível)
+        };
+
+        // 3. Cria e inicia o observador
+        const headerObserver = new IntersectionObserver(observerCallback, observerOptions);
+        headerObserver.observe(headerElement);
+
+        // O clique continua a ser tratado pelo <a href="#page-top"> e pelo CSS 'scroll-behavior: smooth'.
     }
 
     // --- MÓDULO DE TOOLTIP ---
