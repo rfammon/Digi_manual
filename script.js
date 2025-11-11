@@ -1,4 +1,4 @@
-// script.js (v14.3 - Média de 5 Leituras de GPS)
+// script.js (v14.4 - Corrigida Ordem de Execução)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
@@ -585,21 +585,28 @@ const manualContent = {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- (NOVO v13.9) FUNÇÕES DE ARMAZENAMENTO ---
+    // ==========================================================
+    // (NOVO v14.4) DEFINIÇÃO DE FUNÇÕES PRIMÁRIAS
+    // Todas as funções são definidas aqui ANTES de serem chamadas.
+    // ==========================================================
+
+    /**
+     * (v13.9) Salva a lista 'registeredTrees' no localStorage.
+     */
     function saveDataToStorage() {
         try {
-            // Converte a lista de árvores em texto JSON e salva
             localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredTrees));
         } catch (e) {
             console.error("Erro ao salvar no localStorage:", e);
-            // Opcional: alertar o usuário que o armazenamento falhou
         }
     }
 
+    /**
+     * (v13.9) Carrega 'registeredTrees' do localStorage.
+     */
     function loadDataFromStorage() {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
-            // Se houver dados, converte-os de volta para um array
             if (data) {
                 registeredTrees = JSON.parse(data);
             }
@@ -608,440 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- (NOVO v13.9) CARREGA OS DADOS IMEDIATAMENTE ---
-    loadDataFromStorage();
-    
-    // --- O resto do seu script começa aqui ---
-    // Detecção de dispositivo de toque
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    const termClickEvent = isTouchDevice ? 'touchend' : 'click';
-    const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
-
-
-    // --- MÓDULO DE NAVEGAÇÃO ---
-    const detailView = document.getElementById('detalhe-view');
-    const activeTopicButtons = document.querySelectorAll('.topico-btn');
-    
-    function loadContent(targetKey) {
-        if (!detailView) return; 
-        
-        const content = manualContent[targetKey];
-        if (content) {
-            detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
-            // Re-vincular os eventos
-            setupGlossaryInteractions(); 
-            setupEquipmentInteractions();
-            setupPurposeInteractions();
-
-            // (v12.0) Ativa a calculadora
-            if (targetKey === 'calculadora-risco') {
-                setupRiskCalculator(); 
-            }
-
-        } else {
-            detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
-        }
-    }
-
-    // (MODIFICADO v14.0) Salva a aba ativa no clique
-    function handleTopicClick(button) {
-        hideTooltip(); 
-        const target = button.getAttribute('data-target');
-        
-        // --- (NOVO v14.0) SALVA A ÚLTIMA ABA ATIVA ---
-        try {
-            localStorage.setItem(ACTIVE_TAB_KEY, target);
-        } catch (e) {
-            console.error("Erro ao salvar a aba ativa:", e);
-        }
-        // --- FIM DA ADIÇÃO ---
-
-        activeTopicButtons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        loadContent(target);
-    }
-
-    // (MODIFICADO v14.0) --- Inicialização da Navegação ---
-    if (activeTopicButtons.length > 0) {
-        // 1. Adiciona os listeners de clique
-        activeTopicButtons.forEach(button => {
-            button.addEventListener('click', () => handleTopicClick(button));
-        });
-
-        // 2. Tenta carregar a última aba salva
-        let lastActiveTab = null;
-        try {
-            lastActiveTab = localStorage.getItem(ACTIVE_TAB_KEY);
-        } catch (e) {
-            console.error("Erro ao ler a aba ativa:", e);
-        }
-
-        let loadedFromStorage = false;
-        if (lastActiveTab && manualContent[lastActiveTab]) {
-            // Se encontrou uma aba válida, carrega ela
-            loadContent(lastActiveTab);
-            // Remove a classe 'active' do botão padrão (definido no HTML)
-            activeTopicButtons.forEach(btn => btn.classList.remove('active'));
-            // Adiciona a classe 'active' ao botão correto
-            const activeButton = document.querySelector(`.topico-btn[data-target="${lastActiveTab}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
-            }
-            loadedFromStorage = true;
-        }
-
-        // 3. Se não carregou do storage, usa a lógica padrão
-        if (!loadedFromStorage) {
-            const firstActiveButton = document.querySelector('.topico-btn.active');
-            if (firstActiveButton) {
-                // Carrega o que estiver marcado como 'active' no HTML (default)
-                loadContent(firstActiveButton.getAttribute('data-target'));
-            } else {
-                // Se nada estiver marcado, carrega o primeiro da lista
-                loadContent(activeTopicButtons[0].getAttribute('data-target'));
-                activeTopicButtons[0].classList.add('active');
-            }
-        }
-        
-    } else {
-        console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
-    }
-
-    // --- (v14.2) LÓGICA DO BOTÃO VOLTAR AO TOPO (IntersectionObserver) ---
-    
-    const backToTopButton = document.getElementById('back-to-top-btn');
-    // O nosso "alvo" para observar é o header (que tem o ID 'page-top')
-    const headerElement = document.getElementById('page-top'); 
-
-    if (backToTopButton && headerElement) {
-        
-        // 1. A função que é chamada quando o header entra ou sai do ecrã
-        const observerCallback = (entries) => {
-            const [entry] = entries; // Pegamos a primeira (e única) entrada
-            
-            // 'isIntersecting' é true se o header estiver visível
-            if (!entry.isIntersecting) {
-                // Se o header NÃO está visível (o utilizador rolou para baixo)
-                backToTopButton.classList.add('show');
-            } else {
-                // Se o header ESTÁ visível (o utilizador está no topo)
-                backToTopButton.classList.remove('show');
-            }
-        };
-
-        // 2. As opções para o observador
-        const observerOptions = {
-            root: null, // Observa em relação ao viewport principal
-            threshold: 0 // Dispara assim que o elemento sai (0% visível)
-        };
-
-        // 3. Cria e inicia o observador
-        const headerObserver = new IntersectionObserver(observerCallback, observerOptions);
-        headerObserver.observe(headerElement);
-
-        // O clique continua a ser tratado pelo <a href="#page-top"> e pelo CSS 'scroll-behavior: smooth'.
-    }
-    // --- FIM DA ADIÇÃO v14.2 ---
-
-
-    // --- MÓDULO DE TOOLTIP ---
-    let currentTooltip = null; 
-
-    function createTooltip() {
-        let tooltip = document.getElementById('glossary-tooltip');
-        if (!tooltip) {
-            tooltip = document.createElement('div');
-            tooltip.id = 'glossary-tooltip';
-            document.body.appendChild(tooltip); 
-        }
-
-        if (!tooltip.dataset.clickToCloseAdded) {
-            tooltip.addEventListener(popupCloseEvent, (e) => {
-                e.stopPropagation(); 
-                hideTooltip();
-            });
-            tooltip.dataset.clickToCloseAdded = 'true';
-        }
-        
-        return tooltip;
-    }
-
-    function hideTooltip() {
-        if (currentTooltip) {
-            currentTooltip.style.opacity = '0';
-            currentTooltip.style.visibility = 'hidden';
-            delete currentTooltip.dataset.currentElement;
-        }
-    }
-
-    // -- Lógica do GLOSSÁRIO --
-    function setupGlossaryInteractions() {
-        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
-        glossaryTermsElements.forEach(termElement => {
-            if (!isTouchDevice) {
-                termElement.addEventListener('mouseenter', showGlossaryTooltip);
-                termElement.addEventListener('mouseleave', hideTooltip);
-            }
-            termElement.addEventListener(termClickEvent, toggleGlossaryTooltip); 
-        });
-    }
-
-    function showGlossaryTooltip(event) {
-        const termElement = event.currentTarget;
-        const termKey = termElement.getAttribute('data-term-key');
-        const definition = glossaryTerms[termKey];
-        if (!definition) return;
-        currentTooltip = createTooltip(); 
-        currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
-        positionTooltip(termElement);
-        currentTooltip.style.opacity = '1';
-        currentTooltip.style.visibility = 'visible';
-        currentTooltip.dataset.currentElement = termElement.textContent;
-    }
-
-    function toggleGlossaryTooltip(event) {
-        event.preventDefault(); 
-        event.stopPropagation();
-        const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-            hideTooltip();
-        } else {
-            showGlossaryTooltip(event);
-        }
-    }
-
-    // -- Lógica de EQUIPAMENTOS --
-    function setupEquipmentInteractions() {
-        const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-        equipmentTermsElements.forEach(termElement => {
-            if (!isTouchDevice) {
-                termElement.addEventListener('mouseenter', showEquipmentTooltip);
-                termElement.addEventListener('mouseleave', hideTooltip);
-            }
-            termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
-        });
-    }
-
-    function showEquipmentTooltip(event) {
-        const termElement = event.currentTarget;
-        const termKey = termElement.getAttribute('data-term-key');
-        const data = equipmentData[termKey];
-        if (!data) return;
-        currentTooltip = createTooltip();
-        currentTooltip.innerHTML = `
-            <strong>${termElement.textContent}</strong>
-            <p>${data.desc}</p>
-            ${imgTag(data.img, termElement.textContent)}
-        `;
-        positionTooltip(termElement);
-        currentTooltip.style.opacity = '1';
-        currentTooltip.style.visibility = 'visible';
-        currentTooltip.dataset.currentElement = termElement.textContent;
-    }
-
-    function toggleEquipmentTooltip(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-            hideTooltip();
-        } else {
-            showEquipmentTooltip(event);
-        }
-    }
-
-    // -- Lógica de FINALIDADE DA PODA --
-    function setupPurposeInteractions() {
-        const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-        purposeTermsElements.forEach(termElement => {
-            if (!isTouchDevice) {
-                termElement.addEventListener('mouseenter', showPurposeTooltip);
-                termElement.addEventListener('mouseleave', hideTooltip);
-            }
-            termElement.addEventListener(termClickEvent, togglePurposeTooltip);
-        });
-    }
-
-    function showPurposeTooltip(event) {
-        const termElement = event.currentTarget;
-        const termKey = termElement.getAttribute('data-term-key');
-        const data = podaPurposeData[termKey];
-        if (!data) return;
-        currentTooltip = createTooltip();
-        currentTooltip.innerHTML = `
-            <strong>${termElement.textContent}</strong>
-            <p>${data.desc}</p>
-            ${imgTag(data.img, termElement.textContent)}
-        `;
-        positionTooltip(termElement);
-        currentTooltip.style.opacity = '1';
-        currentTooltip.style.visibility = 'visible';
-        currentTooltip.dataset.currentElement = termElement.textContent;
-    }
-
-    function togglePurposeTooltip(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-            hideTooltip();
-        } else {
-            showPurposeTooltip(event);
-        }
-    }
-
-
-    // Função genérica para posicionar o tooltip
-    function positionTooltip(termElement) {
-        const rect = termElement.getBoundingClientRect();
-        const scrollY = window.scrollY;
-        const scrollX = window.scrollX;
-        
-        requestAnimationFrame(() => {
-            if (!currentTooltip) return;
-            const tooltipWidth = currentTooltip.offsetWidth;
-            const tooltipHeight = currentTooltip.offsetHeight;
-            let topPos;
-            if (rect.top > tooltipHeight + 10) { 
-                topos = rect.top + scrollY - tooltipHeight - 10;
-            } else { 
-                topPos = rect.bottom + scrollY + 10;
-            }
-            let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
-            if (leftPos < scrollX + 10) leftPos = scrollX + 10; 
-            if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { 
-                leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
-            }
-            currentTooltip.style.top = `${topPos}px`;
-            currentTooltip.style.left = `${leftPos}px`;
-        });
-    }
-
-    // ==========================================================
-    // INÍCIO DA MODIFICAÇÃO (v14.3) - GPS COM MÉDIA
-    // ==========================================================
-
-    // (v13.9) --- MÓDULO DA CALCULADORA DE RISCO ---
-    function setupRiskCalculator() {
-        const form = document.getElementById('risk-calculator-form');
-        const summaryContainer = document.getElementById('summary-table-container');
-        const exportBtnGroup = document.getElementById('export-btn-group');
-        const exportCsvBtn = document.getElementById('export-csv-btn');
-        const sendEmailBtn = document.getElementById('send-email-btn');
-        const getGpsBtn = document.getElementById('get-gps-btn'); 
-
-        if (!form) return; 
-
-        // Oculta o botão de GPS em desktops
-        if (getGpsBtn && !isTouchDevice) {
-            const gpsContainer = getGpsBtn.closest('.gps-button-container');
-            if(gpsContainer) gpsContainer.style.display = 'none';
-        }
-        
-        // Adiciona listener ao botão GPS
-        if (getGpsBtn) {
-            getGpsBtn.addEventListener('click', handleGetGPS);
-        }
-
-        // 1. Lógica de Adicionar Árvore
-        form.addEventListener('submit', (event) => {
-            event.preventDefault(); 
-            let totalScore = 0;
-            const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
-            
-            checkboxes.forEach(cb => {
-                totalScore += parseInt(cb.dataset.weight, 10);
-            });
-
-            // Define a classificação
-            let classificationText = 'Baixo Risco';
-            let classificationClass = 'risk-col-low';
-            if (totalScore >= 20) {
-                classificationText = 'Alto Risco';
-                classificationClass = 'risk-col-high';
-            } else if (totalScore >= 10) {
-                classificationText = 'Médio Risco';
-                classificationClass = 'risk-col-medium';
-            }
-
-            const newTree = {
-                id: registeredTrees.length + 1,
-                data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
-                especie: document.getElementById('risk-especie').value || 'N/A',
-                local: document.getElementById('risk-local').value || 'N/A',
-                coordX: document.getElementById('risk-coord-x').value || 'N/A',
-                coordY: document.getElementById('risk-coord-y').value || 'N/A',
-                dap: document.getElementById('risk-dap').value || 'N/A',
-                avaliador: document.getElementById('risk-avaliador').value || 'N/A',
-                observacoes: document.getElementById('risk-obs').value || 'N/A', 
-                pontuacao: totalScore,
-                risco: classificationText,
-                riscoClass: classificationClass
-            };
-
-            registeredTrees.push(newTree);
-            
-            // --- (NOVO v13.9) SALVA OS DADOS ---
-            saveDataToStorage();
-            
-            renderSummaryTable();
-            form.reset();
-            try {
-                document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-            } catch(e) { /* ignora erro */ }
-            document.getElementById('risk-especie').focus();
-            
-            // Limpa o status do GPS
-            const gpsStatus = document.getElementById('gps-status');
-            if (gpsStatus) {
-                gpsStatus.textContent = '';
-                gpsStatus.className = '';
-            }
-        });
-        
-        // 2. Lógica do Botão Limpar (v12.6 CORRIGIDO)
-        const resetBtn = document.getElementById('reset-risk-form-btn');
-        if (resetBtn) { // Adicionada verificação de segurança
-            resetBtn.addEventListener('click', (e) => {
-                e.preventDefault(); 
-                form.reset(); 
-                 try {
-                    document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-                } catch(e) { /* ignora erro */ }
-                // Limpa o status do GPS
-                const gpsStatus = document.getElementById('gps-status');
-                if (gpsStatus) {
-                    gpsStatus.textContent = '';
-                    gpsStatus.className = '';
-                }
-            });
-        }
-
-        // 3. Lógica dos Botões de Exportação
-        if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
-        if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
-        
-        // 4. Renderiza a tabela ao carregar (importante para o localStorage)
-        renderSummaryTable();
-        
-        // 5. (v12.6) Event Listener para Excluir
-        if (summaryContainer) {
-            summaryContainer.addEventListener('click', (e) => {
-                const deleteButton = e.target.closest('.delete-tree-btn');
-                if (deleteButton) {
-                    const treeId = parseInt(deleteButton.dataset.id, 10);
-                    handleDeleteTree(treeId);
-                }
-            });
-        }
-    }
-    
     /**
-     * (v13.7) Converte Lat/Lon (WGS84) para coordenadas UTM.
-     * Esta função substitui a biblioteca externa utm-latlon.min.js
-     * @param {number} lat Latitude
-     * @param {number} lon Longitude
-     * @returns {object} {easting, northing, zoneNum, zoneLetter}
+     * (v14.3) Converte Lat/Lon (WGS84) para coordenadas UTM.
+     * Substitui a biblioteca externa.
      */
     function convertLatLonToUtm(lat, lon) {
         const f = 1 / 298.257223563; // WGS 84
@@ -1058,7 +634,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Calcula Zona UTM ---
         let zoneNum = Math.floor((lon + 180.0) / 6.0) + 1;
-        // Exceções para Noruega e Svalbard (mantidas da lógica da biblioteca)
         if (lat >= 56.0 && lat < 64.0 && lon >= 3.0 && lon < 12.0) zoneNum = 32;
         if (lat >= 72.0 && lat < 84.0) {
             if (lon >= 0.0 && lon < 9.0) zoneNum = 31;
@@ -1067,7 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (lon >= 33.0 && lon < 42.0) zoneNum = 37;
         }
         
-        const lonOrigin = (zoneNum - 1.0) * 6.0 - 180.0 + 3.0; // +3 para meridiano central
+        const lonOrigin = (zoneNum - 1.0) * 6.0 - 180.0 + 3.0;
         const lonOriginRad = lonOrigin * (Math.PI / 180.0);
 
         // --- Calcula Letra da Zona ---
@@ -1078,7 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- Cálculos de Projeção ---
-        const n = (a - (a * Math.sqrt(1 - e2))) / (a + (a * Math.sqrt(1 - e2)));
         const nu = a / Math.sqrt(1.0 - e2 * Math.sin(latRad) * Math.sin(latRad));
         const T = Math.tan(latRad) * Math.tan(latRad);
         const C = e_2 * Math.cos(latRad) * Math.cos(latRad);
@@ -1120,7 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * (v14.3) Função principal que captura o GPS 5x e calcula a média.
-     * Esta função é agora 'async' para usar 'await'.
      */
     async function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
@@ -1199,17 +772,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     gpsStatus.textContent = "Tempo esgotado.";
                     break;
                 default:
+                    console.error("Erro de GPS não capturado:", error);
                     gpsStatus.textContent = "Erro ao buscar GPS.";
                     break;
             }
         }
     }
-    
-    // ==========================================================
-    // FIM DA MODIFICAÇÃO (v14.3)
-    // ==========================================================
-    
-    // (v12.6) Função para Excluir e Re-indexar
+
+    /**
+     * (v12.6) Função para Excluir e Re-indexar
+     */
     function handleDeleteTree(id) {
         if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) {
             return;
@@ -1222,12 +794,15 @@ document.addEventListener('DOMContentLoaded', () => {
             tree.id = index + 1;
         });
 
-        // --- (NOVO v13.9) SALVA OS DADOS ---
+        // (v13.9) SALVA OS DADOS
         saveDataToStorage();
         
         renderSummaryTable();
     }
 
+    /**
+     * (v13.9) Renderiza a tabela de resumo a partir da 'registeredTrees'.
+     */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
         const exportBtnGroup = document.getElementById('export-btn-group');
@@ -1241,12 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         let tableHTML = '<table class="summary-table"><thead><tr>';
-        // v12.7: Adiciona header Data
         tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-delete">Excluir</th>';
         tableHTML += '</tr></thead><tbody>';
 
         registeredTrees.forEach(tree => {
-            // v12.7: Formata a data PT-BR para exibição
             const [y, m, d] = (tree.data || '---').split('-');
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
             
@@ -1273,33 +846,292 @@ document.addEventListener('DOMContentLoaded', () => {
         if (exportBtnGroup) exportBtnGroup.style.display = 'flex';
     }
     
+    /**
+     * (v13.9) Módulo da Calculadora de Risco (Listeners).
+     */
+    function setupRiskCalculator() {
+        const form = document.getElementById('risk-calculator-form');
+        const summaryContainer = document.getElementById('summary-table-container');
+        const exportBtnGroup = document.getElementById('export-btn-group');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const sendEmailBtn = document.getElementById('send-email-btn');
+        const getGpsBtn = document.getElementById('get-gps-btn'); 
+
+        if (!form) return; 
+
+        // Oculta o botão de GPS em desktops
+        if (getGpsBtn && !isTouchDevice) {
+            const gpsContainer = getGpsBtn.closest('.gps-button-container');
+            if(gpsContainer) gpsContainer.style.display = 'none';
+        }
+        
+        // Adiciona listener ao botão GPS
+        if (getGpsBtn) {
+            getGpsBtn.addEventListener('click', handleGetGPS);
+        }
+
+        // 1. Lógica de Adicionar Árvore
+        form.addEventListener('submit', (event) => {
+            event.preventDefault(); 
+            let totalScore = 0;
+            const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
+            
+            checkboxes.forEach(cb => {
+                totalScore += parseInt(cb.dataset.weight, 10);
+            });
+
+            // Define a classificação
+            let classificationText = 'Baixo Risco';
+            let classificationClass = 'risk-col-low';
+            if (totalScore >= 20) {
+                classificationText = 'Alto Risco';
+                classificationClass = 'risk-col-high';
+            } else if (totalScore >= 10) {
+                classificationText = 'Médio Risco';
+                classificationClass = 'risk-col-medium';
+            }
+
+            const newTree = {
+                id: registeredTrees.length + 1,
+                data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
+                especie: document.getElementById('risk-especie').value || 'N/A',
+                local: document.getElementById('risk-local').value || 'N/A',
+                coordX: document.getElementById('risk-coord-x').value || 'N/A',
+                coordY: document.getElementById('risk-coord-y').value || 'N/A',
+                dap: document.getElementById('risk-dap').value || 'N/A',
+                avaliador: document.getElementById('risk-avaliador').value || 'N/A',
+                observacoes: document.getElementById('risk-obs').value || 'N/A', 
+                pontuacao: totalScore,
+                risco: classificationText,
+                riscoClass: classificationClass
+            };
+
+            registeredTrees.push(newTree);
+            
+            // (v13.9) SALVA OS DADOS
+            saveDataToStorage();
+            
+            renderSummaryTable();
+            form.reset();
+            try {
+                document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+            } catch(e) { /* ignora erro */ }
+            document.getElementById('risk-especie').focus();
+            
+            // Limpa o status do GPS
+            const gpsStatus = document.getElementById('gps-status');
+            if (gpsStatus) {
+                gpsStatus.textContent = '';
+                gpsStatus.className = '';
+            }
+        });
+        
+        // 2. Lógica do Botão Limpar
+        const resetBtn = document.getElementById('reset-risk-form-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', (e) => {
+                e.preventDefault(); 
+                form.reset(); 
+                 try {
+                    document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+                } catch(e) { /* ignora erro */ }
+                // Limpa o status do GPS
+                const gpsStatus = document.getElementById('gps-status');
+                if (gpsStatus) {
+                    gpsStatus.textContent = '';
+                    gpsStatus.className = '';
+                }
+            });
+        }
+
+        // 3. Lógica dos Botões de Exportação
+        if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
+        if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
+        
+        // 4. Renderiza a tabela ao carregar (importante para o localStorage)
+        renderSummaryTable();
+        
+        // 5. Event Listener para Excluir
+        if (summaryContainer) {
+            summaryContainer.addEventListener('click', (e) => {
+                const deleteButton = e.target.closest('.delete-tree-btn');
+                if (deleteButton) {
+                    const treeId = parseInt(deleteButton.dataset.id, 10);
+                    handleDeleteTree(treeId);
+                }
+            });
+        }
+    }
+
+    // --- Definições de Funções (Tooltip, Export, etc.) ---
+    // (Estas funções não precisam estar no topo, pois são chamadas por listeners)
+
+    let currentTooltip = null; 
+    function createTooltip() {
+        let tooltip = document.getElementById('glossary-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'glossary-tooltip';
+            document.body.appendChild(tooltip); 
+        }
+        if (!tooltip.dataset.clickToCloseAdded) {
+            tooltip.addEventListener(popupCloseEvent, (e) => {
+                e.stopPropagation(); 
+                hideTooltip();
+            });
+            tooltip.dataset.clickToCloseAdded = 'true';
+        }
+        return tooltip;
+    }
+
+    function hideTooltip() {
+        if (currentTooltip) {
+            currentTooltip.style.opacity = '0';
+            currentTooltip.style.visibility = 'hidden';
+            delete currentTooltip.dataset.currentElement;
+        }
+    }
+
+    function setupGlossaryInteractions() {
+        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
+        glossaryTermsElements.forEach(termElement => {
+            if (!isTouchDevice) {
+                termElement.addEventListener('mouseenter', showGlossaryTooltip);
+                termElement.addEventListener('mouseleave', hideTooltip);
+            }
+            termElement.addEventListener(termClickEvent, toggleGlossaryTooltip); 
+        });
+    }
+
+    function showGlossaryTooltip(event) {
+        const termElement = event.currentTarget;
+        const termKey = termElement.getAttribute('data-term-key');
+        const definition = glossaryTerms[termKey];
+        if (!definition) return;
+        currentTooltip = createTooltip(); 
+        currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
+        positionTooltip(termElement);
+        currentTooltip.style.opacity = '1';
+        currentTooltip.style.visibility = 'visible';
+        currentTooltip.dataset.currentElement = termElement.textContent;
+    }
+
+    function toggleGlossaryTooltip(event) {
+        event.preventDefault(); 
+        event.stopPropagation();
+        const tooltip = document.getElementById('glossary-tooltip');
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showGlossaryTooltip(event);
+        }
+    }
+
+    function setupEquipmentInteractions() {
+        const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
+        equipmentTermsElements.forEach(termElement => {
+            if (!isTouchDevice) {
+                termElement.addEventListener('mouseenter', showEquipmentTooltip);
+                termElement.addEventListener('mouseleave', hideTooltip);
+            }
+            termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
+        });
+    }
+
+    function showEquipmentTooltip(event) {
+        const termElement = event.currentTarget;
+        const termKey = termElement.getAttribute('data-term-key');
+        const data = equipmentData[termKey];
+        if (!data) return;
+        currentTooltip = createTooltip();
+        currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
+        positionTooltip(termElement);
+        currentTooltip.style.opacity = '1';
+        currentTooltip.style.visibility = 'visible';
+        currentTooltip.dataset.currentElement = termElement.textContent;
+    }
+
+    function toggleEquipmentTooltip(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const tooltip = document.getElementById('glossary-tooltip');
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showEquipmentTooltip(event);
+        }
+    }
+
+    function setupPurposeInteractions() {
+        const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
+        purposeTermsElements.forEach(termElement => {
+            if (!isTouchDevice) {
+                termElement.addEventListener('mouseenter', showPurposeTooltip);
+                termElement.addEventListener('mouseleave', hideTooltip);
+            }
+            termElement.addEventListener(termClickEvent, togglePurposeTooltip);
+        });
+    }
+
+    function showPurposeTooltip(event) {
+        const termElement = event.currentTarget;
+        const termKey = termElement.getAttribute('data-term-key');
+        const data = podaPurposeData[termKey];
+        if (!data) return;
+        currentTooltip = createTooltip();
+        currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
+        positionTooltip(termElement);
+        currentTooltip.style.opacity = '1';
+        currentTooltip.style.visibility = 'visible';
+        currentTooltip.dataset.currentElement = termElement.textContent;
+    }
+
+    function togglePurposeTooltip(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const tooltip = document.getElementById('glossary-tooltip');
+        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+            hideTooltip();
+        } else {
+            showPurposeTooltip(event);
+        }
+    }
+
+    function positionTooltip(termElement) {
+        const rect = termElement.getBoundingClientRect();
+        const scrollY = window.scrollY;
+        const scrollX = window.scrollX;
+        
+        requestAnimationFrame(() => {
+            if (!currentTooltip) return;
+            const tooltipWidth = currentTooltip.offsetWidth;
+            const tooltipHeight = currentTooltip.offsetHeight;
+            let topPos;
+            if (rect.top > tooltipHeight + 10) { 
+                topPos = rect.top + scrollY - tooltipHeight - 10;
+            } else { 
+                topPos = rect.bottom + scrollY + 10;
+            }
+            let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
+            if (leftPos < scrollX + 10) leftPos = scrollX + 10; 
+            if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { 
+                leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
+            }
+            currentTooltip.style.top = `${topPos}px`;
+            currentTooltip.style.left = `${leftPos}px`;
+        });
+    }
+    
     function getCSVData() {
         if (registeredTrees.length === 0) return null;
-
-        // v12.7: Adiciona header Data
         const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes"];
-        // v12.1: Adiciona o BOM (\uFEFF)
         let csvContent = "\uFEFF" + headers.join(";") + "\n"; 
-
         registeredTrees.forEach(tree => {
             const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ',');
             const cleanLocal = (tree.local || '').replace(/[\n;]/g, ',');
             const cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ',');
             const cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ','); 
-            
-            const row = [
-                tree.id,
-                tree.data, // v12.7: Adiciona dado
-                cleanEspecie,
-                tree.coordX,
-                tree.coordY,
-                tree.dap,
-                cleanLocal,
-                cleanAvaliador,
-                tree.pontuacao,
-                tree.risco,
-                cleanObservacoes
-            ];
+            const row = [tree.id, tree.data, cleanEspecie, tree.coordX, tree.coordY, tree.dap, cleanLocal, cleanAvaliador, tree.pontuacao, tree.risco, cleanObservacoes];
             csvContent += row.join(";") + "\n";
         });
         return csvContent;
@@ -1311,19 +1143,15 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Nenhuma árvore cadastrada para exportar.");
             return;
         }
-
-        // v12.4: Cria nome de arquivo com data
         const today = new Date();
         const d = String(today.getDate()).padStart(2, '0');
         const m = String(today.getMonth() + 1).padStart(2, '0'); 
         const y = today.getFullYear();
         const dateSuffix = `${d}${m}${y}`;
         const filename = `risco_arboreo_${dateSuffix}.csv`;
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
-        
         link.setAttribute("href", url);
         link.setAttribute("download", filename);
         link.style.visibility = 'hidden';
@@ -1332,108 +1160,44 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.removeChild(link);
     }
 
-    // v12.7: Gera um corpo de e-mail em TEXTO PLANO com Data, Espécie e Observações
     function generateEmailSummaryText() {
         if (registeredTrees.length === 0) return "Nenhuma árvore foi cadastrada na tabela de resumo.";
-
         let textBody = "Segue o relatório resumido das árvores avaliadas:\n\n";
-        
-        // Cabeçalho
         textBody += "ID\t|\tData\t\t|\tEspécie (Nome/Tag)\t|\tLocal\t\t|\tClassificação de Risco\t|\tObservações\n";
         textBody += "----------------------------------------------------------------------------------------------------------------------------------------------------------\n";
-
-        // Linhas
         registeredTrees.forEach(tree => {
             const [y, m, d] = (tree.data || '---').split('-');
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
-            
             const cleanEspecie = (tree.especie || 'N/A').padEnd(20, ' ').substring(0, 20);
             const cleanLocal = (tree.local || 'N/A').padEnd(15, ' ').substring(0, 15);
             const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30); 
-            
             textBody += `${tree.id}\t|\t${displayDate}\t|\t${cleanEspecie}\t|\t${cleanLocal}\t|\t${tree.risco}\t|\t${cleanObs}\n`;
         });
-
         textBody += "\n\n";
         textBody += "Instrução Importante:\n";
         textBody += "Para o relatório completo (com coordenadas, DAP, etc.), clique em 'Exportar CSV' no aplicativo e anexe o arquivo baixado a este e-mail antes de enviar.\n";
-        
         return textBody;
     }
 
-    // v12.2: Função de e-mail atualizada
     function sendEmailReport() {
         const targetEmail = ""; 
         const subject = "Relatório de Avaliação de Risco Arbóreo";
-        
         const emailBody = generateEmailSummaryText();
-        
         const encodedSubject = encodeURIComponent(subject);
         const encodedBody = encodeURIComponent(emailBody);
         const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
-        
         if (mailtoLink.length > 2000) {
             alert("Muitos dados para enviar por e-mail. Por favor, use o botão 'Exportar CSV' e anexe o arquivo manualmente.");
             return;
         }
-
         window.location.href = mailtoLink;
     }
     
-    // --- MÓDULO DO FORMULÁRIO (MAILTO:) ---
-    const contactForm = document.getElementById('contact-form');
-    
-    if (contactForm) {
-        contactForm.addEventListener('submit', (event) => {
-            event.preventDefault(); 
-            const targetEmail = "rafael.ammon.prestserv@petrobras.com.br";
-            const nome = document.getElementById('nome').value;
-            const emailRetorno = document.getElementById('email').value;
-            const assunto = document.getElementById('assunto').value;
-            const mensagem = document.getElementById('mensagem').value;
-            
-            const emailBody = `
-Prezado(a),
-
-Esta é uma dúvida enviada através do Manual Digital de Poda e Corte.
----------------------------------------------------
-Enviado por: ${nome}
-Email de Retorno: ${emailRetorno}
----------------------------------------------------
-
-Mensagem:
-${mensagem}
-            `;
-            
-            const encodedSubject = encodeURIComponent(assunto);
-            const encodedBody = encodeURIComponent(emailBody);
-            const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
-            
-            window.location.href = mailtoLink;
-        });
-    }
-
-    // --- MÓDULO DE CHAT GEMINI (ESQUELETO) ---
-    const chatInput = document.getElementById('chat-input');
-    const chatSendBtn = document.getElementById('chat-send-btn');
-    const chatResponseBox = document.getElementById('chat-response-box');
-
-    if (chatSendBtn) {
-        chatSendBtn.addEventListener('click', handleChatSend);
-        chatInput.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter') {
-                handleChatSend();
-            }
-        });
-    }
-
     async function handleChatSend() {
         const userQuery = chatInput.value.trim();
         if (userQuery === "") return; 
-
         chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
         chatInput.value = ""; 
-
         try {
             const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI"; 
             if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
@@ -1447,11 +1211,160 @@ ${mensagem}
             if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
             const data = await response.json();
             chatResponseBox.innerHTML = `<p class="chat-response-text">${data.response}</p>`;
-
         } catch (error) {
             console.error('Erro na API Gemini:', error);
             chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: red;"><strong>Erro:</strong> ${error.message}</p>`;
         }
+    }
+
+
+    // ==========================================================
+    // (NOVO v14.4) PONTO DE ENTRADA / EXECUÇÃO DO SCRIPT
+    // ==========================================================
+
+    // --- Variáveis Globais de Elementos ---
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const termClickEvent = isTouchDevice ? 'touchend' : 'click';
+    const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
+    const detailView = document.getElementById('detalhe-view');
+    const activeTopicButtons = document.querySelectorAll('.topico-btn');
+
+    /**
+     * (v14.4) Carrega o conteúdo principal na <section>
+     */
+    function loadContent(targetKey) {
+        if (!detailView) return; 
+        
+        const content = manualContent[targetKey];
+        if (content) {
+            detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
+            // Re-vincular os eventos de tooltip
+            setupGlossaryInteractions(); 
+            setupEquipmentInteractions();
+            setupPurposeInteractions();
+
+            // (v14.4) Ativa a calculadora se for a aba correta
+            if (targetKey === 'calculadora-risco') {
+                setupRiskCalculator(); 
+            }
+        } else {
+            detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
+        }
+    }
+
+    /**
+     * (v14.4) Manipulador de clique para os botões de tópico
+     */
+    function handleTopicClick(button) {
+        hideTooltip(); 
+        const target = button.getAttribute('data-target');
+        
+        // (v14.0) SALVA A ÚLTIMA ABA ATIVA
+        try {
+            localStorage.setItem(ACTIVE_TAB_KEY, target);
+        } catch (e) {
+            console.error("Erro ao salvar a aba ativa:", e);
+        }
+
+        activeTopicButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        loadContent(target);
+    }
+
+    // --- 1. Inicialização da Navegação (Carregamento da Página) ---
+    if (activeTopicButtons.length > 0) {
+        activeTopicButtons.forEach(button => {
+            button.addEventListener('click', () => handleTopicClick(button));
+        });
+
+        let lastActiveTab = null;
+        try {
+            lastActiveTab = localStorage.getItem(ACTIVE_TAB_KEY);
+        } catch (e) {
+            console.error("Erro ao ler a aba ativa:", e);
+        }
+
+        let loadedFromStorage = false;
+        if (lastActiveTab && manualContent[lastActiveTab]) {
+            loadContent(lastActiveTab);
+            activeTopicButtons.forEach(btn => btn.classList.remove('active'));
+            const activeButton = document.querySelector(`.topico-btn[data-target="${lastActiveTab}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            loadedFromStorage = true;
+        }
+
+        if (!loadedFromStorage) {
+            const firstActiveButton = document.querySelector('.topico-btn.active');
+            if (firstActiveButton) {
+                loadContent(firstActiveButton.getAttribute('data-target'));
+            } else {
+                loadContent(activeTopicButtons[0].getAttribute('data-target'));
+                activeTopicButtons[0].classList.add('active');
+            }
+        }
+    } else {
+        console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
+    }
+
+    // --- 2. Inicialização do Botão "Voltar ao Topo" ---
+    const backToTopButton = document.getElementById('back-to-top-btn');
+    const headerElement = document.getElementById('page-top'); 
+    if (backToTopButton && headerElement) {
+        const observerCallback = (entries) => {
+            const [entry] = entries; 
+            if (!entry.isIntersecting) {
+                backToTopButton.classList.add('show');
+            } else {
+                backToTopButton.classList.remove('show');
+            }
+        };
+        const observerOptions = { root: null, threshold: 0 };
+        const headerObserver = new IntersectionObserver(observerCallback, observerOptions);
+        headerObserver.observe(headerElement);
+    }
+
+    // --- 3. Inicialização do Formulário de Contato ---
+    const contactForm = document.getElementById('contact-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', (event) => {
+            event.preventDefault(); 
+            const targetEmail = "rafael.ammon.prestserv@petrobras.com.br";
+            const nome = document.getElementById('nome').value;
+            const emailRetorno = document.getElementById('email').value;
+            const assunto = document.getElementById('assunto').value;
+            const mensagem = document.getElementById('mensagem').value;
+            const emailBody = `
+Prezado(a),
+
+Esta é uma dúvida enviada através do Manual Digital de Poda e Corte.
+---------------------------------------------------
+Enviado por: ${nome}
+Email de Retorno: ${emailRetorno}
+---------------------------------------------------
+
+Mensagem:
+${mensagem}
+            `;
+            const encodedSubject = encodeURIComponent(assunto);
+            const encodedBody = encodeURIComponent(emailBody);
+            const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
+            window.location.href = mailtoLink;
+        });
+    }
+
+    // --- 4. Inicialização do Chat (Esqueleto) ---
+    const chatInput = document.getElementById('chat-input');
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatResponseBox = document.getElementById('chat-response-box');
+    if (chatSendBtn) {
+        chatSendBtn.addEventListener('click', handleChatSend);
+        chatInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleChatSend();
+            }
+        });
     }
 
 }); // Fim do DOMContentLoaded
