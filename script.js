@@ -1,10 +1,12 @@
-// script.js (v13.9 - Persistência com localStorage)
+// script.js (v14.0 - Salvar Última Aba Ativa)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
 
-// (NOVO v13.9) Chave para o localStorage
+// (v13.9) Chave para o localStorage da tabela
 const STORAGE_KEY = 'manualPodaData';
+// (NOVO v14.0) Chave para a última aba ativa
+const ACTIVE_TAB_KEY = 'manualPodaActiveTab'; 
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
@@ -641,26 +643,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // (MODIFICADO v14.0) Salva a aba ativa no clique
     function handleTopicClick(button) {
         hideTooltip(); 
         const target = button.getAttribute('data-target');
+        
+        // --- (NOVO v14.0) SALVA A ÚLTIMA ABA ATIVA ---
+        try {
+            localStorage.setItem(ACTIVE_TAB_KEY, target);
+        } catch (e) {
+            console.error("Erro ao salvar a aba ativa:", e);
+        }
+        // --- FIM DA ADIÇÃO ---
+
         activeTopicButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
         loadContent(target);
     }
 
-    // Inicialização da Navegação
+    // (MODIFICADO v14.0) --- Inicialização da Navegação ---
     if (activeTopicButtons.length > 0) {
+        // 1. Adiciona os listeners de clique
         activeTopicButtons.forEach(button => {
             button.addEventListener('click', () => handleTopicClick(button));
         });
-        
-        const firstActiveButton = document.querySelector('.topico-btn.active');
-        if (firstActiveButton) {
-            loadContent(firstActiveButton.getAttribute('data-target'));
-        } else {
-            loadContent(activeTopicButtons[0].getAttribute('data-target'));
-            activeTopicButtons[0].classList.add('active');
+
+        // 2. Tenta carregar a última aba salva
+        let lastActiveTab = null;
+        try {
+            lastActiveTab = localStorage.getItem(ACTIVE_TAB_KEY);
+        } catch (e) {
+            console.error("Erro ao ler a aba ativa:", e);
+        }
+
+        let loadedFromStorage = false;
+        if (lastActiveTab && manualContent[lastActiveTab]) {
+            // Se encontrou uma aba válida, carrega ela
+            loadContent(lastActiveTab);
+            // Remove a classe 'active' do botão padrão (definido no HTML)
+            activeTopicButtons.forEach(btn => btn.classList.remove('active'));
+            // Adiciona a classe 'active' ao botão correto
+            const activeButton = document.querySelector(`.topico-btn[data-target="${lastActiveTab}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            loadedFromStorage = true;
+        }
+
+        // 3. Se não carregou do storage, usa a lógica padrão
+        if (!loadedFromStorage) {
+            const firstActiveButton = document.querySelector('.topico-btn.active');
+            if (firstActiveButton) {
+                // Carrega o que estiver marcado como 'active' no HTML (default)
+                loadContent(firstActiveButton.getAttribute('data-target'));
+            } else {
+                // Se nada estiver marcado, carrega o primeiro da lista
+                loadContent(activeTopicButtons[0].getAttribute('data-target'));
+                activeTopicButtons[0].classList.add('active');
+            }
         }
         
     } else {
