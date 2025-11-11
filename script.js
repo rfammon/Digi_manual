@@ -1,4 +1,4 @@
-// script.js (v14.4 - Corrigida Ordem de Execução)
+// script.js (v14.5 - Corrigido Input Decimal)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
@@ -434,7 +434,7 @@ const manualContent = {
                         </div>
                         <div>
                             <label for="risk-dap">DAP (cm):</label>
-                            <input type="number" id="risk-dap" name="risk-dap" min="0">
+                            <input type="number" id="risk-dap" name="risk-dap" min="0" step="any">
                         </div>
                         <div>
                             <label for="risk-avaliador">Avaliador:</label>
@@ -582,6 +582,9 @@ const manualContent = {
 
 
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
+
+// (MODIFICADO v14.4) Estrutura principal movida para DENTRO do DOMContentLoaded
+// e funções de suporte movidas para CIMA.
 
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -860,6 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!form) return; 
 
         // Oculta o botão de GPS em desktops
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
             if(gpsContainer) gpsContainer.style.display = 'none';
@@ -898,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 local: document.getElementById('risk-local').value || 'N/A',
                 coordX: document.getElementById('risk-coord-x').value || 'N/A',
                 coordY: document.getElementById('risk-coord-y').value || 'N/A',
-                dap: document.getElementById('risk-dap').value || 'N/A',
+                dap: document.getElementById('risk-dap').value || 'N/A', 
                 avaliador: document.getElementById('risk-avaliador').value || 'N/A',
                 observacoes: document.getElementById('risk-obs').value || 'N/A', 
                 pontuacao: totalScore,
@@ -967,6 +971,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // (Estas funções não precisam estar no topo, pois são chamadas por listeners)
 
     let currentTooltip = null; 
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const termClickEvent = isTouchDevice ? 'touchend' : 'click';
+    const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
+        
     function createTooltip() {
         let tooltip = document.getElementById('glossary-tooltip');
         if (!tooltip) {
@@ -1223,9 +1231,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================
 
     // --- Variáveis Globais de Elementos ---
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    const termClickEvent = isTouchDevice ? 'touchend' : 'click';
-    const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
     const detailView = document.getElementById('detalhe-view');
     const activeTopicButtons = document.querySelectorAll('.topico-btn');
 
@@ -1272,6 +1277,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 1. Inicialização da Navegação (Carregamento da Página) ---
+    // (v13.9) Carrega os dados da tabela ANTES de qualquer coisa
+    loadDataFromStorage();
+
     if (activeTopicButtons.length > 0) {
         activeTopicButtons.forEach(button => {
             button.addEventListener('click', () => handleTopicClick(button));
