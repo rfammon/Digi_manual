@@ -1,4 +1,4 @@
-/* style.css (Completo v13.7 - Sintaxe Limpa) */
+/* style.css (Completo v13.8 - Layout Mobile 2 Colunas) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -41,7 +41,7 @@ main {
 
 /* -------------------------------------- */
 /* 2. ESTILOS DO ÍNDICE (MAPA MENTAL) */
-/* (CORREÇÃO v13.5/v13.7 - Sintaxe Limpa) */
+/* (CORREÇÃO v13.8 - Mobile 2 Colunas) */
 /* -------------------------------------- */
 
 .mapa-navegacao h2 {
@@ -50,14 +50,14 @@ main {
 }
 
 /*
-* Lógica da v13.5 (Correta):
-* Usa 'auto-fit' com um tamanho fixo ('200px').
+* Lógica da v13.8 (Correta):
+* Usa 'auto-fit' com um tamanho fixo ('150px') para caber 2 colunas no mobile.
 * Usa 'justify-content: center' para centralizar o grid todo.
 */
 .topicos-container {
     display: grid;
-    /* Cria colunas de 200px e se adapta à tela */
-    grid-template-columns: repeat(auto-fit, 200px);
+    /* Cria colunas de 150px e se adapta à tela */
+    grid-template-columns: repeat(auto-fit, 150px);
     gap: 15px;
     margin-bottom: 20px;
 
@@ -66,7 +66,7 @@ main {
 }
 
 /*
-* Adicionamos 'width: 200px' para garantir que o botão
+* Adicionamos 'width: 150px' para garantir que o botão
 * tenha exatamente o tamanho da coluna que definimos.
 */
 .topico-btn {
@@ -88,7 +88,7 @@ main {
     justify-content: center;
 
     /* Garante que o botão tenha a largura da coluna */
-    width: 200px;
+    width: 150px;
 }
 
 .topico-btn:hover {
@@ -706,7 +706,7 @@ main {
     font-size: 0.9rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color: 0.2s;
 }
 #get-gps-btn:hover {
     background-color: #00695c;
