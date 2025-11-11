@@ -1,4 +1,4 @@
-/* style.css (Completo - v10.10 Correção Bullet Points) */
+/* style.css (Completo - v12.9 Correção do Grid + GPS/Delete) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -50,7 +50,8 @@ main {
 
 .topicos-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    /* CORREÇÃO (v12.9): Aumentado para 200px para corrigir quebra de layout */
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px; 
     margin-bottom: 20px;
 }
@@ -85,7 +86,7 @@ main {
 }
 
 /* -------------------------------------- */
-/* 3. ESTILOS DO CONTEÚDO E IMAGENS (v10.10) */
+/* 3. ESTILOS DO CONTEÚDO E IMAGENS (v10.11) */
 /* -------------------------------------- */
 
 .conteudo-detalhe {
@@ -102,6 +103,15 @@ main {
     border-bottom: 2px solid #ffb300;
     padding-bottom: 5px;
     font-size: 1.3rem;
+}
+
+/* (v10.11) - Estilo do Subtítulo (h4) */
+#detalhe-view h4 {
+    color: #00796b; /* Tom de verde (botão) */
+    font-size: 1.15rem;
+    font-weight: bold;
+    margin-top: 20px; /* Espaço acima do subtítulo */
+    margin-bottom: 10px; /* Espaço abaixo (antes do texto/lista) */
 }
 
 #detalhe-view p {
@@ -169,7 +179,6 @@ main {
     cursor: help; 
     border-bottom: 1px dashed #ff6f00; 
     
-    /* NOVO (Site Builder v9.7) - Correção Mobile */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE */
@@ -192,7 +201,6 @@ main {
     text-align: left;
     font-size: 0.9em;
     overflow-wrap: break-word; /* Impede quebra de layout */
-    /* Posição (left, top) é 100% controlada pelo JavaScript */
 }
 
 #glossary-tooltip strong {
@@ -201,7 +209,6 @@ main {
     margin-bottom: 5px;
 }
 
-/* NOVO (Site Builder): Estilos para o conteúdo do tooltip */
 #glossary-tooltip p {
     margin-top: 5px;
     margin-bottom: 10px;
@@ -223,12 +230,11 @@ main {
     cursor: help;
     border-bottom: 1px dashed #00695c;
 
-    /* NOVO (Site Builder v9.7) - Correção Mobile */
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE */
-    user-select: none; /* Padrão */
-    -webkit-tap-highlight-color: transparent; /* Remove flash cinza no toque */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* NOVO (v10.0): FINALIDADE DA PODA */
@@ -238,7 +244,6 @@ main {
     cursor: help;
     border-bottom: 1px dashed #A62A00;
 
-    /* Correção Mobile (v9.7) */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -294,7 +299,7 @@ main {
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: bold;
-    transition: background-color 0.3s;
+    transition: background-color: 0.3s;
     width: 100%; 
 }
 
@@ -378,7 +383,7 @@ main {
     cursor: pointer;
     font-size: 1rem;
     font-weight: bold;
-    transition: background-color 0.3s;
+    transition: background-color: 0.3s;
 }
 
 #chat-send-btn:hover {
@@ -428,9 +433,272 @@ main {
 
 /* Cabeçalho da Categoria (Ex: 1.1. Termos) */
 .glossary-category-header {
-    background-color: #ffffdc; /* Cor de destaque */
+    background-color: #00796b; /* Cor de destaque */
     color: #fff;
     font-weight: bold;
-    font-size: 2.1em;
+    font-size: 1.1em;
     text-align: center !important; /* Centraliza o título da categoria */
+}
+
+
+/* -------------------------------------- */
+/* 10. CALCULADORA DE RISCO (v12.6) */
+/* -------------------------------------- */
+
+.risk-fieldset {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background: #fdfdfd;
+}
+
+.risk-fieldset legend {
+    font-weight: bold;
+    color: #004d40;
+    padding: 0 10px;
+    font-size: 1.2rem;
+}
+
+/* Grid para o formulário de identificação */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.form-grid label,
+.risk-fieldset > div > label { 
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #333;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.form-grid input[type="text"],
+.form-grid input[type="number"],
+.form-grid input[type="date"],
+.risk-fieldset textarea { 
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    font-family: 'Helvetica Neue', Arial, sans-serif; /* Garante a mesma fonte */
+}
+
+.risk-fieldset textarea { 
+    margin-top: 10px; 
+}
+
+
+/* Tabela da calculadora */
+.risk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+.risk-table th, .risk-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+.risk-table th {
+    background-color: #f0f0f0;
+}
+/* Coluna Nº */
+.risk-table td:nth-child(1) { 
+    width: 10px; 
+    text-align: center; 
+    font-weight: bold;
+}
+/* Coluna Peso */
+.risk-table td:nth-child(3) { 
+    width: 30px; 
+    text-align: center; 
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #004d40;
+}
+/* Coluna Checkbox */
+.risk-table td:nth-child(4) { 
+    width: 50px; 
+    text-align: center; 
+}
+
+.risk-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #00796b; /* Cor do check */
+}
+
+/* Botões */
+.risk-buttons-area {
+    display: flex;
+    flex-wrap: wrap; /* Permite quebra em telas menores */
+    gap: 15px;
+    margin-top: 15px;
+    margin-bottom: 25px; /* Espaço antes da próxima seção */
+}
+#add-tree-btn, #reset-risk-form-btn,
+.export-btn { 
+    flex-grow: 1; /* Ocupam espaço igual */
+    min-width: 150px; /* Largura mínima */
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: background-color: 0.3s;
+}
+#add-tree-btn, #export-csv-btn { /* Botões de Ação Principal */
+    background-color: #00796b; /* Verde */
+    color: white;
+}
+#add-tree-btn:hover, #export-csv-btn:hover { background-color: #00695c; }
+
+#reset-risk-form-btn, #send-email-btn { /* Botões Secundários */
+    background-color: #ddd; /* Cinza */
+    color: #333;
+}
+#reset-risk-form-btn:hover, #send-email-btn:hover { background-color: #ccc; }
+
+/* Resultados Imediatos (feedback) */
+#risk-score {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #004d40;
+}
+.risk-classification-box {
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-align: center;
+    border: 1px solid transparent;
+}
+/* Classes de Risco */
+.risk-high {
+    background-color: #FFCDD2; /* Vermelho claro */
+    border-color: #E53935;
+    color: #C62828;
+}
+.risk-medium {
+    background-color: #FFF9C4; /* Amarelo claro */
+    border-color: #FBC02D;
+    color: #E65100;
+}
+.risk-low {
+    background-color: #C8E6C9; /* Verde claro */
+    border-color: #43A047;
+    color: #2E7D32;
+}
+
+/* Tabela de Resumo (v12.0) */
+#summary-table-container {
+    margin-top: 15px;
+    overflow-x: auto; /* Permite rolagem horizontal no mobile */
+}
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em; /* Fonte menor para caber mais dados */
+}
+.summary-table th, .summary-table td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: left;
+    white-space: pre-wrap; 
+    word-break: break-word; 
+}
+.summary-table th {
+    background-color: #004d40; /* Cabeçalho escuro */
+    color: #fff;
+    white-space: nowrap;
+}
+.summary-table .risk-col-high {
+    font-weight: bold;
+    color: #C62828;
+}
+.summary-table .risk-col-medium {
+    font-weight: bold;
+    color: #E65100;
+}
+.summary-table .risk-col-low {
+    color: #2E7D32;
+}
+
+#summary-placeholder {
+    font-style: italic;
+    color: #777;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* (v12.6) - Estilo do Botão Excluir */
+.delete-tree-btn {
+    background: none;
+    border: none;
+    color: #C62828; /* Vermelho */
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    width: 100%; /* Ocupa a célula */
+}
+.delete-tree-btn:hover {
+    color: #E53935;
+    background-color: #FFCDD2;
+    border-radius: 4px;
+}
+.summary-table th.col-delete,
+.summary-table td.col-delete {
+    text-align: center;
+    width: 30px;
+}
+
+/* -------------------------------------- */
+/* 11. BOTÃO GPS (CALCULADORA) v12.8 */
+/* -------------------------------------- */
+
+.gps-button-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px; /* Alinha o botão com o campo de input */
+}
+
+#get-gps-btn {
+    background-color: #004d40; /* Verde escuro */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+#get-gps-btn:hover {
+    background-color: #00695c;
+}
+
+#gps-status {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #333;
+}
+#gps-status.error {
+    color: #C62828; /* Vermelho */
+    font-weight: bold;
 }
