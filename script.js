@@ -1,4 +1,4 @@
-// script.js (v14.5 - Corrigido Input Decimal)
+// script.js (v14.6 - Funcionalidade de Edição e Limpar Tudo)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
@@ -9,13 +9,9 @@ const STORAGE_KEY = 'manualPodaData';
 const ACTIVE_TAB_KEY = 'manualPodaActiveTab'; 
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
-
-// Função utilitária para gerar a tag de imagem
+// ... (Esta secção (linhas 13-176) permanece idêntica à v14.5) ...
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
-
-// Dados do Glossário (COMPLETO)
 const glossaryTerms = {
-    // 1.1 Termos Estruturais e Anatômicos
     'colar do galho': 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.',
     'crista da casca': 'Elevação cortical paralela ao ângulo de inserção do galho, indicadora da zona de união.',
     'lenho de cicatrização': 'Tecido formado para selar ferimentos, também conhecido como callus.',
@@ -25,8 +21,6 @@ const glossaryTerms = {
     'entreno': 'Espaço entre dois nós consecutivos no ramo.',
     'no': 'Ponto de inserção de folhas, gemas ou ramos.',
     'lenho': 'Tecido vegetal com função de sustentação e condução de seiva.',
-    
-    // 1.2 Instrumentos e Equipamentos (para o glossário)
     'podao': 'Tesoura de poda de haste longa para alcance elevado.',
     'tesourao-poda': 'Ferramenta para galhos de até 7 cm de diâmetro.',
     'serra-poda': 'Serra com dentes especiais para madeira verde.',
@@ -35,8 +29,6 @@ const glossaryTerms = {
     'podador-bypass-glossario': 'Lâmina deslizante que realiza cortes limpos.',
     'podador-bigorna': 'Lâmina que pressiona o galho contra superfície plana.',
     'hipsometro': 'Instrumento para medir altura de árvores.',
-
-    // 1.3 Técnicas de Poda
     'poda-conducao': 'Direciona crescimento da árvore.',
     'poda-formacao': 'Define estrutura arquitetônica futura.',
     'poda-limpeza': 'Remove galhos mortos, doentes ou mal orientados.',
@@ -71,8 +63,6 @@ const glossaryTerms = {
     'mtr': 'Manifesto de Transporte de Resíduos (MTR): Documento que garante a rastreabilidade dos resíduos desde a origem até a destinação final, exigido em operações de transporte de resíduos sólidos.',
     'spi q': 'Sistema de Proteção Individual contra Quedas.'
 };
-
-// Dados dos Equipamentos (COMPLETO)
 const equipmentData = {
     'serrote-manual': {
         desc: 'Utilizado para galhos com diâmetro entre 3 e 12 cm. Permite cortes precisos em locais de difícil acesso.',
@@ -103,8 +93,6 @@ const equipmentData = {
         img: 'podador.jpg'
     }
 };
-
-// Dados das Finalidades de Poda (COMPLETO)
 const podaPurposeData = {
     'conducao': {
         desc: 'Direcionar eixo de crescimento, remover ramos baixos/indesejáveis.',
@@ -137,8 +125,10 @@ const podaPurposeData = {
 };
 
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v13.7) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v14.6) ===
 const manualContent = {
+    // ... (As secções 'conceitos-basicos' a 'sobre-autor' (linhas 179-432) 
+    // permanecem idênticas à v14.5) ...
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
         html: `
@@ -357,9 +347,6 @@ const manualContent = {
         `
     },
 
-    // ==========================================================
-    // NOVA SEÇÃO (v13.6/v13.7)
-    // ==========================================================
     'sobre-autor': {
         titulo: '👨‍💻 Sobre o Autor',
         html: `
@@ -393,11 +380,8 @@ const manualContent = {
             </div>
         `
     },
-    // ==========================================================
-    // FIM DA NOVA SEÇÃO
-    // ==========================================================
 
-    // (v12.8) CONTEÚDO DA CALCULADORA DE RISCO (COM GPS)
+    // (MODIFICADO v14.6) Conteúdo da Calculadora
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
@@ -574,6 +558,7 @@ const manualContent = {
                 <div id="export-btn-group" class="risk-buttons-area" style="display: none;">
                     <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
                     <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
+                    <button type="button" id="clear-all-btn" class="export-btn">🗑️ Limpar Tabela</button>
                 </div>
             </fieldset>
         `
@@ -583,14 +568,10 @@ const manualContent = {
 
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
 
-// (MODIFICADO v14.4) Estrutura principal movida para DENTRO do DOMContentLoaded
-// e funções de suporte movidas para CIMA.
-
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================================
-    // (NOVO v14.4) DEFINIÇÃO DE FUNÇÕES PRIMÁRIAS
-    // Todas as funções são definidas aqui ANTES de serem chamadas.
+    // (v14.4) DEFINIÇÃO DE FUNÇÕES PRIMÁRIAS
     // ==========================================================
 
     /**
@@ -620,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * (v14.3) Converte Lat/Lon (WGS84) para coordenadas UTM.
-     * Substitui a biblioteca externa.
      */
     function convertLatLonToUtm(lat, lon) {
         const f = 1 / 298.257223563; // WGS 84
@@ -635,7 +615,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const latRad = lat * (Math.PI / 180.0);
         const lonRad = lon * (Math.PI / 180.0);
 
-        // --- Calcula Zona UTM ---
         let zoneNum = Math.floor((lon + 180.0) / 6.0) + 1;
         if (lat >= 56.0 && lat < 64.0 && lon >= 3.0 && lon < 12.0) zoneNum = 32;
         if (lat >= 72.0 && lat < 84.0) {
@@ -648,14 +627,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const lonOrigin = (zoneNum - 1.0) * 6.0 - 180.0 + 3.0;
         const lonOriginRad = lonOrigin * (Math.PI / 180.0);
 
-        // --- Calcula Letra da Zona ---
         const zoneLetters = "CDEFGHJKLMNPQRSTUVWXX";
         let zoneLetter = "Z";
         if (lat >= -80 && lat <= 84) {
             zoneLetter = zoneLetters.charAt(Math.floor((lat + 80) / 8));
         }
 
-        // --- Cálculos de Projeção ---
         const nu = a / Math.sqrt(1.0 - e2 * Math.sin(latRad) * Math.sin(latRad));
         const T = Math.tan(latRad) * Math.tan(latRad);
         const C = e_2 * Math.cos(latRad) * Math.cos(latRad);
@@ -688,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         return {
-            easting: K2 + 500000.0, // Adiciona falso-leste
+            easting: K2 + 500000.0,
             northing: northing,
             zoneNum: zoneNum,
             zoneLetter: zoneLetter
@@ -716,15 +693,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         gpsStatus.textContent = "Capturando... (1/5)";
-        gpsStatus.className = ''; // Reseta cor
+        gpsStatus.className = ''; 
 
         const options = {
             enableHighAccuracy: true, 
             timeout: 10000,           
-            maximumAge: 0 // Força uma nova leitura
+            maximumAge: 0 
         };
 
-        // Função auxiliar que "promete" uma posição
         const getSinglePosition = (opts) => {
             return new Promise((resolve, reject) => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, opts);
@@ -733,7 +709,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let readings = [];
         try {
-            // Loop para capturar 5 leituras
             for (let i = 0; i < 5; i++) {
                 gpsStatus.textContent = `Capturando... (${i + 1}/5)`;
                 const position = await getSinglePosition(options);
@@ -741,7 +716,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 readings.push(utmCoords);
             }
 
-            // Se chegou aqui, temos 5 leituras. Vamos calcular a média.
             if (readings.length === 5) {
                 const totalEasting = readings.reduce((sum, r) => sum + r.easting, 0);
                 const totalNorthing = readings.reduce((sum, r) => sum + r.northing, 0);
@@ -749,11 +723,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const avgEasting = totalEasting / 5;
                 const avgNorthing = totalNorthing / 5;
 
-                // Usamos a zona da última leitura (é improvável mudar)
                 const lastZoneNum = readings[4].zoneNum;
                 const lastZoneLetter = readings[4].zoneLetter;
 
-                // Preenche os campos com a média
                 coordXField.value = avgEasting.toFixed(0); 
                 coordYField.value = avgNorthing.toFixed(0); 
                 
@@ -762,7 +734,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            // Se qualquer uma das 5 leituras falhar, cai aqui
             gpsStatus.className = 'error';
             switch (error.code) {
                 case error.PERMISSION_DENIED:
@@ -804,7 +775,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v13.9) Renderiza a tabela de resumo a partir da 'registeredTrees'.
+     * (NOVO v14.6) Função para pré-preencher o formulário para edição
+     */
+    function handleEditTree(id) {
+        // Encontra o índice da árvore no array
+        const treeIndex = registeredTrees.findIndex(tree => tree.id === id);
+        if (treeIndex === -1) return; // Não encontrou a árvore
+
+        // Obtém a árvore
+        const treeToEdit = registeredTrees[treeIndex];
+
+        // 1. Preenche os campos de texto simples
+        document.getElementById('risk-data').value = treeToEdit.data;
+        document.getElementById('risk-especie').value = treeToEdit.especie;
+        document.getElementById('risk-local').value = treeToEdit.local;
+        document.getElementById('risk-coord-x').value = treeToEdit.coordX;
+        document.getElementById('risk-coord-y').value = treeToEdit.coordY;
+        document.getElementById('risk-dap').value = treeToEdit.dap;
+        document.getElementById('risk-avaliador').value = treeToEdit.avaliador;
+        document.getElementById('risk-obs').value = treeToEdit.observacoes;
+        
+        // 2. Preenche os checkboxes
+        const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
+        allCheckboxes.forEach((cb, index) => {
+            // Usa o array 'riskFactors' que salvamos
+            cb.checked = treeToEdit.riskFactors[index] || false; 
+        });
+
+        // 3. Remove a árvore do array (ela será readicionada ao submeter)
+        registeredTrees.splice(treeIndex, 1);
+        
+        // 4. Re-indexa os IDs restantes
+        registeredTrees.forEach((tree, index) => {
+            tree.id = index + 1;
+        });
+
+        // 5. Salva a lista (agora sem o item editado)
+        saveDataToStorage();
+        
+        // 6. Re-renderiza a tabela
+        renderSummaryTable();
+
+        // 7. (UX) Rola a página de volta para o formulário
+        document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /**
+     * (NOVO v14.6) Função para limpar a tabela inteira
+     */
+    function handleClearAll() {
+        if (confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) {
+            registeredTrees = [];
+            saveDataToStorage();
+            renderSummaryTable();
+        }
+    }
+
+    /**
+     * (MODIFICADO v14.6) Renderiza a tabela de resumo (adiciona botão de editar)
      */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
@@ -819,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         let tableHTML = '<table class="summary-table"><thead><tr>';
-        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-delete">Excluir</th>';
+        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
         tableHTML += '</tr></thead><tbody>';
 
         registeredTrees.forEach(tree => {
@@ -839,6 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${tree.pontuacao}</td>
                     <td class="${tree.riscoClass}">${tree.risco}</td>
                     <td>${tree.observacoes}</td>
+                    <td class="col-edit"><button type="button" class="edit-tree-btn" data-id="${tree.id}">✏️</button></td>
                     <td class="col-delete"><button type="button" class="delete-tree-btn" data-id="${tree.id}">🗑️</button></td>
                 </tr>
             `;
@@ -850,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * (v13.9) Módulo da Calculadora de Risco (Listeners).
+     * (MODIFICADO v14.6) Módulo da Calculadora de Risco (Listeners)
      */
     function setupRiskCalculator() {
         const form = document.getElementById('risk-calculator-form');
@@ -859,6 +888,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const sendEmailBtn = document.getElementById('send-email-btn');
         const getGpsBtn = document.getElementById('get-gps-btn'); 
+        
+        // (NOVO v14.6) Botão Limpar Tabela
+        const clearAllBtn = document.getElementById('clear-all-btn'); 
 
         if (!form) return; 
 
@@ -884,6 +916,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalScore += parseInt(cb.dataset.weight, 10);
             });
 
+            // (NOVO v14.6) Salva o estado dos checkboxes para a edição
+            const allCheckboxes = form.querySelectorAll('.risk-checkbox');
+            const checkedRiskFactors = [];
+            allCheckboxes.forEach(cb => {
+                checkedRiskFactors.push(cb.checked);
+            });
+            // --- Fim da adição ---
+
             // Define a classificação
             let classificationText = 'Baixo Risco';
             let classificationClass = 'risk-col-low';
@@ -907,7 +947,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 observacoes: document.getElementById('risk-obs').value || 'N/A', 
                 pontuacao: totalScore,
                 risco: classificationText,
-                riscoClass: classificationClass
+                riscoClass: classificationClass,
+                riskFactors: checkedRiskFactors // (NOVO v14.6) Adiciona os dados dos checkboxes ao objeto
             };
 
             registeredTrees.push(newTree);
@@ -930,7 +971,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // 2. Lógica do Botão Limpar
+        // 2. Lógica do Botão Limpar Campos
         const resetBtn = document.getElementById('reset-risk-form-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', (e) => {
@@ -952,16 +993,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
         if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
         
+        // (NOVO v14.6) Listener do botão Limpar Tabela
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', handleClearAll);
+        }
+        
         // 4. Renderiza a tabela ao carregar (importante para o localStorage)
         renderSummaryTable();
         
-        // 5. Event Listener para Excluir
+        // 5. (MODIFICADO v14.6) Event Listener para Editar e Excluir
         if (summaryContainer) {
             summaryContainer.addEventListener('click', (e) => {
                 const deleteButton = e.target.closest('.delete-tree-btn');
+                const editButton = e.target.closest('.edit-tree-btn'); // (NOVO v14.6)
+
                 if (deleteButton) {
                     const treeId = parseInt(deleteButton.dataset.id, 10);
                     handleDeleteTree(treeId);
+                }
+                
+                if (editButton) { // (NOVO v14.6)
+                    const treeId = parseInt(editButton.dataset.id, 10);
+                    handleEditTree(treeId);
                 }
             });
         }
