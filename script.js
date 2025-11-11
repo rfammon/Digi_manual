@@ -1,15 +1,17 @@
-// script.js (v14.9 - Botão Importar Sempre Visível)
+// script.js (v15.2 - Correção Link LinkedIn)
 
-// === 0. ARMAZENAMENTO DE ESTADO ===
+// === 0. ARMAZENAMENTO de ESTADO ===
 let registeredTrees = [];
 
 // (v13.9) Chave para o localStorage da tabela
 const STORAGE_KEY = 'manualPodaData';
 // (v14.0) Chave para a última aba ativa
-const ACTIVE_TAB_KEY = 'manualPodaActiveTab'; 
+const ACTIVE_TAB_KEY = 'manualPodaActiveTab';
+
+// (NOVO v15.0) Variável para reter o nome do avaliador
+let lastEvaluatorName = '';
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
-// ... (Esta secção (linhas 13-176) permanece idêntica) ...
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 const glossaryTerms = {
     'colar do galho': 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.',
@@ -125,10 +127,8 @@ const podaPurposeData = {
 };
 
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v14.9) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v15.2) ===
 const manualContent = {
-    // ... (As secções 'conceitos-basicos' a 'sobre-autor' (linhas 179-432) 
-    // permanecem idênticas à v14.8) ...
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
         html: `
@@ -165,8 +165,8 @@ const manualContent = {
         `
     },
    'planejamento-inspecao': {
-      titulo: '📋 Planejamento e Inspeção',
-      html: `
+     titulo: '📋 Planejamento e Inspeção',
+     html: `
         <h3>Planejamento</h3>
         <p>Etapa fundamental para garantir a execução <strong>segura e eficiente</strong>.</p>
         
@@ -186,7 +186,7 @@ const manualContent = {
         <ul><li><strong>🔴 ALTO RISCO:</strong> Intervenção em até <strong>48h</strong>.</li><li><strong>🟠 MÉDIO RISCO:</strong> Intervenção em até <strong>15 dias</strong>.</li><li><strong>🟢 BAIXO RISCO:</strong> Monitoramento anual.</li></ul>
         <h4>Raio Crítico Radicular (RCR)</h4>
         <p><strong><span class="glossary-term" data-term-key="rcr">RCR</span> = 1,5 × <span class="glossary-term" data-term-key="dap">DAP</span></strong>.</p>
-    `
+     `
 },
     'autorizacao-legal': {
         titulo: '📜 Termos Legais e Autorização (ASV)',
@@ -350,7 +350,7 @@ const manualContent = {
     'sobre-autor': {
         titulo: '👨‍💻 Sobre o Autor',
         html: `
-            <div id="sobre-o-autor"> 
+            <div id="sobre-o-autor">    
                 <div class="autor-container">
                     <div class="autor-texto">
                         <p>
@@ -372,8 +372,8 @@ const manualContent = {
                             Fluente em inglês.
                         </p>
                         <p class="autor-links">
-                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> | 
-                            <a href="https://www.linkedin.com/in/rafael-ammon-68601633/" target="_blank">LinkedIn</a>
+                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
+                            <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
                         </p>
                     </div>
                 </div>
@@ -381,188 +381,203 @@ const manualContent = {
         `
     },
 
-    // (MODIFICADO v14.9) Conteúdo da Calculadora
+    // (MODIFICADO v15.1) Conteúdo da Calculadora
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
-            <p>Preencha os dados da árvore e marque "Sim" para todos os fatores de risco observados. Clique em "Adicionar Árvore" para salvá-la na tabela de resumo e limpar o formulário para a próxima avaliação.</p>
+            <p>Use a aba "Registar" para nova coleta e "Resumo" para ver, editar ou exportar os dados.</p>
             
-            <form id="risk-calculator-form">
-                
-                <fieldset class="risk-fieldset">
-                    <legend>1. Identificação da Árvore</legend>
-                    <div class="form-grid">
-                        <div>
-                            <label for="risk-data">Data da Coleta:</label>
-                            <input type="date" id="risk-data" name="risk-data" value="${new Date().toISOString().split('T')[0]}">
+            <nav class="sub-nav">
+                <button type="button" class="sub-nav-btn active" data-target="tab-content-register">
+                    Registar Árvore
+                </button>
+                <button type="button" class="sub-nav-btn" data-target="tab-content-summary">
+                    Resumo da Vistoria <span id="summary-badge" class="badge"></span>
+                </button>
+            </nav>
+    
+            <div id="tab-content-register" class="sub-tab-content active">
+                <form id="risk-calculator-form">
+                    <fieldset class="risk-fieldset">
+                        <legend>1. Identificação da Árvore</legend>
+                        <div class="form-grid">
+                            <div>
+                                <label for="risk-data">Data da Coleta:</label>
+                                <input type="date" id="risk-data" name="risk-data" value="${new Date().toISOString().split('T')[0]}">
+                            </div>
+                            <div>
+                                <label for="risk-especie">Espécie (Nome/Tag):</label>
+                                <input type="text" id="risk-especie" name="risk-especie" required>
+                            </div>
+                            <div>
+                                <label for="risk-local">Local (Endereço/Setor):</label>
+                                <input type="text" id="risk-local" name="risk-local">
+                            </div>
+                            <div>
+                                <label for="risk-coord-x">Coord. X (UTM):</label>
+                                <input type="text" id="risk-coord-x" name="risk-coord-x">
+                            </div>
+                            <div>
+                                <label for="risk-coord-y">Coord. Y (UTM):</label>
+                                <input type="text" id="risk-coord-y" name="risk-coord-y">
+                            </div>
+                             <div class="gps-button-container">
+                                <button type="button" id="get-gps-btn">🛰️ Capturar GPS</button>
+                                <span id="gps-status"></span>
+                            </div>
+                            <div>
+                                <label for="risk-dap">DAP (cm):</label>
+                                <input type="number" id="risk-dap" name="risk-dap" min="0" step="any">
+                            </div>
+                            <div>
+                                <label for="risk-avaliador">Avaliador:</label>
+                                <input type="text" id="risk-avaliador" name="risk-avaliador">
+                            </div>
                         </div>
                         <div>
-                            <label for="risk-especie">Espécie (Nome/Tag):</label>
-                            <input type="text" id="risk-especie" name="risk-especie" required>
+                            <label for="risk-obs">Observações (Opcional):</label>
+                            <textarea id="risk-obs" name="risk-obs" rows="3" placeholder="Ex: Cavidade no tronco, presença de pragas, galho sobre telhado..."></textarea>
                         </div>
-                        <div>
-                            <label for="risk-local">Local (Endereço/Setor):</label>
-                            <input type="text" id="risk-local" name="risk-local">
-                        </div>
-                        <div>
-                            <label for="risk-coord-x">Coord. X (UTM):</label>
-                            <input type="text" id="risk-coord-x" name="risk-coord-x">
-                        </div>
-                        <div>
-                            <label for="risk-coord-y">Coord. Y (UTM):</label>
-                            <input type="text" id="risk-coord-y" name="risk-coord-y">
-                        </div>
-                         <div class="gps-button-container">
-                            <button type="button" id="get-gps-btn">🛰️ Capturar GPS</button>
-                            <span id="gps-status"></span>
-                        </div>
-                        <div>
-                            <label for="risk-dap">DAP (cm):</label>
-                            <input type="number" id="risk-dap" name="risk-dap" min="0" step="any">
-                        </div>
-                        <div>
-                            <label for="risk-avaliador">Avaliador:</label>
-                            <input type="text" id="risk-avaliador" name="risk-avaliador">
-                        </div>
+                    </fieldset>
+                    
+                    <fieldset class="risk-fieldset">
+                        <legend>2. Lista de Verificação de Risco</legend>
+                        <table class="risk-table">
+                            <thead>
+                                <tr>
+                                    <th>Nº</th>
+                                    <th>Pergunta</th>
+                                    <th>Peso</th>
+                                    <th>Sim</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Há galhos mortos com diâmetro superior a 5 cm?</td>
+                                    <td>3</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Existem rachaduras ou fendas no tronco ou galhos principais?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>Há sinais de apodrecimento (madeira esponjosa, fungos, cavidades)?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>A árvore possui uniões em “V” com casca inclusa?</td>
+                                    <td>4</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="4"></td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>Há galhos cruzados ou friccionando entre si?</td>
+                                    <td>2</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="2"></td>
+                                </tr>
+                                <tr>
+                                    <td>6</td>
+                                    <td>A árvore apresenta copa assimétrica (>30% de desequilíbrio)?</td>
+                                    <td>2</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="2"></td>
+                                </tr>
+                                <tr>
+                                    <td>7</td>
+                                    <td>Há sinais de inclinação anormal ou recente?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>8</td>
+                                    <td>A árvore está próxima a vias públicas ou áreas de circulação?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>9</td>
+                                    <td>Há risco de queda sobre edificações, veículos ou pessoas?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>10</td>
+                                    <td>A árvore interfere em redes elétricas ou estruturas urbanas?</td>
+                                    <td>4</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="4"></td>
+                                </tr>
+                                <tr>
+                                    <td>11</td>
+                                    <td>A espécie é conhecida por apresentar alta taxa de falhas?</td>
+                                    <td>3</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
+                                </tr>
+                                <tr>
+                                    <td>12</td>
+                                    <td>A árvore já sofreu podas drásticas ou brotação epicórmica intensa?</td>
+                                    <td>3</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
+                                </tr>
+                                <tr>
+                                    <td>13</td>
+                                    <td>Há calçadas rachadas ou tubulações expostas próximas à base?</td>
+                                    <td>3</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
+                                </tr>
+                                <tr>
+                                    <td>14</td>
+                                    <td>Há perda visível de raízes de sustentação (>40%)?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>15</td>
+                                    <td>Há sinais de compactação ou asfixia radicular?</td>
+                                    <td>3</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
+                                </tr>
+                                <tr>
+                                    <td>16</td>
+                                    <td>Há apodrecimento em raízes primárias (>3 cm)?</td>
+                                    <td>5</td>
+                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </fieldset>
+                    
+                    <div class="risk-buttons-area">
+                        <button type="submit" id="add-tree-btn">➕ Adicionar Árvore</button>
+                        <button type="button" id="reset-risk-form-btn">Limpar Campos</button>
+                        
                     </div>
-                    <div>
-                        <label for="risk-obs">Observações (Opcional):</label>
-                        <textarea id="risk-obs" name="risk-obs" rows="3" placeholder="Ex: Cavidade no tronco, presença de pragas, galho sobre telhado..."></textarea>
+                </form>
+            </div>
+    
+            <div id="tab-content-summary" class="sub-tab-content">
+                <fieldset class="risk-fieldset">
+                    <legend>3. Árvores Cadastradas</legend>
+                    <div id="summary-table-container">
+                        <p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>
+                        </div>
+                    
+                    <div id="import-export-controls" class="risk-buttons-area">
+                        
+                        <input type="file" id="csv-importer" accept="text/csv,text/plain,.csv" style="display: none;">
+                        <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
+    
+                        <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
+                        <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
+                        <button type="button" id="clear-all-btn" class="export-btn">🗑️ Limpar Tabela</button>
                     </div>
                 </fieldset>
-                
-                <fieldset class="risk-fieldset">
-                    <legend>2. Lista de Verificação de Risco</legend>
-                    <table class="risk-table">
-                        <thead>
-                            <tr>
-                                <th>Nº</th>
-                                <th>Pergunta</th>
-                                <th>Peso</th>
-                                <th>Sim</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>Há galhos mortos com diâmetro superior a 5 cm?</td>
-                                <td>3</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                            </tr>
-                            <tr>
-                                <td>2</td>
-                                <td>Existem rachaduras ou fendas no tronco ou galhos principais?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                            <tr>
-                                <td>3</td>
-                                <td>Há sinais de apodrecimento (madeira esponjosa, fungos, cavidades)?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                            <tr>
-                                <td>4</td>
-                                <td>A árvore possui uniões em “V” com casca inclusa?</td>
-                                <td>4</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="4"></td>
-                            </tr>
-                            <tr>
-                                <td>5</td>
-                                <td>Há galhos cruzados ou friccionando entre si?</td>
-                                <td>2</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="2"></td>
-                            </tr>
-                            <tr>
-                                <td>6</td>
-                                <td>A árvore apresenta copa assimétrica (>30% de desequilíbrio)?</td>
-                                <td>2</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="2"></td>
-                            </tr>
-                            <tr>
-                                <td>7</td>
-                                <td>Há sinais de inclinação anormal ou recente?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                            <tr>
-                                <td>8</td>
-                                <td>A árvore está próxima a vias públicas ou áreas de circulação?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                            <tr>
-                                <td>9</td>
-                                <td>Há risco de queda sobre edificações, veículos ou pessoas?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                            <tr>
-                                <td>10</td>
-                                <td>A árvore interfere em redes elétricas ou estruturas urbanas?</td>
-                                <td>4</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="4"></td>
-                            </tr>
-                            <tr>
-                                <td>11</td>
-                                <td>A espécie é conhecida por apresentar alta taxa de falhas?</td>
-                                <td>3</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                            </tr>
-                            <tr>
-                                <td>12</td>
-                                <td>A árvore já sofreu podas drásticas ou brotação epicórmica intensa?</td>
-                                <td>3</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                            </tr>
-                            <tr>
-                                <td>13</td>
-                                <td>Há calçadas rachadas ou tubulações expostas próximas à base?</td>
-                                <td>3</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                            </tr>
-                            <tr>
-                                <td>14</td>
-                                <td>Há perda visível de raízes de sustentação (>40%)?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                            <tr>
-                                <td>15</td>
-                                <td>Há sinais de compactação ou asfixia radicular?</td>
-                                <td>3</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                            </tr>
-                            <tr>
-                                <td>16</td>
-                                <td>Há apodrecimento em raízes primárias (>3 cm)?</td>
-                                <td>5</td>
-                                <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </fieldset>
-                
-                <div class="risk-buttons-area">
-                    <button type="submit" id="add-tree-btn">➕ Adicionar Árvore</button>
-                    <button type="button" id="reset-risk-form-btn">Limpar Campos</button>
-                    <input type="file" id="csv-importer" accept=".csv" style="display: none;">
-                    <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
-                </div>
-            </form>
-            
-            <fieldset class="risk-fieldset">
-                <legend>3. Árvores Cadastradas</legend>
-                <div id="summary-table-container">
-                    <p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>
-                    </div>
-                
-                <div id="export-btn-group" class="risk-buttons-area" style="display: none;">
-                    <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
-                    <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
-                    <button type="button" id="clear-all-btn" class="export-btn">🗑️ Limpar Tabela</button>
-                </div>
-            </fieldset>
+            </div>
         `
     }
 };
@@ -571,9 +586,6 @@ const manualContent = {
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    // (NOVO v14.7) Variável para reter o nome do avaliador na sessão
-    let lastEvaluatorName = '';
 
     // ==========================================================
     // (v14.4) DEFINIÇÃO DE FUNÇÕES PRIMÁRIAS
@@ -698,12 +710,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         gpsStatus.textContent = "Capturando... (1/5)";
-        gpsStatus.className = ''; 
+        gpsStatus.className = '';    
 
         const options = {
-            enableHighAccuracy: true, 
-            timeout: 10000,           
-            maximumAge: 0 
+            enableHighAccuracy: true,    
+            timeout: 10000,              
+            maximumAge: 0    
         };
 
         const getSinglePosition = (opts) => {
@@ -731,8 +743,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lastZoneNum = readings[4].zoneNum;
                 const lastZoneLetter = readings[4].zoneLetter;
 
-                coordXField.value = avgEasting.toFixed(0); 
-                coordYField.value = avgNorthing.toFixed(0); 
+                coordXField.value = avgEasting.toFixed(0);    
+                coordYField.value = avgNorthing.toFixed(0);    
                 
                 gpsStatus.textContent = `Média de 5 leituras (Zona: ${lastZoneNum}${lastZoneLetter})`;
                 gpsStatus.className = '';
@@ -804,7 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
         allCheckboxes.forEach((cb, index) => {
             // (MODIFICADO v14.8) Converte 1/0 para true/false
-            cb.checked = treeToEdit.riskFactors[index] === 1 || false; 
+            cb.checked = treeToEdit.riskFactors[index] === 1 || false;    
         });
 
         // 3. Remove a árvore do array (ela será readicionada ao submeter)
@@ -837,27 +849,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (MODIFICADO v14.8) Renderiza a tabela de resumo (adiciona botão de editar)
+     * (MODIFICADO v15.0) Renderiza a tabela e atualiza o badge
      */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
-        const exportBtnGroup = document.getElementById('export-btn-group');
-
-        if (!container) return; 
-
-        // (MODIFICADO v14.9) Agora, o 'exportBtnGroup' só é escondido 
-        // se a tabela estiver vazia, mas o botão de importação (que está fora)
-        // permanece visível.
+        
+        // (MODIFICADO v15.0) Controla o grupo de botões de import/export
+        const importExportControls = document.getElementById('import-export-controls');
+        
+        // (NOVO v15.0) Controla o badge de contagem
+        const summaryBadge = document.getElementById('summary-badge');
+    
+        if (!container) return;    
+    
+        // (NOVO v15.0) Atualiza o badge
+        if (summaryBadge) {
+            if (registeredTrees.length > 0) {
+                summaryBadge.textContent = `(${registeredTrees.length})`;
+                summaryBadge.style.display = 'inline';
+            } else {
+                summaryBadge.textContent = '';
+                summaryBadge.style.display = 'none';
+            }
+        }
+    
+        // (MODIFICADO v15.0) Oculta os botões de exportação se a tabela estiver vazia
         if (registeredTrees.length === 0) {
             container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
-            if (exportBtnGroup) exportBtnGroup.style.display = 'none';
+            if (importExportControls) {
+                // Esconde apenas os botões de EXPORT, mantém o IMPORT visível
+                document.getElementById('export-csv-btn')?.setAttribute('style', 'display:none');
+                document.getElementById('send-email-btn')?.setAttribute('style', 'display:none');
+                document.getElementById('clear-all-btn')?.setAttribute('style', 'display:none');
+            }
             return;
         }
         
+        // (MODIFICADO v15.0) Mostra os botões de exportação
+        if (importExportControls) {
+            document.getElementById('export-csv-btn')?.setAttribute('style', 'display:block');
+            document.getElementById('send-email-btn')?.setAttribute('style', 'display:block');
+            document.getElementById('clear-all-btn')?.setAttribute('style', 'display:block');
+        }
+    
+        // ... (O restante da lógica de criação da tabela permanece o mesmo) ...
         let tableHTML = '<table class="summary-table"><thead><tr>';
         tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
         tableHTML += '</tr></thead><tbody>';
-
+    
         registeredTrees.forEach(tree => {
             const [y, m, d] = (tree.data || '---').split('-');
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
@@ -865,7 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHTML += `
                 <tr>
                     <td>${tree.id}</td>
-                    <td>${displayDate}</td> 
+                    <td>${displayDate}</td>    
                     <td>${tree.especie}</td>
                     <td>${tree.coordX}</td>
                     <td>${tree.coordY}</td>
@@ -880,33 +919,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `;
         });
-
+    
         tableHTML += '</tbody></table>';
         container.innerHTML = tableHTML;
-        if (exportBtnGroup) exportBtnGroup.style.display = 'flex';
     }
     
     /**
-     * (MODIFICADO v14.9) Módulo da Calculadora de Risco (Listeners)
+     * (MODIFICADO v15.0) Módulo da Calculadora de Risco (Listeners e Abas)
      */
     function setupRiskCalculator() {
+        
+        // (NOVO v15.0) Lógica de controle das Abas Secundárias
+        const subNavButtons = document.querySelectorAll('.sub-nav-btn');
+        const subTabPanes = document.querySelectorAll('.sub-tab-content');
+    
+        /**
+         * (NOVO v15.0) Função auxiliar para mostrar uma aba específica
+         * @param {string} targetId O ID do 'data-target' do botão
+         */
+        function showSubTab(targetId) {
+            subTabPanes.forEach(pane => {
+                if (pane.id === targetId) {
+                    pane.classList.add('active');
+                } else {
+                    pane.classList.remove('active');
+                }
+            });
+            subNavButtons.forEach(btn => {
+                if (btn.getAttribute('data-target') === targetId) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+    
+        subNavButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.getAttribute('data-target');
+                showSubTab(targetId);
+            });
+        });
+    
+        // --- O restante da lógica original de setupRiskCalculator ---
+    
         // Encontra todos os elementos
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
-        const exportBtnGroup = document.getElementById('export-btn-group');
+        
+        // (MODIFICADO v15.0) Botões de exportação/importação
+        const importExportControls = document.getElementById('import-export-controls');
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const sendEmailBtn = document.getElementById('send-email-btn');
-        const getGpsBtn = document.getElementById('get-gps-btn'); 
-        const clearAllBtn = document.getElementById('clear-all-btn'); 
-        const csvImporter = document.getElementById('csv-importer'); // (v14.8)
-
-        if (!form) return; 
-
-        // (v14.7) Preenche o nome do avaliador se já existir
+        const getGpsBtn = document.getElementById('get-gps-btn');    
+        const clearAllBtn = document.getElementById('clear-all-btn');    
+        const csvImporter = document.getElementById('csv-importer');
+    
+        if (!form) return;    
+    
+        // (v14.7) Preenche o nome do avaliador
         if (lastEvaluatorName) {
             document.getElementById('risk-avaliador').value = lastEvaluatorName;
         }
-
+    
         // Oculta o botão de GPS em desktops
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (getGpsBtn && !isTouchDevice) {
@@ -918,24 +993,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (getGpsBtn) {
             getGpsBtn.addEventListener('click', handleGetGPS);
         }
-
+    
         // 1. Lógica de Adicionar Árvore
         form.addEventListener('submit', (event) => {
-            event.preventDefault(); 
+            event.preventDefault();    
             let totalScore = 0;
             const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
             
             checkboxes.forEach(cb => {
                 totalScore += parseInt(cb.dataset.weight, 10);
             });
-
+    
             // (v14.8) Salva o estado como 1 ou 0
             const allCheckboxes = form.querySelectorAll('.risk-checkbox');
             const checkedRiskFactors = [];
             allCheckboxes.forEach(cb => {
-                checkedRiskFactors.push(cb.checked ? 1 : 0); // Salva 1 para marcado, 0 para desmarcado
+                checkedRiskFactors.push(cb.checked ? 1 : 0);
             });
-
+    
             // Define a classificação
             let classificationText = 'Baixo Risco';
             let classificationClass = 'risk-col-low';
@@ -946,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 classificationText = 'Médio Risco';
                 classificationClass = 'risk-col-medium';
             }
-
+    
             const newTree = {
                 id: registeredTrees.length + 1,
                 data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
@@ -954,27 +1029,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 local: document.getElementById('risk-local').value || 'N/A',
                 coordX: document.getElementById('risk-coord-x').value || 'N/A',
                 coordY: document.getElementById('risk-coord-y').value || 'N/A',
-                dap: document.getElementById('risk-dap').value || 'N/A', 
+                dap: document.getElementById('risk-dap').value || 'N/A',    
                 avaliador: document.getElementById('risk-avaliador').value || 'N/A',
-                observacoes: document.getElementById('risk-obs').value || 'N/A', 
+                observacoes: document.getElementById('risk-obs').value || 'N/A',    
                 pontuacao: totalScore,
                 risco: classificationText,
                 riscoClass: classificationClass,
-                riskFactors: checkedRiskFactors // (v14.6) Adiciona os dados dos checkboxes ao objeto
+                riskFactors: checkedRiskFactors
             };
-
+    
             registeredTrees.push(newTree);
             saveDataToStorage();
             renderSummaryTable();
             
-            // (v14.7) Salva o nome do avaliador antes de limpar
+            // (v14.7) Salva o nome do avaliador
             lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
             form.reset();
             try {
                 document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-                document.getElementById('risk-avaliador').value = lastEvaluatorName; // Re-aplica o nome
+                document.getElementById('risk-avaliador').value = lastEvaluatorName;
             } catch(e) { /* ignora erro */ }
-            
+
+            // (NOVO v15.0) FEEDBACK IMEDIATO: Muda para a aba de resumo
+            showSubTab('tab-content-summary');
+
+            // Foco no campo espécie para a próxima entrada
             document.getElementById('risk-especie').focus();
             
             const gpsStatus = document.getElementById('gps-status');
@@ -988,14 +1067,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const resetBtn = document.getElementById('reset-risk-form-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', (e) => {
-                e.preventDefault(); 
-                
-                // (v14.7) Salva o nome do avaliador antes de limpar
+                e.preventDefault();    
                 lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
-                form.reset(); 
+                form.reset();    
                  try {
                     document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-                    document.getElementById('risk-avaliador').value = lastEvaluatorName; // Re-aplica o nome
+                    document.getElementById('risk-avaliador').value = lastEvaluatorName;
                 } catch(e) { /* ignora erro */ }
                 
                 const gpsStatus = document.getElementById('gps-status');
@@ -1005,20 +1082,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-
-        // 3. Lógica dos Botões de Exportação
+    
+        // 3. Lógica dos Botões de Importação/Exportação
         if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
         if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
-        
-        // (v14.6) Listener do botão Limpar Tabela
-        if (clearAllBtn) {
-            clearAllBtn.addEventListener('click', handleClearAll);
-        }
-
-        // (v14.8) Listener do botão Importar CSV
-        if (csvImporter) {
-            csvImporter.addEventListener('change', handleFileImport);
-        }
+        if (clearAllBtn) clearAllBtn.addEventListener('click', handleClearAll);
+        if (csvImporter) csvImporter.addEventListener('change', handleFileImport);
         
         // 4. Renderiza a tabela ao carregar
         renderSummaryTable();
@@ -1027,16 +1096,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (summaryContainer) {
             summaryContainer.addEventListener('click', (e) => {
                 const deleteButton = e.target.closest('.delete-tree-btn');
-                const editButton = e.target.closest('.edit-tree-btn'); 
-
+                const editButton = e.target.closest('.edit-tree-btn');    
+    
                 if (deleteButton) {
                     const treeId = parseInt(deleteButton.dataset.id, 10);
                     handleDeleteTree(treeId);
                 }
                 
-                if (editButton) { 
+                if (editButton) {    
                     const treeId = parseInt(editButton.dataset.id, 10);
                     handleEditTree(treeId);
+                    // (NOVO v15.0) Ao editar, volta para a aba de registro
+                    showSubTab('tab-content-register');
                 }
             });
         }
@@ -1044,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Definições de Funções (Tooltip, Export, etc.) ---
 
-    let currentTooltip = null; 
+    let currentTooltip = null;    
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const termClickEvent = isTouchDevice ? 'touchend' : 'click';
     const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
@@ -1054,11 +1125,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!tooltip) {
             tooltip = document.createElement('div');
             tooltip.id = 'glossary-tooltip';
-            document.body.appendChild(tooltip); 
+            document.body.appendChild(tooltip);    
         }
         if (!tooltip.dataset.clickToCloseAdded) {
             tooltip.addEventListener(popupCloseEvent, (e) => {
-                e.stopPropagation(); 
+                e.stopPropagation();    
                 hideTooltip();
             });
             tooltip.dataset.clickToCloseAdded = 'true';
@@ -1075,13 +1146,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupGlossaryInteractions() {
-        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term'); 
+        const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
         glossaryTermsElements.forEach(termElement => {
             if (!isTouchDevice) {
                 termElement.addEventListener('mouseenter', showGlossaryTooltip);
                 termElement.addEventListener('mouseleave', hideTooltip);
             }
-            termElement.addEventListener(termClickEvent, toggleGlossaryTooltip); 
+            termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);    
         });
     }
 
@@ -1090,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const termKey = termElement.getAttribute('data-term-key');
         const definition = glossaryTerms[termKey];
         if (!definition) return;
-        currentTooltip = createTooltip(); 
+        currentTooltip = createTooltip();    
         currentTooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
         positionTooltip(termElement);
         currentTooltip.style.opacity = '1';
@@ -1099,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleGlossaryTooltip(event) {
-        event.preventDefault(); 
+        event.preventDefault();    
         event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
         if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
@@ -1189,14 +1260,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const tooltipWidth = currentTooltip.offsetWidth;
             const tooltipHeight = currentTooltip.offsetHeight;
             let topPos;
-            if (rect.top > tooltipHeight + 10) { 
+            if (rect.top > tooltipHeight + 10) {    
                 topPos = rect.top + scrollY - tooltipHeight - 10;
-            } else { 
+            } else {    
                 topPos = rect.bottom + scrollY + 10;
             }
             let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
-            if (leftPos < scrollX + 10) leftPos = scrollX + 10; 
-            if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { 
+            if (leftPos < scrollX + 10) leftPos = scrollX + 10;    
+            if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) {    
                 leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
             }
             currentTooltip.style.top = `${topPos}px`;
@@ -1212,19 +1283,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // (MODIFICADO v14.8) Adicionada coluna "RiskFactors"
         const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors"];
-        let csvContent = "\uFEFF" + headers.join(";") + "\n"; 
+        let csvContent = "\uFEFF" + headers.join(";") + "\n";    
 
         registeredTrees.forEach(tree => {
             const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ',');
             const cleanLocal = (tree.local || '').replace(/[\n;]/g, ',');
             const cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ',');
-            const cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ','); 
+            const cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ',');    
             // (MODIFICADO v14.8) Adiciona os riskFactors como string (ex: "1,0,0,1...")
             const riskFactorsString = (tree.riskFactors || []).join(',');
 
             const row = [
                 tree.id,
-                tree.data, 
+                tree.data,    
                 cleanEspecie,
                 tree.coordX,
                 tree.coordY,
@@ -1249,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const today = new Date();
         const d = String(today.getDate()).padStart(2, '0');
-        const m = String(today.getMonth() + 1).padStart(2, '0'); 
+        const m = String(today.getMonth() + 1).padStart(2, '0');    
         const y = today.getFullYear();
         const dateSuffix = `${d}${m}${y}`;
         const filename = `risco_arboreo_${dateSuffix}.csv`;
@@ -1274,7 +1345,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
             const cleanEspecie = (tree.especie || 'N/A').padEnd(20, ' ').substring(0, 20);
             const cleanLocal = (tree.local || 'N/A').padEnd(15, ' ').substring(0, 15);
-            const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30); 
+            const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30);    
             textBody += `${tree.id}\t|\t${displayDate}\t|\t${cleanEspecie}\t|\t${cleanLocal}\t|\t${tree.risco}\t|\t${cleanObs}\n`;
         });
         textBody += "\n\n";
@@ -1284,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function sendEmailReport() {
-        const targetEmail = ""; 
+        const targetEmail = "";    
         const subject = "Relatório de Avaliação de Risco Arbóreo";
         const emailBody = generateEmailSummaryText();
         const encodedSubject = encodeURIComponent(subject);
@@ -1349,7 +1420,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const risco = row[9] || 'N/A';
                     const observacoes = row[10] || 'N/A';
                     // A nova coluna de RiskFactors
-                    const riskFactorsString = row[11] || ''; 
+                    const riskFactorsString = row[11] || '';    
                     const riskFactors = riskFactorsString.split(',').map(item => parseInt(item, 10)); // Mantém como 1 ou 0
 
                     // Recalcula a classe de risco (mais seguro do que confiar na do CSV)
@@ -1398,11 +1469,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleChatSend() {
         const userQuery = chatInput.value.trim();
-        if (userQuery === "") return; 
+        if (userQuery === "") return;    
         chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
-        chatInput.value = ""; 
+        chatInput.value = "";    
         try {
-            const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI"; 
+            const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI";    
             if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
                  throw new Error("A função de back-end (Google Cloud Function) ainda não foi configurada. Esta é a Fase 2.");
             }
@@ -1433,19 +1504,19 @@ document.addEventListener('DOMContentLoaded', () => {
      * (v14.4) Carrega o conteúdo principal na <section>
      */
     function loadContent(targetKey) {
-        if (!detailView) return; 
+        if (!detailView) return;    
         
         const content = manualContent[targetKey];
         if (content) {
             detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
             // Re-vincular os eventos de tooltip
-            setupGlossaryInteractions(); 
+            setupGlossaryInteractions();    
             setupEquipmentInteractions();
             setupPurposeInteractions();
 
             // (v14.4) Ativa a calculadora se for a aba correta
             if (targetKey === 'calculadora-risco') {
-                setupRiskCalculator(); 
+                setupRiskCalculator();    
             }
         } else {
             detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
@@ -1456,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * (v14.4) Manipulador de clique para os botões de tópico
      */
     function handleTopicClick(button) {
-        hideTooltip(); 
+        hideTooltip();    
         const target = button.getAttribute('data-target');
         
         // (v14.0) SALVA A ÚLTIMA ABA ATIVA
@@ -1513,10 +1584,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 2. Inicialização do Botão "Voltar ao Topo" ---
     const backToTopButton = document.getElementById('back-to-top-btn');
-    const headerElement = document.getElementById('page-top'); 
+    const headerElement = document.getElementById('page-top');    
     if (backToTopButton && headerElement) {
         const observerCallback = (entries) => {
-            const [entry] = entries; 
+            const [entry] = entries;    
             if (!entry.isIntersecting) {
                 backToTopButton.classList.add('show');
             } else {
@@ -1532,7 +1603,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const contactForm = document.getElementById('contact-form');
     if (contactForm) {
         contactForm.addEventListener('submit', (event) => {
-            event.preventDefault(); 
+            event.preventDefault();    
             const targetEmail = "rafael.ammon.prestserv@petrobras.com.br";
             const nome = document.getElementById('nome').value;
             const emailRetorno = document.getElementById('email').value;
