@@ -1,4 +1,4 @@
-/* style.css (Completo v15.0 - Inclui Abas da Calculadora) */
+/* style.css (Completo v15.4 - Inclui Estilos Mobile para Checklist) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -811,7 +811,6 @@ html {
 
 /* -------------------------------------- */
 /* 10.1. CALCULADORA (Abas Secundárias v15.0) */
-/* (MOVIDO DA SEÇÃO 10 PARA O FINAL PARA GARANTIR PRIORIDADE) */
 /* -------------------------------------- */
 
 .sub-nav {
@@ -881,4 +880,155 @@ html {
     gap: 15px;
     margin-top: 15px;
     margin-bottom: 25px;
+}
+
+/* -------------------------------------- */
+/* 14. NOTIFICAÇÕES TOAST (v15.3) */
+/* -------------------------------------- */
+
+#toast-container {
+    position: fixed;
+    bottom: 20px; /* Alinha com o botão "Voltar ao Topo" */
+    left: 50%;
+    transform: translateX(-50%); /* Centraliza horizontalmente */
+    z-index: 2000; /* Acima de tudo */
+    display: flex;
+    flex-direction: column-reverse; /* Novas notificações aparecem em cima */
+    gap: 10px;
+    width: calc(100% - 40px);
+    max-width: 500px;
+}
+
+.toast-notification {
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(20px);
+    animation: toast-fade-in 0.3s forwards;
+}
+
+/* Animação de entrada e saída */
+@keyframes toast-fade-in {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.toast-notification.toast-fade-out {
+    animation: toast-fade-out 0.3s forwards;
+}
+
+@keyframes toast-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+/* Tipos de Toast */
+.toast-notification.success {
+    background-color: #00796b; /* Verde (sucesso) */
+}
+
+.toast-notification.error {
+    background-color: #C62828; /* Vermelho (erro) */
+}
+
+.toast-notification.info {
+    background-color: #1565C0; /* Azul (info) */
+}
+
+/* -------------------------------------- */
+/* 15. CHECKLIST MOBILE (v15.4) */
+/* -------------------------------------- */
+
+@media (max-width: 768px) {
+    /* Esconde o cabeçalho da tabela de risco, inútil no mobile */
+    .risk-table thead {
+        display: none;
+    }
+
+    /* Força a tabela a se comportar como blocos */
+    .risk-table, 
+    .risk-table tbody, 
+    .risk-table tr, 
+    .risk-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .risk-table tr {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        padding: 10px;
+    }
+
+    /* Remove bordas das células, pois o TR já tem borda */
+    .risk-table td {
+        border: none;
+        padding: 5px 0;
+        text-align: left !important; /* Força alinhamento */
+        width: 100% !important; /* Força largura */
+    }
+
+    /* Célula da Pergunta (td[2]) */
+    .risk-table td:nth-child(2) {
+        font-size: 1.05em;
+        line-height: 1.4;
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* Célula do Peso (td[3]) */
+    .risk-table td:nth-child(3) {
+        /* Recria o label "Peso" */
+        content: "Peso: " attr(data-label);
+        font-size: 0.9em;
+        font-weight: normal;
+        color: #555;
+    }
+    .risk-table td:nth-child(3)::before {
+        content: "Peso: ";
+        font-weight: bold;
+    }
+
+    /* Célula do Checkbox (td[4]) */
+    .risk-table td:nth-child(4) {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start; /* Alinha à esquerda */
+        padding-top: 10px;
+        border-top: 1px dashed #eee;
+        margin-top: 10px;
+    }
+
+    /* Recria o label "Sim" */
+    .risk-table td:nth-child(4)::before {
+        content: "Marcar 'Sim':";
+        font-weight: bold;
+        margin-right: 15px;
+        flex-grow: 1; /* Empurra o checkbox para a direita */
+    }
+
+    .risk-checkbox {
+        width: 25px; /* Aumenta área de toque */
+        height: 25px;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+
+    /* Célula do Nº (td[1]) - Oculta */
+    .risk-table td:nth-child(1) {
+        display: none;
+    }
 }

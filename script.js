@@ -1,4 +1,4 @@
-// script.js (v15.2 - Correção Link LinkedIn)
+// script.js (v15.3 - Implementação de Notificações Toast)
 
 // === 0. ARMAZENAMENTO de ESTADO ===
 let registeredTrees = [];
@@ -789,6 +789,9 @@ document.addEventListener('DOMContentLoaded', () => {
         saveDataToStorage();
         
         renderSummaryTable();
+        
+        // (NOVO v15.3) Notificação Toast
+        showToast(`🗑️ Árvore ID ${id} excluída.`, 'info');
     }
 
     /**
@@ -835,6 +838,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 7. (UX) Rola a página de volta para o formulário
         document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
+
+        // (NOVO v15.3) Notificação Toast
+        showToast(`✏️ Editando Árvore ID ${id}. Salve ao terminar.`, 'info');
     }
 
     /**
@@ -845,6 +851,8 @@ document.addEventListener('DOMContentLoaded', () => {
             registeredTrees = [];
             saveDataToStorage();
             renderSummaryTable();
+            // (NOVO v15.3) Notificação Toast
+            showToast('🗑️ Tabela limpa. Todos os registros foram removidos.', 'error');
         }
     }
 
@@ -1052,6 +1060,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // (NOVO v15.0) FEEDBACK IMEDIATO: Muda para a aba de resumo
             showSubTab('tab-content-summary');
+
+            // (NOVO v15.3) Notificação Toast
+            showToast(`✔️ Árvore "${newTree.especie}" (ID ${newTree.id}) salva.`, 'success');
 
             // Foco no campo espécie para a próxima entrada
             document.getElementById('risk-especie').focus();
@@ -1315,7 +1326,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function exportCSV() {
         const csvContent = getCSVData();
         if (!csvContent) {
-            alert("Nenhuma árvore cadastrada para exportar.");
+            // (v15.3) Substituído alert por toast
+            showToast('Nenhuma árvore cadastrada para exportar.', 'info');
             return;
         }
         const today = new Date();
@@ -1358,11 +1370,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetEmail = "";    
         const subject = "Relatório de Avaliação de Risco Arbóreo";
         const emailBody = generateEmailSummaryText();
+        if (emailBody === "Nenhuma árvore foi cadastrada na tabela de resumo.") {
+             // (v15.3) Substituído alert por toast
+            showToast('Nenhuma árvore cadastrada para enviar.', 'info');
+            return;
+        }
+        
         const encodedSubject = encodeURIComponent(subject);
         const encodedBody = encodeURIComponent(emailBody);
         const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
         if (mailtoLink.length > 2000) {
-            alert("Muitos dados para enviar por e-mail. Por favor, use o botão 'Exportar CSV' e anexe o arquivo manualmente.");
+             // (v15.3) Substituído alert por toast
+            showToast('Muitos dados para e-mail. Use "Exportar CSV" e anexe.', 'error');
             return;
         }
         window.location.href = mailtoLink;
@@ -1384,7 +1403,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const lines = content.split('\n').filter(line => line.trim() !== ''); // Remove linhas vazias
 
             if (lines.length <= 1) {
-                alert("Erro: O ficheiro CSV está vazio ou é inválido.");
+                // (v15.3) Substituído alert por toast
+                showToast("Erro: O ficheiro CSV está vazio ou é inválido.", 'error');
                 return;
             }
 
@@ -1448,11 +1468,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 registeredTrees = newTrees;
                 saveDataToStorage();
                 renderSummaryTable();
-                alert(`Importação concluída! ${newTrees.length} registos carregados.`);
+                // (v15.3) Substituído alert por toast
+                showToast(`📤 Importação concluída! ${newTrees.length} registos carregados.`, 'success');
 
             } catch (error) {
                 console.error("Erro ao processar o ficheiro CSV:", error);
-                alert("Erro ao processar o ficheiro. Verifique o formato do CSV e tente novamente.");
+                 // (v15.3) Substituído alert por toast
+                showToast("Erro ao processar o ficheiro. Verifique o formato.", 'error');
             } finally {
                 // Limpa o input de ficheiro para permitir carregar o mesmo ficheiro novamente
                 event.target.value = null;
@@ -1460,12 +1482,45 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         reader.onerror = () => {
-            alert("Erro ao ler o ficheiro.");
+             // (v15.3) Substituído alert por toast
+            showToast("Erro ao ler o ficheiro.", 'error');
             event.target.value = null;
         };
 
         reader.readAsText(file);
     }
+
+    /**
+     * (NOVO v15.3) Mostra uma notificação toast
+     * @param {string} message A mensagem a ser exibida.
+     * @param {string} type 'success' (verde), 'error' (vermelho), ou 'info' (azul).
+     * @param {number} duration Duração em milissegundos.
+     */
+    function showToast(message, type = 'success', duration = 3000) {
+        const container = document.getElementById('toast-container');
+        if (!container) {
+            console.error("Elemento #toast-container não encontrado.");
+            return;
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast-notification ${type}`;
+        toast.textContent = message;
+
+        container.appendChild(toast);
+
+        // Animação de saída
+        setTimeout(() => {
+            toast.classList.add('toast-fade-out');
+            // Remove o elemento após a animação
+            toast.addEventListener('animationend', () => {
+                if (toast.parentNode === container) {
+                    container.removeChild(toast);
+                }
+            });
+        }, duration);
+    }
+
 
     async function handleChatSend() {
         const userQuery = chatInput.value.trim();
