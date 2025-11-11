@@ -706,6 +706,28 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
     }
+	
+// --- (NOVO v14.1) LÓGICA DO BOTÃO VOLTAR AO TOPO ---
+    
+    const backToTopButton = document.getElementById('back-to-top-btn');
+
+    if (backToTopButton) {
+        // Função que decide se o botão aparece
+        const scrollFunction = () => {
+            // Mostra o botão após 300px de scroll
+            if (window.scrollY > 300 || document.documentElement.scrollTop > 300) {
+                backToTopButton.classList.add('show');
+            } else {
+                backToTopButton.classList.remove('show');
+            }
+        };
+
+        // Adiciona o listener de scroll
+        window.onscroll = scrollFunction;
+        
+        // O clique já é tratado pelo <a href="#page-top"> e pelo CSS 'scroll-behavior: smooth'.
+        // Não precisamos de JS para o clique, tornando-o mais leve.
+    }
 
     // --- MÓDULO DE TOOLTIP ---
     let currentTooltip = null; 

@@ -758,3 +758,50 @@ main {
     color: #004d40;
     text-decoration: underline;
 }
+
+/* (NOVO v14.1) Habilita o scroll suave para o botão 'Voltar ao Topo' */
+html {
+    scroll-behavior: smooth;
+}
+
+/* -------------------------------------- */
+/* 13. BOTÃO VOLTAR AO TOPO (v14.1) */
+/* -------------------------------------- */
+
+#back-to-top-btn {
+    display: none; /* Oculto por padrão (JS irá mostrá-lo) */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999; /* Sobrepõe outros elementos */
+    
+    background-color: #004d40; /* Cor primária (do header) */
+    color: #fff;
+    border: none;
+    border-radius: 50%; /* Botão circular */
+    
+    width: 50px;
+    height: 50px;
+    
+    /* Centraliza a seta (&#9650;) */
+    font-size: 24px;
+    line-height: 50px; /* Alinha verticalmente */
+    text-align: center;
+    
+    text-decoration: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: background-color 0.2s, opacity 0.3s, visibility 0.3s;
+    opacity: 0; /* Começa invisível para transição suave */
+    visibility: hidden;
+}
+
+#back-to-top-btn:hover {
+    background-color: #00796b; /* Cor de hover (dos botões) */
+}
+
+/* Classe 'show' que o JS vai adicionar */
+#back-to-top-btn.show {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+}
