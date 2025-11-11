@@ -1,4 +1,4 @@
-/* style.css (Completo v15.5 - Polimento UI: Spinner GPS) */
+/* style.css (Completo v16.0 - Inclui Toast, Abas e Spinner) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -15,9 +15,9 @@ body {
     line-height: 1.6;
     background-color: #f4f4f9;
     color: #333;
-    position: relative; /* Contexto para o Tooltip */
+    position: relative;
     min-height: 100vh;
-    overflow-wrap: break-word; /* Impede estouro de texto global */
+    overflow-wrap: break-word;
     word-wrap: break-word;
 }
 
@@ -247,7 +247,7 @@ main {
 
 
 /* -------------------------------------- */
-/* 6. FORMULÁRIO DE CONTATO (Era 5) */
+/* 6. FORMULÁRIO DE CONTATO */
 /* -------------------------------------- */
 
 #fale-conosco {
@@ -309,7 +309,7 @@ main {
 }
 
 /* -------------------------------------- */
-/* 7. CHAT (Seção não estava no CSS) */
+/* 7. CHAT */
 /* -------------------------------------- */
 #gemini-chat {
     padding: 20px;
@@ -394,7 +394,7 @@ main {
 }
 
 /* -------------------------------------- */
-/* 9. ESTILOS DO GLOSSÁRIO GERAL (NOVO) */
+/* 9. ESTILOS DO GLOSSÁRIO GERAL */
 /* -------------------------------------- */
 
 .glossary-table {
@@ -434,7 +434,7 @@ main {
 
 
 /* -------------------------------------- */
-/* 10. CALCULADORA DE RISCO (v12.6) */
+/* 10. CALCULADORA DE RISCO */
 /* -------------------------------------- */
 
 .risk-fieldset {
@@ -543,6 +543,11 @@ main {
     font-size: 1.1rem;
     font-weight: bold;
     transition: background-color 0.3s;
+    /* (v16.0) Alinhamento de ícone e texto */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 #add-tree-btn, #export-csv-btn {
     background-color: #00796b;
@@ -556,9 +561,8 @@ main {
 }
 #reset-risk-form-btn:hover, #send-email-btn:hover { background-color: #ccc; }
 
-/* (NOVO v14.8) Estilo do Botão Importar */
 .csv-import-label {
-    background-color: #ffb300; /* Destaque amarelo */
+    background-color: #ffb300;
     color: #333;
     text-align: center;
 }
@@ -566,46 +570,14 @@ main {
     background-color: #ffa000;
 }
 
-/* (NOVO v14.6) Estilo do Botão Limpar Tabela */
 #clear-all-btn {
-    background-color: #C62828; /* Vermelho escuro */
+    background-color: #C62828;
     color: white;
 }
 #clear-all-btn:hover {
-    background-color: #E53935; /* Vermelho mais claro */
+    background-color: #E53935;
 }
 
-
-/* Resultados Imediatos (feedback) */
-#risk-score {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #004d40;
-}
-.risk-classification-box {
-    padding: 15px;
-    border-radius: 5px;
-    margin-top: 10px;
-    font-size: 1.1rem;
-    font-weight: bold;
-    text-align: center;
-    border: 1px solid transparent;
-}
-.risk-high {
-    background-color: #FFCDD2;
-    border-color: #E53935;
-    color: #C62828;
-}
-.risk-medium {
-    background-color: #FFF9C4;
-    border-color: #FBC02D;
-    color: #E65100;
-}
-.risk-low {
-    background-color: #C8E6C9;
-    border-color: #43A047;
-    color: #2E7D32;
-}
 
 /* Tabela de Resumo */
 #summary-table-container {
@@ -651,7 +623,6 @@ main {
     text-align: center;
 }
 
-/* (MODIFICADO v14.6) Estilos dos Botões de Ação da Tabela */
 .edit-tree-btn,
 .delete-tree-btn {
     background: none;
@@ -661,38 +632,27 @@ main {
     cursor: pointer;
     padding: 5px;
     line-height: 1;
-    width: 100%; /* Ocupa a célula */
+    width: 100%;
     border-radius: 4px;
     transition: background-color 0.2s;
 }
-.delete-tree-btn {
-    color: #C62828; /* Vermelho */
-}
-.delete-tree-btn:hover {
-    color: #E53935;
-    background-color: #FFCDD2;
-}
-.edit-tree-btn {
-    color: #1565C0; /* Azul */
-}
-.edit-tree-btn:hover {
-    color: #1976D2;
-    background-color: #BBDEFB; /* Azul claro */
-}
+.delete-tree-btn { color: #C62828; }
+.delete-tree-btn:hover { color: #E53935; background-color: #FFCDD2; }
+.edit-tree-btn { color: #1565C0; }
+.edit-tree-btn:hover { color: #1976D2; background-color: #BBDEFB; }
 
-/* (MODIFICADO v14.6) Colunas de Ação */
 .summary-table th.col-edit,
 .summary-table td.col-edit,
 .summary-table th.col-delete,
 .summary-table td.col-delete {
     text-align: center;
     width: 30px;
-    white-space: nowrap; /* Impede que os botões quebrem linha */
+    white-space: nowrap;
 }
 
 
 /* -------------------------------------- */
-/* 11. BOTÃO GPS (CALCULADORA) v12.8 */
+/* 11. BOTÃO GPS (CALCULADORA) */
 /* -------------------------------------- */
 
 .gps-button-container {
@@ -712,14 +672,17 @@ main {
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s;
-    /* (v15.5) Prepara para alinhamento do spinner */
-    display: inline-flex;
+    /* (v16.0) Alinhamento do spinner */
+    display: flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
 }
 #get-gps-btn:hover {
     background-color: #00695c;
+}
+#get-gps-btn:disabled {
+    background-color: #757575;
+    cursor: not-allowed;
 }
 
 #gps-status {
@@ -732,95 +695,70 @@ main {
     font-weight: bold;
 }
 
+/* (NOVO v16.0) Spinner do GPS */
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
 /* -------------------------------------- */
-/* 12. SECÇÃO SOBRE O AUTOR (v13.6) */
+/* 12. SECÇÃO SOBRE O AUTOR */
 /* -------------------------------------- */
 
-#sobre-o-autor {
-    padding: 0;
-}
+#sobre-o-autor { padding: 0; }
+.autor-container { display: flex; flex-wrap: wrap; gap: 20px; }
+.autor-texto p { margin-bottom: 15px; font-size: 1em; }
+.autor-texto .autor-links { font-size: 0.95rem; font-weight: bold; }
+.autor-texto .autor-links a { color: #00796b; text-decoration: none; transition: color 0.2s; }
+.autor-texto .autor-links a:hover { color: #004d40; text-decoration: underline; }
 
-.autor-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-}
+/* -------------------------------------- */
+/* 13. BOTÃO VOLTAR AO TOPO */
+/* -------------------------------------- */
 
-.autor-texto p {
-    margin-bottom: 15px;
-    font-size: 1em;
-}
-
-.autor-texto .autor-links {
-    font-size: 0.95rem;
-    font-weight: bold;
-}
-
-.autor-texto .autor-links a {
-    color: #00796b;
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.autor-texto .autor-links a:hover {
-    color: #004d40;
-    text-decoration: underline;
-}
-
-/* (NOVO v14.1) Habilita o scroll suave para o botão 'Voltar ao Topo' */
 html {
     scroll-behavior: smooth;
 }
 
-/* -------------------------------------- */
-/* 13. BOTÃO VOLTAR AO TOPO (v14.1) */
-/* -------------------------------------- */
-
 #back-to-top-btn {
-    display: none; /* Oculto por padrão (JS irá mostrá-lo) */
+    display: none;
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 999; /* Sobrepõe outros elementos */
-    
-    background-color: #004d40; /* Cor primária (do header) */
+    z-index: 999;
+    background-color: #004d40;
     color: #fff;
     border: none;
-    border-radius: 50%; /* Botão circular */
-    
+    border-radius: 50%;
     width: 50px;
     height: 50px;
-    
-    /* Centraliza a seta (&#9650;) */
     font-size: 24px;
-    line-height: 50px; /* Alinha verticalmente */
+    line-height: 50px;
     text-align: center;
-    
     text-decoration: none;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     transition: background-color 0.2s, opacity 0.3s, visibility 0.3s;
-    opacity: 0; /* Começa invisível para transição suave */
+    opacity: 0;
     visibility: hidden;
 }
-
-#back-to-top-btn:hover {
-    background-color: #00796b; /* Cor de hover (dos botões) */
-}
-
-/* Classe 'show' que o JS vai adicionar */
-#back-to-top-btn.show {
-    display: block;
-    opacity: 1;
-    visibility: visible;
-}
+#back-to-top-btn:hover { background-color: #00796b; }
+#back-to-top-btn.show { display: block; opacity: 1; visibility: visible; }
 
 /* -------------------------------------- */
-/* 10.1. CALCULADORA (Abas Secundárias v15.0) */
+/* 14. ABAS SECUNDÁRIAS (v15.0) */
 /* -------------------------------------- */
 
 .sub-nav {
     display: flex;
-    gap: 5px; /* Espaço entre os botões */
+    gap: 5px;
     margin-bottom: 20px;
     border-bottom: 3px solid #ddd;
 }
@@ -828,7 +766,7 @@ html {
 .sub-nav-btn {
     padding: 10px 15px;
     border: none;
-    background-color: #f0f0f0; /* Cor inativa */
+    background-color: #f0f0f0;
     color: #555;
     cursor: pointer;
     font-size: 1rem;
@@ -836,49 +774,38 @@ html {
     border-radius: 6px 6px 0 0;
     transition: background-color 0.2s, color 0.2s;
     position: relative;
-    top: 3px; /* Alinha com a borda inferior */
+    top: 3px;
     border: 3px solid transparent;
     border-bottom: none;
 }
 
-.sub-nav-btn:hover {
-    background-color: #e0e0e0;
-}
-
+.sub-nav-btn:hover { background-color: #e0e0e0; }
 .sub-nav-btn.active {
-    background-color: #fff; /* Cor de fundo da aba ativa (mesma do fieldset) */
-    color: #004d40; /* Cor primária */
+    background-color: #fff;
+    color: #004d40;
     border-color: #ddd;
-    border-bottom: 3px solid #fff; /* Cobre a borda principal */
+    border-bottom: 3px solid #fff;
 }
 
-/* Badge de contagem */
 .badge {
-    background-color: #ffb300; /* Destaque amarelo */
+    background-color: #ffb300;
     color: #333;
     border-radius: 10px;
     padding: 2px 6px;
     font-size: 0.85em;
     margin-left: 5px;
     font-weight: bold;
-    display: none; /* Oculto por padrão (JS controla) */
-}
-
-.sub-nav-btn.active .badge {
-    background-color: #00796b; /* Cor verde quando a aba estáativa */
-    color: #fff;
-}
-
-/* Controle de visibilidade do conteúdo */
-.sub-tab-content {
     display: none;
 }
 
-.sub-tab-content.active {
-    display: block;
+.sub-nav-btn.active .badge {
+    background-color: #00796b;
+    color: #fff;
 }
 
-/* (v15.0) Ajuste no layout dos botões de import/export */
+.sub-tab-content { display: none; }
+.sub-tab-content.active { display: block; }
+
 #import-export-controls {
     display: flex;
     flex-wrap: wrap;
@@ -888,177 +815,184 @@ html {
 }
 
 /* -------------------------------------- */
-/* 14. NOTIFICAÇÕES TOAST (v15.3) */
+/* 15. TOAST NOTIFICATION (v15.1) */
 /* -------------------------------------- */
 
-#toast-container {
+#toast-notification {
     position: fixed;
-    bottom: 20px; /* Alinha com o botão "Voltar ao Topo" */
+    bottom: 20px;
     left: 50%;
-    transform: translateX(-50%); /* Centraliza horizontalmente */
-    z-index: 2000; /* Acima de tudo */
-    display: flex;
-    flex-direction: column-reverse; /* Novas notificações aparecem em cima */
-    gap: 10px;
-    width: calc(100% - 40px);
-    max-width: 500px;
-}
-
-.toast-notification {
-    padding: 15px 20px;
-    border-radius: 8px;
-    font-size: 1rem;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: 6px;
+    background-color: #2E7D32; /* Verde (Sucesso) */
+    color: white;
     font-weight: bold;
-    color: #fff;
+    z-index: 2000;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    
+    visibility: hidden;
     opacity: 0;
-    transform: translateY(20px);
-    animation: toast-fade-in 0.3s forwards;
+    transition: opacity 0.3s, visibility 0.3s, bottom 0.3s;
 }
 
-/* Animação de entrada e saída */
-@keyframes toast-fade-in {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.toast-notification.toast-fade-out {
-    animation: toast-fade-out 0.3s forwards;
-}
-
-@keyframes toast-fade-out {
-    from {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateY(20px);
-    }
+#toast-notification.show {
+    visibility: visible;
+    opacity: 1;
+    bottom: 30px;
 }
 
 /* Tipos de Toast */
-.toast-notification.success {
-    background-color: #00796b; /* Verde (sucesso) */
+#toast-notification.success {
+    background-color: #2E7D32; /* Verde */
 }
-
-.toast-notification.error {
-    background-color: #C62828; /* Vermelho (erro) */
-}
-
-.toast-notification.info {
-    background-color: #1565C0; /* Azul (info) */
+#toast-notification.error {
+    background-color: #C62828; /* Vermelho */
 }
 
 /* -------------------------------------- */
-/* 15. CHECKLIST MOBILE (v15.4) */
+/* 16. CHECKLIST MOBILE (v15.1) */
 /* -------------------------------------- */
 
+/* Oculta o carrossel no desktop */
+.mobile-checklist-wrapper {
+    display: none;
+}
+
+/* Media Query para Mobile (ex: < 768px) */
 @media (max-width: 768px) {
-    /* Esconde o cabeçalho da tabela de risco, inútil no mobile */
-    .risk-table thead {
+    
+    /* 1. Esconde a tabela desktop no mobile */
+    .risk-table {
         display: none;
     }
 
-    /* Força a tabela a se comportar como blocos */
-    .risk-table, 
-    .risk-table tbody, 
-    .risk-table tr, 
-    .risk-table td {
+    /* 2. Mostra o novo wrapper do carrossel */
+    .mobile-checklist-wrapper {
         display: block;
-        width: 100%;
-    }
-
-    .risk-table tr {
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        margin-bottom: 15px;
-        padding: 10px;
-    }
-
-    /* Remove bordas das células, pois o TR já tem borda */
-    .risk-table td {
-        border: none;
-        padding: 5px 0;
-        text-align: left !important; /* Força alinhamento */
-        width: 100% !important; /* Força largura */
-    }
-
-    /* Célula da Pergunta (td[2]) */
-    .risk-table td:nth-child(2) {
-        font-size: 1.05em;
-        line-height: 1.4;
-        font-weight: bold;
-        color: #333;
-    }
-
-    /* Célula do Peso (td[3]) */
-    .risk-table td:nth-child(3) {
-        /* Recria o label "Peso" */
-        content: "Peso: " attr(data-label);
-        font-size: 0.9em;
-        font-weight: normal;
-        color: #555;
-    }
-    .risk-table td:nth-child(3)::before {
-        content: "Peso: ";
-        font-weight: bold;
-    }
-
-    /* Célula do Checkbox (td[4]) */
-    .risk-table td:nth-child(4) {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start; /* Alinha à esquerda */
-        padding-top: 10px;
-        border-top: 1px dashed #eee;
         margin-top: 10px;
     }
 
-    /* Recria o label "Sim" */
-    .risk-table td:nth-child(4)::before {
-        content: "Marcar 'Sim':";
+    /* 3. Estilo do Cartão (Cor de fundo solicitada) */
+    .mobile-checklist-card {
+        /* Cor verde clara do tema (seção do chat) */
+        background-color: #e8f5e9; 
+        border: 1px solid #00796b;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .checklist-card-question {
+        font-size: 1.1rem;
         font-weight: bold;
-        margin-right: 15px;
-        flex-grow: 1; /* Empurra o checkbox para a direita */
+        color: #333;
+        display: block;
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+    .checklist-card-question strong {
+        color: #004d40;
     }
 
-    .risk-checkbox {
-        width: 25px; /* Aumenta área de toque */
-        height: 25px;
-        margin-right: 15px;
-        flex-shrink: 0;
+    .checklist-card-peso {
+        font-size: 0.9rem;
+        color: #555;
+        font-style: italic;
+        display: block;
+        margin-bottom: 20px;
     }
 
-    /* Célula do Nº (td[1]) - Oculta */
-    .risk-table td:nth-child(1) {
+    /* 4. Estilo do Toggle Switch (Sim/Não) */
+    .checklist-card-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+    
+    /* Esconde o checkbox real */
+    .checklist-card-toggle .mobile-checkbox-proxy {
         display: none;
     }
-}
 
-/* -------------------------------------- */
-/* 16. SPINNER GPS (v15.5) */
-/* -------------------------------------- */
+    .checklist-card-toggle .toggle-label {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #777;
+        transition: color 0.2s;
+    }
 
-#get-gps-btn:disabled {
-    background-color: #00695c; /* Cor de hover */
-    opacity: 0.7;
-    cursor: not-allowed;
-}
+    .checklist-card-toggle .toggle-switch {
+        background-color: #ccc;
+        border-radius: 15px;
+        width: 60px;
+        height: 30px;
+        margin: 0 15px;
+        position: relative;
+        transition: background-color 0.2s;
+    }
 
-.spinner {
-    width: 16px;
-    height: 16px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
-}
+    .checklist-card-toggle .toggle-switch::before {
+        content: '';
+        position: absolute;
+        background-color: white;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.2s;
+    }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+    /* Estado Ativo (Checado = SIM) */
+    .checklist-card-toggle .mobile-checkbox-proxy:checked + .toggle-label:nth-of-type(1) {
+        color: #777; /* "Não" fica cinza */
+    }
+    .checklist-card-toggle .mobile-checkbox-proxy:checked ~ .toggle-label:nth-of-type(2) {
+        color: #00796b; /* "Sim" fica verde */
+    }
+    .checklist-card-toggle .mobile-checkbox-proxy:checked ~ .toggle-switch {
+        background-color: #00796b; /* Switch fica verde */
+    }
+    .checklist-card-toggle .mobile-checkbox-proxy:checked ~ .toggle-switch::before {
+        transform: translateX(30px); /* Bolinha move */
+    }
+
+
+    /* 5. Estilo da Navegação (Setas) */
+    .mobile-checklist-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+    }
+
+    .mobile-checklist-nav button {
+        background-color: #00796b;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 15px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    /* Desativa botões no início/fim */
+    .mobile-checklist-nav button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .mobile-checklist-nav .checklist-counter {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #004d40;
     }
 }

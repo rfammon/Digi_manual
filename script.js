@@ -1,15 +1,18 @@
-// script.js (v15.5 - Polimento UI: Ícones e Spinner GPS)
+// script.js (COMPLETO v16.0 - Final, Limpo e com Polimento)
 
 // === 0. ARMAZENAMENTO de ESTADO ===
 let registeredTrees = [];
 
-// (v13.9) Chave para o localStorage da tabela
+// Chave para o localStorage da tabela
 const STORAGE_KEY = 'manualPodaData';
-// (v14.0) Chave para a última aba ativa
+// Chave para a última aba ativa
 const ACTIVE_TAB_KEY = 'manualPodaActiveTab';
 
-// (NOVO v15.0) Variável para reter o nome do avaliador
+// (v15.0) Variável para reter o nome do avaliador
 let lastEvaluatorName = '';
+
+// (v15.1) Variável global para o timer do toast
+let toastTimer;
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -79,7 +82,7 @@ const equipmentData = {
         img: 'motopoda.jpg'
     },
     'podador-haste': {
-        desc: 'Semelhante à motopoda em funcionalidade de longo alcance, mas operado manualmente, oferecendo precisão em galhos finos e médios em altura.',
+        desc: 'Semelhante à motopoda em funcionalidade de longo alcance, mas operado manually, oferecendo precisão em galhos finos e médios em altura.',
         img: 'podao.jpg'
     },
     'tesoura-poda': {
@@ -127,7 +130,7 @@ const podaPurposeData = {
 };
 
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v15.5) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v16.0) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -138,7 +141,7 @@ const manualContent = {
             <p>Termos como <span class="glossary-term" data-term-key="lenho de cicatrização">lenho de cicatrização</span>, <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span> e <span class="glossary-term" data-term-key="lenho de reação">lenho de reação</span> são importantes para a inspeção.</p>
             
             <h3>Compartimentalização de Árvores</h3>
-            <p>As árvores possuem defesas naturais que protegem cortes e ferimentos, como os causados pela poda. Na casca, os ferimentos formam uma camada prototora chamada periderme necrofilática, que impede a entrada de microrganismos. Na madeira, ocorre um processo chamado compartimentalização, que isola a área danificada para evitar que o problema se espalhe pelo restante da árvore.</p>
+            <p>As árvores possuem defesas naturais que protegem cortes e ferimentos, como os causados pela poda. Na casca, os ferimentos formam uma camada protetora chamada periderme necrofilática, que impede a entrada de microrganismos. Na madeira, ocorre um processo chamado compartimentalização, que isola a área danificada para evitar que o problema se espalhe pelo restante da árvore.</p>
             ${imgTag('compartimentalização.jpg', 'Diagrama do processo de compartimentalização')}
 
             <h3>Instrumentos e Equipamentos</h3>
@@ -164,30 +167,30 @@ const manualContent = {
             </ul>
         `
     },
-   'planejamento-inspecao': {
-     titulo: '📋 Planejamento e Inspeção',
-     html: `
-        <h3>Planejamento</h3>
-        <p>Etapa fundamental para garantir a execução <strong>segura e eficiente</strong>.</p>
-        
-        <h4>Definição do Local, Escopo e Objetivo da Poda e Corte</h4>
-        <ul>
-            <li>Identificar o local exato da intervenção, considerando áreas industriais, administrativas ou públicas.</li>
-            <li>Definir o escopo da atividade: poda, corte total, levantamento de copa, adequação urbana, entre outros.</li>
-            <li>Estabelecer o objetivo técnico da intervenção, como condução, limpeza, correção estrutural, adequação ou emergência.</li>
-            <li>Selecionar previamente os galhos e troncos a serem removidos, respeitando critérios técnicos e fitossanitários.</li>
-        </ul>
-        <h4>Finalidade da Poda</h4>
-        <ul><li><strong>Limpeza:</strong> Remover ramos mortos/secos.</li><li><strong>Correção:</strong> Remover ramos com defeito estrutural (ex: <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>). ${imgTag('uniao-v-casca-inclusa.jpg', 'União em V com casca inclusa')}</li><li><strong>Adequação:</strong> Resolver conflitos com estruturas.</li><li><strong>⚠️ Poda de Raízes:</strong> Deve ser <strong>evitada</strong>.</li></ul>
-        <h4>Inspeção Visual Expedita</h4>
-        <p>Foco nos riscos críticos:</p>
-        <ul><li>Fendas horizontais.</li><li>Presença de <strong>carpóforos (cogumelos)</strong>. ${imgTag('sinal-podridao.jpg', 'Cogumelos indicando apodrecimento')}</li><li>Galhos mortos > 5 cm.</li><li>Uniões em “V” com <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>.</li></ul>
-        <h4>Classificação de Risco</h4>
-        <ul><li><strong>🔴 ALTO RISCO:</strong> Intervenção em até <strong>48h</strong>.</li><li><strong>🟠 MÉDIO RISCO:</strong> Intervenção em até <strong>15 dias</strong>.</li><li><strong>🟢 BAIXO RISCO:</strong> Monitoramento anual.</li></ul>
-        <h4>Raio Crítico Radicular (RCR)</h4>
-        <p><strong><span class="glossary-term" data-term-key="rcr">RCR</span> = 1,5 × <span class="glossary-term" data-term-key="dap">DAP</span></strong>.</p>
-     `
-},
+    'planejamento-inspecao': {
+        titulo: '📋 Planejamento e Inspeção',
+        html: `
+            <h3>Planejamento</h3>
+            <p>Etapa fundamental para garantir a execução <strong>segura e eficiente</strong>.</p>
+            
+            <h4>Definição do Local, Escopo e Objetivo da Poda e Corte</h4>
+            <ul>
+                <li>Identificar o local exato da intervenção, considerando áreas industriais, administrativas ou públicas.</li>
+                <li>Definir o escopo da atividade: poda, corte total, levantamento de copa, adequação urbana, entre outros.</li>
+                <li>Estabelecer o objetivo técnico da intervenção, como condução, limpeza, correção estrutural, adequação ou emergência.</li>
+                <li>Selecionar previamente os galhos e troncos a serem removidos, respeitando critérios técnicos e fitossanitários.</li>
+            </ul>
+            <h4>Finalidade da Poda</h4>
+            <ul><li><strong>Limpeza:</strong> Remover ramos mortos/secos.</li><li><strong>Correção:</strong> Remover ramos com defeito estrutural (ex: <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>). ${imgTag('uniao-v-casca-inclusa.jpg', 'União em V com casca inclusa')}</li><li><strong>Adequação:</strong> Resolver conflitos com estruturas.</li><li><strong>⚠️ Poda de Raízes:</strong> Deve ser <strong>evitada</strong>.</li></ul>
+            <h4>Inspeção Visual Expedita</h4>
+            <p>Foco nos riscos críticos:</p>
+            <ul><li>Fendas horizontais.</li><li>Presença de <strong>carpóforos (cogumelos)</strong>. ${imgTag('sinal-podridao.jpg', 'Cogumelos indicando apodrecimento')}</li><li>Galhos mortos > 5 cm.</li><li>Uniões em “V” com <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>.</li></ul>
+            <h4>Classificação de Risco</h4>
+            <ul><li><strong>🔴 ALTO RISCO:</strong> Intervenção em até <strong>48h</strong>.</li><li><strong>🟠 MÉDIO RISCO:</strong> Intervenção em até <strong>15 dias</strong>.</li><li><strong>🟢 BAIXO RISCO:</strong> Monitoramento anual.</li></ul>
+            <h4>Raio Crítico Radicular (RCR)</h4>
+            <p><strong><span class="glossary-term" data-term-key="rcr">RCR</span> = 1,5 × <span class="glossary-term" data-term-key="dap">DAP</span></strong>.</p>
+        `
+    },
     'autorizacao-legal': {
         titulo: '📜 Termos Legais e Autorização (ASV)',
         html: `
@@ -381,15 +384,15 @@ const manualContent = {
         `
     },
 
-    // (MODIFICADO v15.5) Conteúdo da Calculadora
+    // (MODIFICADO v16.0) Conteúdo da Calculadora (Polimento de ícones)
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
-            <p>Use a aba "Registar" para nova coleta e "Resumo" para ver, editar ou exportar os dados.</p>
+            <p>Use a aba "Registrar" para nova coleta e "Resumo" para ver, editar ou exportar os dados.</p>
             
             <nav class="sub-nav">
                 <button type="button" class="sub-nav-btn active" data-target="tab-content-register">
-                    Registar Árvore
+                    Registrar Árvore
                 </button>
                 <button type="button" class="sub-nav-btn" data-target="tab-content-summary">
                     Resumo da Vistoria <span id="summary-badge" class="badge"></span>
@@ -442,120 +445,46 @@ const manualContent = {
                     
                     <fieldset class="risk-fieldset">
                         <legend>2. Lista de Verificação de Risco</legend>
+
                         <table class="risk-table">
                             <thead>
-                                <tr>
-                                    <th>Nº</th>
-                                    <th>Pergunta</th>
-                                    <th>Peso</th>
-                                    <th>Sim</th>
-                                </tr>
+                                <tr><th>Nº</th><th>Pergunta</th><th>Peso</th><th>Sim</th></tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>1</td>
-                                    <td>Há galhos mortos com diâmetro superior a 5 cm?</td>
-                                    <td>3</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                                </tr>
-                                <tr>
-                                    <td>2</td>
-                                    <td>Existem rachaduras ou fendas no tronco ou galhos principais?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
-                                <tr>
-                                    <td>3</td>
-                                    <td>Há sinais de apodrecimento (madeira esponjosa, fungos, cavidades)?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
-                                <tr>
-                                    <td>4</td>
-                                    <td>A árvore possui uniões em “V” com casca inclusa?</td>
-                                    <td>4</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="4"></td>
-                                </tr>
-                                <tr>
-                                    <td>5</td>
-                                    <td>Há galhos cruzados ou friccionando entre si?</td>
-                                    <td>2</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="2"></td>
-                                </tr>
-                                <tr>
-                                    <td>6</td>
-                                    <td>A árvore apresenta copa assimétrica (>30% de desequilíbrio)?</td>
-                                    <td>2</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="2"></td>
-                                </tr>
-                                <tr>
-                                    <td>7</td>
-                                    <td>Há sinais de inclinação anormal ou recente?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
-                                <tr>
-                                    <td>8</td>
-                                    <td>A árvore está próxima a vias públicas ou áreas de circulação?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
-                                <tr>
-                                    <td>9</td>
-                                    <td>Há risco de queda sobre edificações, veículos ou pessoas?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
-                                <tr>
-                                    <td>10</td>
-                                    <td>A árvore interfere em redes elétricas ou estruturas urbanas?</td>
-                                    <td>4</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="4"></td>
-                                </tr>
-                                <tr>
-                                    <td>11</td>
-                                    <td>A árvore é conhecida por apresentar alta taxa de falhas?</td>
-                                    <td>3</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                                </tr>
-                                <tr>
-                                    <td>12</td>
-                                    <td>A árvore já sofreu podas drásticas ou brotação epicórmica intensa?</td>
-                                    <td>3</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                                </tr>
-                                <tr>
-                                    <td>13</td>
-                                    <td>Há calçadas rachadas ou tubulações expostas próximas à base?</td>
-                                    <td>3</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                                </tr>
-                                <tr>
-                                    <td>14</td>
-                                    <td>Há perda visível de raízes de sustentação (>40%)?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
-                                <tr>
-                                    <td>15</td>
-                                    <td>Há sinais de compactação ou asfixia radicular?</td>
-                                    <td>3</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
-                                </tr>
-                                <tr>
-                                    <td>16</td>
-                                    <td>Há apodrecimento em raízes primárias (>3 cm)?</td>
-                                    <td>5</td>
-                                    <td><input type="checkbox" class="risk-checkbox" data-weight="5"></td>
-                                </tr>
+                                <tr><td>1</td><td>Há galhos mortos com diâmetro superior a 5 cm?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
+                                <tr><td>2</td><td>Existem rachaduras ou fendas no tronco ou galhos principais?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
+                                <tr><td>3</td><td>Há sinais de apodrecimento (madeira esponjosa, fungos, cavidades)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
+                                <tr><td>4</td><td>A árvore possui uniões em “V” com casca inclusa?</td><td>4</td><td><input type="checkbox" class="risk-checkbox" data-weight="4"></td></tr>
+                                <tr><td>5</td><td>Há galhos cruzados ou friccionando entre si?</td><td>2</td><td><input type="checkbox" class="risk-checkbox" data-weight="2"></td></tr>
+                                <tr><td>6</td><td>A árvore apresenta copa assimétrica (>30% de desequilíbrio)?</td><td>2</td><td><input type="checkbox" class="risk-checkbox" data-weight="2"></td></tr>
+                                <tr><td>7</td><td>Há sinais de inclinação anormal ou recente?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
+                                <tr><td>8</td><td>A árvore está próxima a vias públicas ou áreas de circulação?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
+                                <tr><td>9</td><td>Há risco de queda sobre edificações, veículos ou pessoas?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
+                                <tr><td>10</td><td>A árvore interfere em redes elétricas ou estruturas urbanas?</td><td>4</td><td><input type="checkbox" class="risk-checkbox" data-weight="4"></td></tr>
+                                <tr><td>11</td><td>A espécie é conhecida por apresentar alta taxa de falhas?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
+                                <tr><td>12</td><td>A árvore já sofreu podas drásticas ou brotação epicórmica intensa?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
+                                <tr><td>13</td><td>Há calçadas rachadas ou tubulações expostas próximas à base?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
+                                <tr><td>14</td><td>Há perda visível de raízes de sustentação (>40%)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
+                                <tr><td>15</td><td>Há sinais de compactação ou asfixia radicular?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
+                                <tr><td>16</td><td>Há apodrecimento em raízes primárias (>3 cm)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
                             </tbody>
                         </table>
+
+                        <div class="mobile-checklist-wrapper">
+                            <div class="mobile-checklist-card">
+                                </div>
+                            <div class="mobile-checklist-nav">
+                                <button type="button" id="checklist-prev">❮ Anterior</button>
+                                <span class="checklist-counter">1 / 16</span>
+                                <button type="button" id="checklist-next">Próxima ❯</button>
+                            </div>
+                        </div>
+
                     </fieldset>
                     
                     <div class="risk-buttons-area">
                         <button type="submit" id="add-tree-btn">➕ Adicionar Árvore</button>
                         <button type="button" id="reset-risk-form-btn">Limpar Campos</button>
-                        
                     </div>
                 </form>
             </div>
@@ -568,9 +497,7 @@ const manualContent = {
                         </div>
                     
                     <div id="import-export-controls" class="risk-buttons-area">
-                        
-                        <input type="file" id="csv-importer" accept="text/csv,text/plain,.csv" style="display: none;">
-                        
+                        <input type="file" id="csv-importer" accept=".csv" style="display: none;">
                         <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
                         <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
                         <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
@@ -585,53 +512,171 @@ const manualContent = {
 
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
 
+// (NOVO v16.0) Lógica do Carrossel Mobile movida para o escopo global
+// para poder ser chamada por setupRiskCalculator e handleEditTree
+let mobileChecklist = {
+    currentIndex: 0,
+    totalQuestions: 0,
+    questions: null,
+    wrapper: null,
+    card: null,
+    navPrev: null,
+    navNext: null,
+    counter: null
+};
+
+/**
+ * (v16.0) Mostra a pergunta do carrossel no índice especificado
+ */
+function showMobileQuestion(index) {
+    const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
+    
+    const questionRow = questions[index];
+    if (!questionRow) return;
+
+    // Extrai dados da tabela
+    const num = questionRow.cells[0].textContent;
+    const pergunta = questionRow.cells[1].textContent;
+    const peso = questionRow.cells[2].textContent;
+    const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
+
+    // Injeta HTML no cartão
+    card.innerHTML = `
+        <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
+        <span class="checklist-card-peso">(Peso: ${peso})</span>
+        <label class="checklist-card-toggle">
+            <input type="checkbox" class="mobile-checkbox-proxy" data-target-index="${index}" ${realCheckbox.checked ? 'checked' : ''}>
+            <span class="toggle-label">Não</span>
+            <span class="toggle-switch"></span>
+            <span class="toggle-label">Sim</span>
+        </label>
+    `;
+
+    // Atualiza navegação
+    counter.textContent = `${index + 1} / ${totalQuestions}`;
+    navPrev.disabled = (index === 0);
+    navNext.disabled = (index === totalQuestions - 1);
+    mobileChecklist.currentIndex = index;
+}
+
+/**
+ * (v16.0) Inicializa o carrossel mobile
+ */
+function setupMobileChecklist() {
+    mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
+    if (!mobileChecklist.wrapper) return; // Só continua se os elementos existirem
+
+    mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
+    mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
+    mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
+    mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
+    
+    // Fonte da verdade: a tabela desktop (que está oculta)
+    mobileChecklist.questions = document.querySelectorAll('.risk-table tbody tr');
+    if (mobileChecklist.questions.length === 0) return; // Segurança
+
+    mobileChecklist.currentIndex = 0;
+    mobileChecklist.totalQuestions = mobileChecklist.questions.length;
+
+    // Limpa listeners antigos para evitar duplicatas
+    mobileChecklist.card.replaceWith(mobileChecklist.card.cloneNode(true));
+    mobileChecklist.navPrev.replaceWith(mobileChecklist.navPrev.cloneNode(true));
+    mobileChecklist.navNext.replaceWith(mobileChecklist.navNext.cloneNode(true));
+
+    // Re-seleciona os elementos clonados
+    mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
+    mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
+    mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
+
+    // Event listener para o "toggle" (proxy)
+    mobileChecklist.card.addEventListener('change', (e) => {
+        const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
+        if (proxyCheckbox) {
+            const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
+            const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
+            realCheckbox.checked = proxyCheckbox.checked;
+        }
+    });
+
+    // Event listeners da Navegação
+    mobileChecklist.navPrev.addEventListener('click', () => {
+        if (mobileChecklist.currentIndex > 0) {
+            showMobileQuestion(mobileChecklist.currentIndex - 1);
+        }
+    });
+
+    mobileChecklist.navNext.addEventListener('click', () => {
+        if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) {
+            showMobileQuestion(mobileChecklist.currentIndex + 1);
+        }
+    });
+
+    // Mostra a primeira pergunta
+    showMobileQuestion(0);
+}
+
+
+
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================================
-    // (v14.4) DEFINIÇÃO DE FUNÇÕES PRIMÁRIAS
+    // (v15.1) FUNÇÃO DE FEEDBACK (TOAST)
+    // ==========================================================
+    /**
+     * Mostra uma notificação toast (Sugestão 2)
+     * @param {string} message A mensagem a ser exibida.
+     * @param {string} type 'success' (verde) ou 'error' (vermelho).
+     */
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast-notification');
+        if (!toast) return;
+
+        // Limpa timer anterior se houver
+        if (toastTimer) {
+            clearTimeout(toastTimer);
+        }
+
+        toast.textContent = message;
+        toast.className = 'show'; // Remove classes antigas
+        toast.classList.add(type); // Adiciona 'success' ou 'error'
+
+        // Esconde após 3 segundos
+        toastTimer = setTimeout(() => {
+            toast.className = toast.className.replace('show', '');
+            toastTimer = null;
+        }, 3000);
+    }
+
+    // ==========================================================
+    // FUNÇÕES PRIMÁRIAS (LocalStorage, GPS, CRUD)
     // ==========================================================
 
     /**
-     * (v13.9) Salva a lista 'registeredTrees' no localStorage.
+     * Salva a lista 'registeredTrees' no localStorage.
      */
     function saveDataToStorage() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredTrees));
-        } catch (e) {
-            console.error("Erro ao salvar no localStorage:", e);
-        }
+        } catch (e) { console.error("Erro ao salvar no localStorage:", e); }
     }
 
     /**
-     * (v13.9) Carrega 'registeredTrees' do localStorage.
+     * Carrega 'registeredTrees' do localStorage.
      */
     function loadDataFromStorage() {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
-            if (data) {
-                registeredTrees = JSON.parse(data);
-            }
-        } catch (e) {
-            console.error("Erro ao ler do localStorage:", e);
-        }
+            if (data) { registeredTrees = JSON.parse(data); }
+        } catch (e) { console.error("Erro ao ler do localStorage:", e); }
     }
 
     /**
-     * (v14.3) Converte Lat/Lon (WGS84) para coordenadas UTM.
+     * Converte Lat/Lon (WGS84) para coordenadas UTM.
      */
     function convertLatLonToUtm(lat, lon) {
-        const f = 1 / 298.257223563; // WGS 84
-        const a = 6378137.0; // WGS 84
-        const k0 = 0.9996;
-        const e = Math.sqrt(f * (2 - f));
-        const e2 = e * e;
-        const e4 = e2 * e2;
-        const e6 = e4 * e2;
-        const e_2 = e2 / (1.0 - e2);
-
-        const latRad = lat * (Math.PI / 180.0);
-        const lonRad = lon * (Math.PI / 180.0);
-
+        const f = 1 / 298.257223563, a = 6378137.0, k0 = 0.9996;
+        const e = Math.sqrt(f * (2 - f)), e2 = e * e, e4 = e2 * e2, e6 = e4 * e2, e_2 = e2 / (1.0 - e2);
+        const latRad = lat * (Math.PI / 180.0), lonRad = lon * (Math.PI / 180.0);
         let zoneNum = Math.floor((lon + 180.0) / 6.0) + 1;
         if (lat >= 56.0 && lat < 64.0 && lon >= 3.0 && lon < 12.0) zoneNum = 32;
         if (lat >= 72.0 && lat < 84.0) {
@@ -640,70 +685,28 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (lon >= 21.0 && lon < 33.0) zoneNum = 35;
             else if (lon >= 33.0 && lon < 42.0) zoneNum = 37;
         }
-        
-        const lonOrigin = (zoneNum - 1.0) * 6.0 - 180.0 + 3.0;
-        const lonOriginRad = lonOrigin * (Math.PI / 180.0);
-
+        const lonOrigin = (zoneNum - 1.0) * 6.0 - 180.0 + 3.0, lonOriginRad = lonOrigin * (Math.PI / 180.0);
         const zoneLetters = "CDEFGHJKLMNPQRSTUVWXX";
         let zoneLetter = "Z";
-        if (lat >= -80 && lat <= 84) {
-            zoneLetter = zoneLetters.charAt(Math.floor((lat + 80) / 8));
-        }
-
+        if (lat >= -80 && lat <= 84) zoneLetter = zoneLetters.charAt(Math.floor((lat + 80) / 8));
         const nu = a / Math.sqrt(1.0 - e2 * Math.sin(latRad) * Math.sin(latRad));
-        const T = Math.tan(latRad) * Math.tan(latRad);
-        const C = e_2 * Math.cos(latRad) * Math.cos(latRad);
-        const A = (lonRad - lonOriginRad) * Math.cos(latRad);
-
-        const M = a * (
-            (1.0 - e2 / 4.0 - 3.0 * e4 / 64.0 - 5.0 * e6 / 256.0) * latRad -
-            (3.0 * e2 / 8.0 + 3.0 * e4 / 32.0 + 45.0 * e6 / 1024.0) * Math.sin(2.0 * latRad) +
-            (15.0 * e4 / 256.0 + 45.0 * e6 / 1024.0) * Math.sin(4.0 * latRad) -
-            (35.0 * e6 / 3072.0) * Math.sin(6.0 * latRad)
-        );
-
-        const M1 = M + nu * Math.tan(latRad) * (
-            (A * A / 2.0) +
-            (5.0 - T + 9.0 * C + 4.0 * C * C) * (A * A * A * A / 24.0) +
-            (61.0 - 58.0 * T + T * T + 600.0 * C - 330.0 * e_2) * (A * A * A * A * A * A / 720.0)
-        );
-
-        const K1 = k0 * (M1);
-        
-        const K2 = k0 * nu * (
-            A +
-            (1.0 - T + C) * (A * A * A / 6.0) +
-            (5.0 - 18.0 * T + T * T + 72.0 * C - 58.0 * e_2) * (A * A * A * A * A / 120.0)
-        );
-        
+        const T = Math.tan(latRad) * Math.tan(latRad), C = e_2 * Math.cos(latRad) * Math.cos(latRad), A = (lonRad - lonOriginRad) * Math.cos(latRad);
+        const M = a * ((1.0 - e2 / 4.0 - 3.0 * e4 / 64.0 - 5.0 * e6 / 256.0) * latRad - (3.0 * e2 / 8.0 + 3.0 * e4 / 32.0 + 45.0 * e6 / 1024.0) * Math.sin(2.0 * latRad) + (15.0 * e4 / 256.0 + 45.0 * e6 / 1024.0) * Math.sin(4.0 * latRad) - (35.0 * e6 / 3072.0) * Math.sin(6.0 * latRad));
+        const M1 = M + nu * Math.tan(latRad) * ((A * A / 2.0) + (5.0 - T + 9.0 * C + 4.0 * C * C) * (A * A * A * A / 24.0) + (61.0 - 58.0 * T + T * T + 600.0 * C - 330.0 * e_2) * (A * A * A * A * A * A / 720.0));
+        const K1 = k0 * (M1), K2 = k0 * nu * (A + (1.0 - T + C) * (A * A * A / 6.0) + (5.0 - 18.0 * T + T * T + 72.0 * C - 58.0 * e_2) * (A * A * A * A * A / 120.0));
         let northing = K1;
-        if (lat < 0.0) {
-            northing += 10000000.0; // Hemisfério Sul
-        }
-        
-        return {
-            easting: K2 + 500000.0,
-            northing: northing,
-            zoneNum: zoneNum,
-            zoneLetter: zoneLetter
-        };
+        if (lat < 0.0) northing += 10000000.0;
+        return { easting: K2 + 500000.0, northing: northing, zoneNum: zoneNum, zoneLetter: zoneLetter };
     }
 
     /**
-     * (MODIFICADO v15.5) Captura GPS com estado de loading/spinner
+     * (v16.0) Função principal que captura o GPS (com spinner)
      */
     async function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
         const coordXField = document.getElementById('risk-coord-x');
         const coordYField = document.getElementById('risk-coord-y');
-        
-        // (NOVO v15.5) Controle do botão
         const getGpsBtn = document.getElementById('get-gps-btn');
-        const originalBtnText = getGpsBtn.innerHTML; // Salva o texto original "🛰️ Capturar GPS"
-        
-        // (NOVO v15.5) Cria o spinner
-        const spinner = document.createElement('span');
-        spinner.className = 'spinner';
 
         if (!navigator.geolocation) {
             gpsStatus.textContent = "Geolocalização não é suportada.";
@@ -717,112 +720,68 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // (NOVO v15.5) Ativa o estado de loading
+        // (NOVO v16.0) Desativa botão e mostra spinner
         getGpsBtn.disabled = true;
-        getGpsBtn.innerHTML = ''; // Limpa o botão
-        getGpsBtn.appendChild(spinner); // Adiciona o spinner
-        
+        getGpsBtn.innerHTML = '🛰️ Capturando... <span class="spinner"></span>';
         gpsStatus.textContent = "Capturando... (1/5)";
         gpsStatus.className = '';    
 
-        const options = {
-            enableHighAccuracy: true,    
-            timeout: 10000,              
-            maximumAge: 0    
-        };
-
-        const getSinglePosition = (opts) => {
-            return new Promise((resolve, reject) => {
-                navigator.geolocation.getCurrentPosition(resolve, reject, opts);
-            });
-        };
+        const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+        const getSinglePosition = (opts) => new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, opts));
 
         let readings = [];
         try {
             for (let i = 0; i < 5; i++) {
                 gpsStatus.textContent = `Capturando... (${i + 1}/5)`;
                 const position = await getSinglePosition(options);
-                const utmCoords = convertLatLonToUtm(position.coords.latitude, position.coords.longitude);
-                readings.push(utmCoords);
+                readings.push(convertLatLonToUtm(position.coords.latitude, position.coords.longitude));
             }
 
             if (readings.length === 5) {
-                const totalEasting = readings.reduce((sum, r) => sum + r.easting, 0);
-                const totalNorthing = readings.reduce((sum, r) => sum + r.northing, 0);
-                
-                const avgEasting = totalEasting / 5;
-                const avgNorthing = totalNorthing / 5;
-
-                const lastZoneNum = readings[4].zoneNum;
-                const lastZoneLetter = readings[4].zoneLetter;
-
+                const avgEasting = readings.reduce((sum, r) => sum + r.easting, 0) / 5;
+                const avgNorthing = readings.reduce((sum, r) => sum + r.northing, 0) / 5;
                 coordXField.value = avgEasting.toFixed(0);    
                 coordYField.value = avgNorthing.toFixed(0);    
-                
-                gpsStatus.textContent = `Média de 5 leituras (Zona: ${lastZoneNum}${lastZoneLetter})`;
+                gpsStatus.textContent = `Média de 5 leituras (Zona: ${readings[4].zoneNum}${readings[4].zoneLetter})`;
                 gpsStatus.className = '';
             }
-
         } catch (error) {
             gpsStatus.className = 'error';
             switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    gpsStatus.textContent = "Permissão ao GPS negada.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    gpsStatus.textContent = "Posição indisponível.";
-                    break;
-                case error.TIMEOUT:
-                    gpsStatus.textContent = "Tempo esgotado.";
-                    break;
-                default:
-                    console.error("Erro de GPS não capturado:", error);
-                    gpsStatus.textContent = "Erro ao buscar GPS.";
-                    break;
+                case error.PERMISSION_DENIED: gpsStatus.textContent = "Permissão ao GPS negada."; break;
+                case error.POSITION_UNAVAILABLE: gpsStatus.textContent = "Posição indisponível."; break;
+                case error.TIMEOUT: gpsStatus.textContent = "Tempo esgotado."; break;
+                default: gpsStatus.textContent = "Erro ao buscar GPS."; break;
             }
         } finally {
-            // (NOVO v15.5) Restaura o botão em qualquer cenário (sucesso ou erro)
+            // (NOVO v16.0) Re-ativa o botão
             getGpsBtn.disabled = false;
-            getGpsBtn.innerHTML = originalBtnText; // Restaura o "🛰️ Capturar GPS"
+            getGpsBtn.innerHTML = '🛰️ Capturar GPS';
         }
     }
 
     /**
-     * (v12.6) Função para Excluir e Re-indexar
+     * Função para Excluir e Re-indexar
      */
     function handleDeleteTree(id) {
-        if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) {
-            return;
-        }
+        if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return;
         
         registeredTrees = registeredTrees.filter(tree => tree.id !== id);
-        
-        // Re-indexa os IDs
-        registeredTrees.forEach((tree, index) => {
-            tree.id = index + 1;
-        });
-
-        // (v13.9) SALVA OS DADOS
+        registeredTrees.forEach((tree, index) => { tree.id = index + 1; }); // Re-indexa
         saveDataToStorage();
-        
         renderSummaryTable();
-        
-        // (NOVO v15.3) Notificação Toast
-        showToast(`🗑️ Árvore ID ${id} excluída.`, 'info');
+        showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); // (v15.1)
     }
 
     /**
-     * (v14.6) Função para pré-preencher o formulário para edição
+     * (v16.0) Função para pré-preencher o formulário para edição
      */
     function handleEditTree(id) {
-        // Encontra o índice da árvore no array
         const treeIndex = registeredTrees.findIndex(tree => tree.id === id);
-        if (treeIndex === -1) return; // Não encontrou a árvore
-
-        // Obtém a árvore
+        if (treeIndex === -1) return;
         const treeToEdit = registeredTrees[treeIndex];
 
-        // 1. Preenche os campos de texto simples
+        // 1. Preenche campos
         document.getElementById('risk-data').value = treeToEdit.data;
         document.getElementById('risk-especie').value = treeToEdit.especie;
         document.getElementById('risk-local').value = treeToEdit.local;
@@ -832,62 +791,51 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('risk-avaliador').value = treeToEdit.avaliador;
         document.getElementById('risk-obs').value = treeToEdit.observacoes;
         
-        // 2. Preenche os checkboxes
+        // 2. Preenche checkboxes (na tabela oculta)
         const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
         allCheckboxes.forEach((cb, index) => {
-            // (MODIFICADO v14.8) Converte 1/0 para true/false
-            cb.checked = treeToEdit.riskFactors[index] === 1 || false;    
+            cb.checked = treeToEdit.riskFactors[index] === 1 || false;
         });
 
-        // 3. Remove a árvore do array (ela será readicionada ao submeter)
+        // (v16.0) Sincroniza o carrossel mobile (se existir)
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (isTouchDevice) {
+            setupMobileChecklist(); // Re-inicia o carrossel para ler os novos valores
+        }
+
+        // 3. Remove e Re-indexa
         registeredTrees.splice(treeIndex, 1);
-        
-        // 4. Re-indexa os IDs restantes
-        registeredTrees.forEach((tree, index) => {
-            tree.id = index + 1;
-        });
-
-        // 5. Salva a lista (agora sem o item editado)
+        registeredTrees.forEach((tree, index) => { tree.id = index + 1; });
         saveDataToStorage();
-        
-        // 6. Re-renderiza a tabela
         renderSummaryTable();
 
-        // 7. (UX) Rola a página de volta para o formulário
+        // 7. Rola para o formulário
         document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
-
-        // (NOVO v15.3) Notificação Toast
-        showToast(`✏️ Editando Árvore ID ${id}. Salve ao terminar.`, 'info');
     }
 
     /**
-     * (v14.6) Função para limpar a tabela inteira
+     * Função para limpar a tabela inteira
      */
     function handleClearAll() {
         if (confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) {
             registeredTrees = [];
             saveDataToStorage();
             renderSummaryTable();
-            // (NOVO v15.3) Notificação Toast
-            showToast('🗑️ Tabela limpa. Todos os registros foram removidos.', 'error');
+            showToast('🗑️ Tabela limpa.', 'error'); // (v15.1)
         }
     }
 
     /**
-     * (MODIFICADO v15.0) Renderiza a tabela e atualiza o badge
+     * (v15.0) Renderiza a tabela e atualiza o badge
      */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
-        
-        // (MODIFICADO v15.0) Controla o grupo de botões de import/export
         const importExportControls = document.getElementById('import-export-controls');
-        
-        // (NOVO v15.0) Controla o badge de contagem
         const summaryBadge = document.getElementById('summary-badge');
     
         if (!container) return;    
     
-        // (NOVO v15.0) Atualiza o badge
+        // Atualiza o badge
         if (summaryBadge) {
             if (registeredTrees.length > 0) {
                 summaryBadge.textContent = `(${registeredTrees.length})`;
@@ -898,11 +846,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     
-        // (MODIFICADO v15.0) Oculta os botões de exportação se a tabela estiver vazia
+        // Oculta os botões de exportação se a tabela estiver vazia
         if (registeredTrees.length === 0) {
             container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
             if (importExportControls) {
-                // Esconde apenas os botões de EXPORT, mantém o IMPORT visível
                 document.getElementById('export-csv-btn')?.setAttribute('style', 'display:none');
                 document.getElementById('send-email-btn')?.setAttribute('style', 'display:none');
                 document.getElementById('clear-all-btn')?.setAttribute('style', 'display:none');
@@ -910,14 +857,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // (MODIFICADO v15.0) Mostra os botões de exportação
+        // Mostra os botões de exportação
         if (importExportControls) {
             document.getElementById('export-csv-btn')?.setAttribute('style', 'display:block');
             document.getElementById('send-email-btn')?.setAttribute('style', 'display:block');
             document.getElementById('clear-all-btn')?.setAttribute('style', 'display:block');
         }
     
-        // ... (O restante da lógica de criação da tabela permanece o mesmo) ...
         let tableHTML = '<table class="summary-table"><thead><tr>';
         tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
         tableHTML += '</tr></thead><tbody>';
@@ -950,50 +896,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * (MODIFICADO v15.0) Módulo da Calculadora de Risco (Listeners e Abas)
+     * (v16.0) Módulo da Calculadora de Risco (Toast, Abas e Carrossel Mobile)
      */
     function setupRiskCalculator() {
         
-        // (NOVO v15.0) Lógica de controle das Abas Secundárias
+        // (v15.0) Lógica de controle das Abas Secundárias
         const subNavButtons = document.querySelectorAll('.sub-nav-btn');
         const subTabPanes = document.querySelectorAll('.sub-tab-content');
-    
-        /**
-         * (NOVO v15.0) Função auxiliar para mostrar uma aba específica
-         * @param {string} targetId O ID do 'data-target' do botão
-         */
         function showSubTab(targetId) {
-            subTabPanes.forEach(pane => {
-                if (pane.id === targetId) {
-                    pane.classList.add('active');
-                } else {
-                    pane.classList.remove('active');
-                }
-            });
-            subNavButtons.forEach(btn => {
-                if (btn.getAttribute('data-target') === targetId) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
+            subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
+            subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
         }
-    
         subNavButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetId = button.getAttribute('data-target');
-                showSubTab(targetId);
-            });
+            button.addEventListener('click', () => showSubTab(button.getAttribute('data-target')));
         });
     
-        // --- O restante da lógica original de setupRiskCalculator ---
-    
-        // Encontra todos os elementos
+        // --- Elementos do Formulário Principal ---
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
-        
-        // (MODIFICADO v15.0) Botões de exportação/importação
-        const importExportControls = document.getElementById('import-export-controls');
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const sendEmailBtn = document.getElementById('send-email-btn');
         const getGpsBtn = document.getElementById('get-gps-btn');    
@@ -1002,50 +922,32 @@ document.addEventListener('DOMContentLoaded', () => {
     
         if (!form) return;    
     
-        // (v14.7) Preenche o nome do avaliador
         if (lastEvaluatorName) {
             document.getElementById('risk-avaliador').value = lastEvaluatorName;
         }
     
-        // Oculta o botão de GPS em desktops
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
             if(gpsContainer) gpsContainer.style.display = 'none';
         }
         
-        // Adiciona listener ao botão GPS
-        if (getGpsBtn) {
-            getGpsBtn.addEventListener('click', handleGetGPS);
-        }
+        if (getGpsBtn) getGpsBtn.addEventListener('click', handleGetGPS);
     
         // 1. Lógica de Adicionar Árvore
         form.addEventListener('submit', (event) => {
             event.preventDefault();    
             let totalScore = 0;
+            // Lê os checkboxes da tabela (fonte da verdade)
             const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
-            
-            checkboxes.forEach(cb => {
-                totalScore += parseInt(cb.dataset.weight, 10);
-            });
+            checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
     
-            // (v14.8) Salva o estado como 1 ou 0
             const allCheckboxes = form.querySelectorAll('.risk-checkbox');
-            const checkedRiskFactors = [];
-            allCheckboxes.forEach(cb => {
-                checkedRiskFactors.push(cb.checked ? 1 : 0);
-            });
+            const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
     
-            // Define a classificação
-            let classificationText = 'Baixo Risco';
-            let classificationClass = 'risk-col-low';
-            if (totalScore >= 20) {
-                classificationText = 'Alto Risco';
-                classificationClass = 'risk-col-high';
-            } else if (totalScore >= 10) {
-                classificationText = 'Médio Risco';
-                classificationClass = 'risk-col-medium';
-            }
+            let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
+            if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
+            else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
     
             const newTree = {
                 id: registeredTrees.length + 1,
@@ -1067,6 +969,9 @@ document.addEventListener('DOMContentLoaded', () => {
             saveDataToStorage();
             renderSummaryTable();
             
+            // (NOVO v15.1) Mostra o Toast de sucesso
+            showToast(`✔️ Árvore "${newTree.especie || 'N/A'}" (ID ${newTree.id}) adicionada!`, 'success');
+
             // (v14.7) Salva o nome do avaliador
             lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
             form.reset();
@@ -1075,20 +980,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('risk-avaliador').value = lastEvaluatorName;
             } catch(e) { /* ignora erro */ }
 
-            // (NOVO v15.0) FEEDBACK IMEDIATO: Muda para a aba de resumo
-            showSubTab('tab-content-summary');
-
-            // (NOVO v15.3) Notificação Toast
-            showToast(`✔️ Árvore "${newTree.especie}" (ID ${newTree.id}) salva.`, 'success');
-
-            // Foco no campo espécie para a próxima entrada
+            // (MODIFICADO v15.1) Não muda de aba. Apenas foca no campo.
             document.getElementById('risk-especie').focus();
             
-            const gpsStatus = document.getElementById('gps-status');
-            if (gpsStatus) {
-                gpsStatus.textContent = '';
-                gpsStatus.className = '';
+            // (v15.1) Reseta o carrossel mobile para a P1
+            if (isTouchDevice) {
+                setupMobileChecklist(); // Re-inicia o carrossel
             }
+
+            const gpsStatus = document.getElementById('gps-status');
+            if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
         });
         
         // 2. Lógica do Botão Limpar Campos
@@ -1103,11 +1004,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('risk-avaliador').value = lastEvaluatorName;
                 } catch(e) { /* ignora erro */ }
                 
-                const gpsStatus = document.getElementById('gps-status');
-                if (gpsStatus) {
-                    gpsStatus.textContent = '';
-                    gpsStatus.className = '';
+                if (isTouchDevice) {
+                    setupMobileChecklist(); // (v15.1) Reseta o carrossel
                 }
+
+                const gpsStatus = document.getElementById('gps-status');
+                if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
             });
         }
     
@@ -1134,12 +1036,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (editButton) {    
                     const treeId = parseInt(editButton.dataset.id, 10);
                     handleEditTree(treeId);
-                    // (NOVO v15.0) Ao editar, volta para a aba de registro
-                    showSubTab('tab-content-register');
+                    showSubTab('tab-content-register'); // Volta para a aba de registro
                 }
             });
         }
-    }
+
+        // (v16.0) Só ativa o carrossel no mobile
+        if (isTouchDevice) {
+            setupMobileChecklist();
+        }
+
+    } // Fim de setupRiskCalculator()
 
     // --- Definições de Funções (Tooltip, Export, etc.) ---
 
@@ -1147,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const termClickEvent = isTouchDevice ? 'touchend' : 'click';
     const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
-        
+    
     function createTooltip() {
         let tooltip = document.getElementById('glossary-tooltip');
         if (!tooltip) {
@@ -1156,10 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(tooltip);    
         }
         if (!tooltip.dataset.clickToCloseAdded) {
-            tooltip.addEventListener(popupCloseEvent, (e) => {
-                e.stopPropagation();    
-                hideTooltip();
-            });
+            tooltip.addEventListener(popupCloseEvent, (e) => { e.stopPropagation(); hideTooltip(); });
             tooltip.dataset.clickToCloseAdded = 'true';
         }
         return tooltip;
@@ -1198,14 +1102,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleGlossaryTooltip(event) {
-        event.preventDefault();    
-        event.stopPropagation();
+        event.preventDefault(); event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
         if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
-        } else {
-            showGlossaryTooltip(event);
-        }
+        } else { showGlossaryTooltip(event); }
     }
 
     function setupEquipmentInteractions() {
@@ -1233,14 +1134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleEquipmentTooltip(event) {
-        event.preventDefault();
-        event.stopPropagation();
+        event.preventDefault(); event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
         if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
-        } else {
-            showEquipmentTooltip(event);
-        }
+        } else { showEquipmentTooltip(event); }
     }
 
     function setupPurposeInteractions() {
@@ -1268,73 +1166,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function togglePurposeTooltip(event) {
-        event.preventDefault();
-        event.stopPropagation();
+        event.preventDefault(); event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
         if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
-        } else {
-            showPurposeTooltip(event);
-        }
+        } else { showPurposeTooltip(event); }
     }
 
     function positionTooltip(termElement) {
         const rect = termElement.getBoundingClientRect();
-        const scrollY = window.scrollY;
-        const scrollX = window.scrollX;
-        
+        const scrollY = window.scrollY, scrollX = window.scrollX;
         requestAnimationFrame(() => {
             if (!currentTooltip) return;
-            const tooltipWidth = currentTooltip.offsetWidth;
-            const tooltipHeight = currentTooltip.offsetHeight;
+            const tooltipWidth = currentTooltip.offsetWidth, tooltipHeight = currentTooltip.offsetHeight;
             let topPos;
-            if (rect.top > tooltipHeight + 10) {    
-                topPos = rect.top + scrollY - tooltipHeight - 10;
-            } else {    
-                topPos = rect.bottom + scrollY + 10;
-            }
+            if (rect.top > tooltipHeight + 10) { topPos = rect.top + scrollY - tooltipHeight - 10; }
+            else { topPos = rect.bottom + scrollY + 10; }
             let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
-            if (leftPos < scrollX + 10) leftPos = scrollX + 10;    
-            if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) {    
-                leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
-            }
+            if (leftPos < scrollX + 10) leftPos = scrollX + 10;
+            if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { leftPos = window.innerWidth + scrollX - tooltipWidth - 10; }
             currentTooltip.style.top = `${topPos}px`;
             currentTooltip.style.left = `${leftPos}px`;
         });
     }
     
     /**
-     * (MODIFICADO v14.8) Gera dados CSV com a coluna RiskFactors
+     * Gera dados CSV com a coluna RiskFactors
      */
     function getCSVData() {
         if (registeredTrees.length === 0) return null;
-        
-        // (MODIFICADO v14.8) Adicionada coluna "RiskFactors"
         const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors"];
-        let csvContent = "\uFEFF" + headers.join(";") + "\n";    
-
+        let csvContent = "\uFEFF" + headers.join(";") + "\n";
         registeredTrees.forEach(tree => {
-            const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ',');
-            const cleanLocal = (tree.local || '').replace(/[\n;]/g, ',');
-            const cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ',');
-            const cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ',');    
-            // (MODIFICADO v14.8) Adiciona os riskFactors como string (ex: "1,0,0,1...")
+            const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ','), cleanLocal = (tree.local || '').replace(/[\n;]/g, ','), cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ','), cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ',');
             const riskFactorsString = (tree.riskFactors || []).join(',');
-
-            const row = [
-                tree.id,
-                tree.data,    
-                cleanEspecie,
-                tree.coordX,
-                tree.coordY,
-                tree.dap,
-                cleanLocal,
-                cleanAvaliador,
-                tree.pontuacao,
-                tree.risco,
-                cleanObservacoes,
-                riskFactorsString // (NOVO v14.8)
-            ];
+            const row = [tree.id, tree.data, cleanEspecie, tree.coordX, tree.coordY, tree.dap, cleanLocal, cleanAvaliador, tree.pontuacao, tree.risco, cleanObservacoes, riskFactorsString];
             csvContent += row.join(";") + "\n";
         });
         return csvContent;
@@ -1342,17 +1208,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function exportCSV() {
         const csvContent = getCSVData();
-        if (!csvContent) {
-            // (v15.3) Substituído alert por toast
-            showToast('Nenhuma árvore cadastrada para exportar.', 'info');
-            return;
-        }
-        const today = new Date();
-        const d = String(today.getDate()).padStart(2, '0');
-        const m = String(today.getMonth() + 1).padStart(2, '0');    
-        const y = today.getFullYear();
-        const dateSuffix = `${d}${m}${y}`;
-        const filename = `risco_arboreo_${dateSuffix}.csv`;
+        if (!csvContent) { showToast("Nenhuma árvore cadastrada para exportar.", 'error'); return; }
+        const d = String(new Date().getDate()).padStart(2, '0'), m = String(new Date().getMonth() + 1).padStart(2, '0'), y = new Date().getFullYear();
+        const filename = `risco_arboreo_${d}${m}${y}.csv`;
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -1374,7 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
             const cleanEspecie = (tree.especie || 'N/A').padEnd(20, ' ').substring(0, 20);
             const cleanLocal = (tree.local || 'N/A').padEnd(15, ' ').substring(0, 15);
-            const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30);    
+            const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30);
             textBody += `${tree.id}\t|\t${displayDate}\t|\t${cleanEspecie}\t|\t${cleanLocal}\t|\t${tree.risco}\t|\t${cleanObs}\n`;
         });
         textBody += "\n\n";
@@ -1384,176 +1242,81 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function sendEmailReport() {
-        const targetEmail = "";    
+        const targetEmail = "";
         const subject = "Relatório de Avaliação de Risco Arbóreo";
         const emailBody = generateEmailSummaryText();
-        if (emailBody === "Nenhuma árvore foi cadastrada na tabela de resumo.") {
-             // (v15.3) Substituído alert por toast
-            showToast('Nenhuma árvore cadastrada para enviar.', 'info');
-            return;
-        }
-        
-        const encodedSubject = encodeURIComponent(subject);
-        const encodedBody = encodeURIComponent(emailBody);
+        const encodedSubject = encodeURIComponent(subject), encodedBody = encodeURIComponent(emailBody);
         const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
-        if (mailtoLink.length > 2000) {
-             // (v15.3) Substituído alert por toast
-            showToast('Muitos dados para e-mail. Use "Exportar CSV" e anexe.', 'error');
-            return;
-        }
+        if (mailtoLink.length > 2000) { showToast("Muitos dados para e-mail. Use 'Exportar CSV'.", 'error'); return; }
         window.location.href = mailtoLink;
     }
     
     /**
-     * (NOVO v14.8) Função para importar dados de um CSV
+     * Função para importar dados de um CSV
      */
     function handleFileImport(event) {
         const file = event.target.files[0];
-        if (!file) {
-            return; // Nenhum ficheiro selecionado
-        }
-
+        if (!file) return;
         const reader = new FileReader();
-        
         reader.onload = (e) => {
             const content = e.target.result;
-            const lines = content.split('\n').filter(line => line.trim() !== ''); // Remove linhas vazias
-
-            if (lines.length <= 1) {
-                // (v15.3) Substituído alert por toast
-                showToast("Erro: O ficheiro CSV está vazio ou é inválido.", 'error');
-                return;
-            }
-
-            // Pergunta ao utilizador se quer substituir ou adicionar
+            const lines = content.split('\n').filter(line => line.trim() !== '');
+            if (lines.length <= 1) { showToast("Erro: O ficheiro CSV está vazio ou é inválido.", 'error'); return; }
             const append = confirm("Deseja ADICIONAR os dados à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual pelos dados do ficheiro.");
-
-            let newTrees = [];
-            if (append) {
-                newTrees = [...registeredTrees]; // Mantém os dados atuais
-            }
-            // Se não for 'append', newTrees começa vazio (substituição)
-
+            let newTrees = append ? [...registeredTrees] : [];
             try {
-                // Começa em 1 para saltar o cabeçalho (headers)
                 for (let i = 1; i < lines.length; i++) {
                     const row = lines[i].split(';');
-
-                    // Validação básica (deve ter 12 colunas)
-                    if (row.length < 12) {
-                        console.warn("Linha mal formatada, ignorada:", lines[i]);
-                        continue;
-                    }
-
-                    // Mapeamento das colunas (baseado na função getCSVData)
-                    const data = row[1] || 'N/A';
-                    const especie = row[2] || 'N/A';
-                    const coordX = row[3] || 'N/A';
-                    const coordY = row[4] || 'N/A';
-                    const dap = row[5] || 'N/A';
-                    const local = row[6] || 'N/A';
-                    const avaliador = row[7] || 'N/A';
+                    if (row.length < 12) { console.warn("Linha mal formatada, ignorada:", lines[i]); continue; }
+                    
                     const pontuacao = parseInt(row[8], 10) || 0;
-                    const risco = row[9] || 'N/A';
-                    const observacoes = row[10] || 'N/A';
-                    // A nova coluna de RiskFactors
-                    const riskFactorsString = row[11] || '';    
-                    const riskFactors = riskFactorsString.split(',').map(item => parseInt(item, 10)); // Mantém como 1 ou 0
-
-                    // Recalcula a classe de risco (mais seguro do que confiar na do CSV)
                     let riscoClass = 'risk-col-low';
                     if (pontuacao >= 20) riscoClass = 'risk-col-high';
                     else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
 
                     newTrees.push({
-                        id: newTrees.length + 1, // Re-indexa o ID
-                        data: data,
-                        especie: especie,
-                        local: local,
-                        coordX: coordX,
-                        coordY: coordY,
-                        dap: dap,
-                        avaliador: avaliador,
-                        observacoes: observacoes,
+                        id: newTrees.length + 1,
+                        data: row[1] || 'N/A',
+                        especie: row[2] || 'N/A',
+                        coordX: row[3] || 'N/A',
+                        coordY: row[4] || 'N/A',
+                        dap: row[5] || 'N/A',
+                        local: row[6] || 'N/A',
+                        avaliador: row[7] || 'N/A',
                         pontuacao: pontuacao,
-                        risco: risco,
-                        riscoClass: riscoClass,
-                        riskFactors: riskFactors
+                        risco: row[9] || 'N/A',
+                        observacoes: row[10] || 'N/A',
+                        riskFactors: (row[11] || '').split(',').map(item => parseInt(item, 10)),
+                        riscoClass: riscoClass
                     });
                 }
-                
                 registeredTrees = newTrees;
                 saveDataToStorage();
                 renderSummaryTable();
-                // (v15.3) Substituído alert por toast
-                showToast(`📤 Importação concluída! ${newTrees.length} registos carregados.`, 'success');
-
+                showToast(`📤 Importação concluída! ${newTrees.length} registos carregados.`, 'success'); // (v15.1)
             } catch (error) {
                 console.error("Erro ao processar o ficheiro CSV:", error);
-                 // (v15.3) Substituído alert por toast
-                showToast("Erro ao processar o ficheiro. Verifique o formato.", 'error');
-            } finally {
-                // Limpa o input de ficheiro para permitir carregar o mesmo ficheiro novamente
-                event.target.value = null;
-            }
+                showToast("Erro ao processar o ficheiro.", 'error'); // (v15.1)
+            } finally { event.target.value = null; }
         };
-
-        reader.onerror = () => {
-             // (v15.3) Substituído alert por toast
-            showToast("Erro ao ler o ficheiro.", 'error');
-            event.target.value = null;
-        };
-
+        reader.onerror = () => { showToast("Erro ao ler o ficheiro.", 'error'); event.target.value = null; };
         reader.readAsText(file);
     }
 
     /**
-     * (NOVO v15.3) Mostra uma notificação toast
-     * @param {string} message A mensagem a ser exibida.
-     * @param {string} type 'success' (verde), 'error' (vermelho), ou 'info' (azul).
-     * @param {number} duration Duração em milissegundos.
+     * Manipulador do Chat (Esqueleto)
      */
-    function showToast(message, type = 'success', duration = 3000) {
-        const container = document.getElementById('toast-container');
-        if (!container) {
-            console.error("Elemento #toast-container não encontrado.");
-            return;
-        }
-
-        const toast = document.createElement('div');
-        toast.className = `toast-notification ${type}`;
-        toast.textContent = message;
-
-        container.appendChild(toast);
-
-        // Animação de saída
-        setTimeout(() => {
-            toast.classList.add('toast-fade-out');
-            // Remove o elemento após a animação
-            toast.addEventListener('animationend', () => {
-                if (toast.parentNode === container) {
-                    container.removeChild(toast);
-                }
-            });
-        }, duration);
-    }
-
-
     async function handleChatSend() {
         const userQuery = chatInput.value.trim();
-        if (userQuery === "") return;    
+        if (userQuery === "") return;
         chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
-        chatInput.value = "";    
+        chatInput.value = "";
         try {
-            const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI";    
+            const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI";
             if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
-                 throw new Error("A função de back-end (Google Cloud Function) ainda não foi configurada. Esta é a Fase 2.");
+                 throw new Error("A função de back-end (Google Cloud Function) ainda não foi configurada.");
             }
-            const response = await fetch(PONTESEGURA_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: userQuery })
-            });
+            const response = await fetch(PONTESEGURA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userQuery }) });
             if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
             const data = await response.json();
             chatResponseBox.innerHTML = `<p class="chat-response-text">${data.response}</p>`;
@@ -1565,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ==========================================================
-    // (NOVO v14.4) PONTO DE ENTRADA / EXECUÇÃO DO SCRIPT
+    // PONTO DE ENTRADA / EXECUÇÃO DO SCRIPT
     // ==========================================================
 
     // --- Variáveis Globais de Elementos ---
@@ -1573,11 +1336,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeTopicButtons = document.querySelectorAll('.topico-btn');
 
     /**
-     * (v14.4) Carrega o conteúdo principal na <section>
+     * Carrega o conteúdo principal na <section>
      */
     function loadContent(targetKey) {
         if (!detailView) return;    
-        
         const content = manualContent[targetKey];
         if (content) {
             detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
@@ -1585,8 +1347,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupGlossaryInteractions();    
             setupEquipmentInteractions();
             setupPurposeInteractions();
-
-            // (v14.4) Ativa a calculadora se for a aba correta
+            // Ativa a calculadora se for a aba correta
             if (targetKey === 'calculadora-risco') {
                 setupRiskCalculator();    
             }
@@ -1596,26 +1357,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v14.4) Manipulador de clique para os botões de tópico
+     * Manipulador de clique para os botões de tópico
      */
     function handleTopicClick(button) {
         hideTooltip();    
         const target = button.getAttribute('data-target');
-        
-        // (v14.0) SALVA A ÚLTIMA ABA ATIVA
-        try {
-            localStorage.setItem(ACTIVE_TAB_KEY, target);
-        } catch (e) {
-            console.error("Erro ao salvar a aba ativa:", e);
-        }
-
+        try { localStorage.setItem(ACTIVE_TAB_KEY, target); }
+        catch (e) { console.error("Erro ao salvar a aba ativa:", e); }
         activeTopicButtons.forEach(btn => btn.classList.remove('active'));
         button.classList.add('active');
         loadContent(target);
     }
 
     // --- 1. Inicialização da Navegação (Carregamento da Página) ---
-    // (v13.9) Carrega os dados da tabela ANTES de qualquer coisa
     loadDataFromStorage();
 
     if (activeTopicButtons.length > 0) {
@@ -1624,31 +1378,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let lastActiveTab = null;
-        try {
-            lastActiveTab = localStorage.getItem(ACTIVE_TAB_KEY);
-        } catch (e) {
-            console.error("Erro ao ler a aba ativa:", e);
-        }
+        try { lastActiveTab = localStorage.getItem(ACTIVE_TAB_KEY); }
+        catch (e) { console.error("Erro ao ler a aba ativa:", e); }
 
         let loadedFromStorage = false;
         if (lastActiveTab && manualContent[lastActiveTab]) {
             loadContent(lastActiveTab);
             activeTopicButtons.forEach(btn => btn.classList.remove('active'));
             const activeButton = document.querySelector(`.topico-btn[data-target="${lastActiveTab}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
-            }
+            if (activeButton) activeButton.classList.add('active');
             loadedFromStorage = true;
         }
 
         if (!loadedFromStorage) {
             const firstActiveButton = document.querySelector('.topico-btn.active');
-            if (firstActiveButton) {
-                loadContent(firstActiveButton.getAttribute('data-target'));
-            } else {
-                loadContent(activeTopicButtons[0].getAttribute('data-target'));
-                activeTopicButtons[0].classList.add('active');
-            }
+            if (firstActiveButton) { loadContent(firstActiveButton.getAttribute('data-target')); }
+            else { loadContent(activeTopicButtons[0].getAttribute('data-target')); activeTopicButtons[0].classList.add('active'); }
         }
     } else {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
@@ -1660,14 +1405,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (backToTopButton && headerElement) {
         const observerCallback = (entries) => {
             const [entry] = entries;    
-            if (!entry.isIntersecting) {
-                backToTopButton.classList.add('show');
-            } else {
-                backToTopButton.classList.remove('show');
-            }
+            if (!entry.isIntersecting) { backToTopButton.classList.add('show'); }
+            else { backToTopButton.classList.remove('show'); }
         };
-        const observerOptions = { root: null, threshold: 0 };
-        const headerObserver = new IntersectionObserver(observerCallback, observerOptions);
+        const headerObserver = new IntersectionObserver(observerCallback, { root: null, threshold: 0 });
         headerObserver.observe(headerElement);
     }
 
@@ -1707,9 +1448,7 @@ ${mensagem}
     if (chatSendBtn) {
         chatSendBtn.addEventListener('click', handleChatSend);
         chatInput.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter') {
-                handleChatSend();
-            }
+            if (event.key === 'Enter') { handleChatSend(); }
         });
     }
 
