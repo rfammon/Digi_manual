@@ -1,4 +1,4 @@
-// script.js (v14.6 - Funcionalidade de Edição e Limpar Tudo)
+// script.js (v14.9 - Botão Importar Sempre Visível)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
@@ -9,7 +9,7 @@ const STORAGE_KEY = 'manualPodaData';
 const ACTIVE_TAB_KEY = 'manualPodaActiveTab'; 
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
-// ... (Esta secção (linhas 13-176) permanece idêntica à v14.5) ...
+// ... (Esta secção (linhas 13-176) permanece idêntica) ...
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 const glossaryTerms = {
     'colar do galho': 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.',
@@ -125,10 +125,10 @@ const podaPurposeData = {
 };
 
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v14.6) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v14.9) ===
 const manualContent = {
     // ... (As secções 'conceitos-basicos' a 'sobre-autor' (linhas 179-432) 
-    // permanecem idênticas à v14.5) ...
+    // permanecem idênticas à v14.8) ...
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
         html: `
@@ -381,7 +381,7 @@ const manualContent = {
         `
     },
 
-    // (MODIFICADO v14.6) Conteúdo da Calculadora
+    // (MODIFICADO v14.9) Conteúdo da Calculadora
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
@@ -546,6 +546,8 @@ const manualContent = {
                 <div class="risk-buttons-area">
                     <button type="submit" id="add-tree-btn">➕ Adicionar Árvore</button>
                     <button type="button" id="reset-risk-form-btn">Limpar Campos</button>
+                    <input type="file" id="csv-importer" accept=".csv" style="display: none;">
+                    <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
                 </div>
             </form>
             
@@ -569,6 +571,9 @@ const manualContent = {
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    // (NOVO v14.7) Variável para reter o nome do avaliador na sessão
+    let lastEvaluatorName = '';
 
     // ==========================================================
     // (v14.4) DEFINIÇÃO DE FUNÇÕES PRIMÁRIAS
@@ -775,7 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (NOVO v14.6) Função para pré-preencher o formulário para edição
+     * (v14.6) Função para pré-preencher o formulário para edição
      */
     function handleEditTree(id) {
         // Encontra o índice da árvore no array
@@ -798,8 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 2. Preenche os checkboxes
         const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
         allCheckboxes.forEach((cb, index) => {
-            // Usa o array 'riskFactors' que salvamos
-            cb.checked = treeToEdit.riskFactors[index] || false; 
+            // (MODIFICADO v14.8) Converte 1/0 para true/false
+            cb.checked = treeToEdit.riskFactors[index] === 1 || false; 
         });
 
         // 3. Remove a árvore do array (ela será readicionada ao submeter)
@@ -821,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (NOVO v14.6) Função para limpar a tabela inteira
+     * (v14.6) Função para limpar a tabela inteira
      */
     function handleClearAll() {
         if (confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) {
@@ -832,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (MODIFICADO v14.6) Renderiza a tabela de resumo (adiciona botão de editar)
+     * (MODIFICADO v14.8) Renderiza a tabela de resumo (adiciona botão de editar)
      */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
@@ -840,6 +845,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!container) return; 
 
+        // (MODIFICADO v14.9) Agora, o 'exportBtnGroup' só é escondido 
+        // se a tabela estiver vazia, mas o botão de importação (que está fora)
+        // permanece visível.
         if (registeredTrees.length === 0) {
             container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
             if (exportBtnGroup) exportBtnGroup.style.display = 'none';
@@ -879,20 +887,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * (MODIFICADO v14.6) Módulo da Calculadora de Risco (Listeners)
+     * (MODIFICADO v14.9) Módulo da Calculadora de Risco (Listeners)
      */
     function setupRiskCalculator() {
+        // Encontra todos os elementos
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
         const exportBtnGroup = document.getElementById('export-btn-group');
         const exportCsvBtn = document.getElementById('export-csv-btn');
         const sendEmailBtn = document.getElementById('send-email-btn');
         const getGpsBtn = document.getElementById('get-gps-btn'); 
-        
-        // (NOVO v14.6) Botão Limpar Tabela
         const clearAllBtn = document.getElementById('clear-all-btn'); 
+        const csvImporter = document.getElementById('csv-importer'); // (v14.8)
 
         if (!form) return; 
+
+        // (v14.7) Preenche o nome do avaliador se já existir
+        if (lastEvaluatorName) {
+            document.getElementById('risk-avaliador').value = lastEvaluatorName;
+        }
 
         // Oculta o botão de GPS em desktops
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -916,13 +929,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalScore += parseInt(cb.dataset.weight, 10);
             });
 
-            // (NOVO v14.6) Salva o estado dos checkboxes para a edição
+            // (v14.8) Salva o estado como 1 ou 0
             const allCheckboxes = form.querySelectorAll('.risk-checkbox');
             const checkedRiskFactors = [];
             allCheckboxes.forEach(cb => {
-                checkedRiskFactors.push(cb.checked);
+                checkedRiskFactors.push(cb.checked ? 1 : 0); // Salva 1 para marcado, 0 para desmarcado
             });
-            // --- Fim da adição ---
 
             // Define a classificação
             let classificationText = 'Baixo Risco';
@@ -948,22 +960,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 pontuacao: totalScore,
                 risco: classificationText,
                 riscoClass: classificationClass,
-                riskFactors: checkedRiskFactors // (NOVO v14.6) Adiciona os dados dos checkboxes ao objeto
+                riskFactors: checkedRiskFactors // (v14.6) Adiciona os dados dos checkboxes ao objeto
             };
 
             registeredTrees.push(newTree);
-            
-            // (v13.9) SALVA OS DADOS
             saveDataToStorage();
-            
             renderSummaryTable();
+            
+            // (v14.7) Salva o nome do avaliador antes de limpar
+            lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
             form.reset();
             try {
                 document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+                document.getElementById('risk-avaliador').value = lastEvaluatorName; // Re-aplica o nome
             } catch(e) { /* ignora erro */ }
+            
             document.getElementById('risk-especie').focus();
             
-            // Limpa o status do GPS
             const gpsStatus = document.getElementById('gps-status');
             if (gpsStatus) {
                 gpsStatus.textContent = '';
@@ -976,11 +989,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resetBtn) {
             resetBtn.addEventListener('click', (e) => {
                 e.preventDefault(); 
+                
+                // (v14.7) Salva o nome do avaliador antes de limpar
+                lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
                 form.reset(); 
                  try {
                     document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('risk-avaliador').value = lastEvaluatorName; // Re-aplica o nome
                 } catch(e) { /* ignora erro */ }
-                // Limpa o status do GPS
+                
                 const gpsStatus = document.getElementById('gps-status');
                 if (gpsStatus) {
                     gpsStatus.textContent = '';
@@ -993,26 +1010,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
         if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
         
-        // (NOVO v14.6) Listener do botão Limpar Tabela
+        // (v14.6) Listener do botão Limpar Tabela
         if (clearAllBtn) {
             clearAllBtn.addEventListener('click', handleClearAll);
         }
+
+        // (v14.8) Listener do botão Importar CSV
+        if (csvImporter) {
+            csvImporter.addEventListener('change', handleFileImport);
+        }
         
-        // 4. Renderiza a tabela ao carregar (importante para o localStorage)
+        // 4. Renderiza a tabela ao carregar
         renderSummaryTable();
         
-        // 5. (MODIFICADO v14.6) Event Listener para Editar e Excluir
+        // 5. (v14.6) Event Listener para Editar e Excluir
         if (summaryContainer) {
             summaryContainer.addEventListener('click', (e) => {
                 const deleteButton = e.target.closest('.delete-tree-btn');
-                const editButton = e.target.closest('.edit-tree-btn'); // (NOVO v14.6)
+                const editButton = e.target.closest('.edit-tree-btn'); 
 
                 if (deleteButton) {
                     const treeId = parseInt(deleteButton.dataset.id, 10);
                     handleDeleteTree(treeId);
                 }
                 
-                if (editButton) { // (NOVO v14.6)
+                if (editButton) { 
                     const treeId = parseInt(editButton.dataset.id, 10);
                     handleEditTree(treeId);
                 }
@@ -1021,7 +1043,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Definições de Funções (Tooltip, Export, etc.) ---
-    // (Estas funções não precisam estar no topo, pois são chamadas por listeners)
 
     let currentTooltip = null; 
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -1183,16 +1204,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    /**
+     * (MODIFICADO v14.8) Gera dados CSV com a coluna RiskFactors
+     */
     function getCSVData() {
         if (registeredTrees.length === 0) return null;
-        const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes"];
+        
+        // (MODIFICADO v14.8) Adicionada coluna "RiskFactors"
+        const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors"];
         let csvContent = "\uFEFF" + headers.join(";") + "\n"; 
+
         registeredTrees.forEach(tree => {
             const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ',');
             const cleanLocal = (tree.local || '').replace(/[\n;]/g, ',');
             const cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ',');
             const cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ','); 
-            const row = [tree.id, tree.data, cleanEspecie, tree.coordX, tree.coordY, tree.dap, cleanLocal, cleanAvaliador, tree.pontuacao, tree.risco, cleanObservacoes];
+            // (MODIFICADO v14.8) Adiciona os riskFactors como string (ex: "1,0,0,1...")
+            const riskFactorsString = (tree.riskFactors || []).join(',');
+
+            const row = [
+                tree.id,
+                tree.data, 
+                cleanEspecie,
+                tree.coordX,
+                tree.coordY,
+                tree.dap,
+                cleanLocal,
+                cleanAvaliador,
+                tree.pontuacao,
+                tree.risco,
+                cleanObservacoes,
+                riskFactorsString // (NOVO v14.8)
+            ];
             csvContent += row.join(";") + "\n";
         });
         return csvContent;
@@ -1254,6 +1297,105 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = mailtoLink;
     }
     
+    /**
+     * (NOVO v14.8) Função para importar dados de um CSV
+     */
+    function handleFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return; // Nenhum ficheiro selecionado
+        }
+
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            const content = e.target.result;
+            const lines = content.split('\n').filter(line => line.trim() !== ''); // Remove linhas vazias
+
+            if (lines.length <= 1) {
+                alert("Erro: O ficheiro CSV está vazio ou é inválido.");
+                return;
+            }
+
+            // Pergunta ao utilizador se quer substituir ou adicionar
+            const append = confirm("Deseja ADICIONAR os dados à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual pelos dados do ficheiro.");
+
+            let newTrees = [];
+            if (append) {
+                newTrees = [...registeredTrees]; // Mantém os dados atuais
+            }
+            // Se não for 'append', newTrees começa vazio (substituição)
+
+            try {
+                // Começa em 1 para saltar o cabeçalho (headers)
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i].split(';');
+
+                    // Validação básica (deve ter 12 colunas)
+                    if (row.length < 12) {
+                        console.warn("Linha mal formatada, ignorada:", lines[i]);
+                        continue;
+                    }
+
+                    // Mapeamento das colunas (baseado na função getCSVData)
+                    const data = row[1] || 'N/A';
+                    const especie = row[2] || 'N/A';
+                    const coordX = row[3] || 'N/A';
+                    const coordY = row[4] || 'N/A';
+                    const dap = row[5] || 'N/A';
+                    const local = row[6] || 'N/A';
+                    const avaliador = row[7] || 'N/A';
+                    const pontuacao = parseInt(row[8], 10) || 0;
+                    const risco = row[9] || 'N/A';
+                    const observacoes = row[10] || 'N/A';
+                    // A nova coluna de RiskFactors
+                    const riskFactorsString = row[11] || ''; 
+                    const riskFactors = riskFactorsString.split(',').map(item => parseInt(item, 10)); // Mantém como 1 ou 0
+
+                    // Recalcula a classe de risco (mais seguro do que confiar na do CSV)
+                    let riscoClass = 'risk-col-low';
+                    if (pontuacao >= 20) riscoClass = 'risk-col-high';
+                    else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
+
+                    newTrees.push({
+                        id: newTrees.length + 1, // Re-indexa o ID
+                        data: data,
+                        especie: especie,
+                        local: local,
+                        coordX: coordX,
+                        coordY: coordY,
+                        dap: dap,
+                        avaliador: avaliador,
+                        observacoes: observacoes,
+                        pontuacao: pontuacao,
+                        risco: risco,
+                        riscoClass: riscoClass,
+                        riskFactors: riskFactors
+                    });
+                }
+                
+                registeredTrees = newTrees;
+                saveDataToStorage();
+                renderSummaryTable();
+                alert(`Importação concluída! ${newTrees.length} registos carregados.`);
+
+            } catch (error) {
+                console.error("Erro ao processar o ficheiro CSV:", error);
+                alert("Erro ao processar o ficheiro. Verifique o formato do CSV e tente novamente.");
+            } finally {
+                // Limpa o input de ficheiro para permitir carregar o mesmo ficheiro novamente
+                event.target.value = null;
+            }
+        };
+
+        reader.onerror = () => {
+            alert("Erro ao ler o ficheiro.");
+            event.target.value = null;
+        };
+
+        reader.readAsText(file);
+    }
+
     async function handleChatSend() {
         const userQuery = chatInput.value.trim();
         if (userQuery === "") return; 

@@ -1,4 +1,4 @@
-/* style.css (Completo v14.6 - Estilos de Edição e Limpar) */
+/* style.css (Completo v14.8 - Estilos de Importar/Editar) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -556,6 +556,16 @@ main {
     color: #333;
 }
 #reset-risk-form-btn:hover, #send-email-btn:hover { background-color: #ccc; }
+
+/* (NOVO v14.8) Estilo do Botão Importar */
+.csv-import-label {
+    background-color: #ffb300; /* Destaque amarelo */
+    color: #333;
+    text-align: center;
+}
+.csv-import-label:hover {
+    background-color: #ffa000;
+}
 
 /* (NOVO v14.6) Estilo do Botão Limpar Tabela */
 #clear-all-btn {
