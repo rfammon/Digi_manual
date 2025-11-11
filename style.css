@@ -1,4 +1,4 @@
-/* style.css (Completo - v10.3 Limpo) */
+/* style.css (Completo - v10.10 Correção Bullet Points) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -85,7 +85,7 @@ main {
 }
 
 /* -------------------------------------- */
-/* 3. ESTILOS DO CONTEÚDO E IMAGENS */
+/* 3. ESTILOS DO CONTEÚDO E IMAGENS (v10.10) */
 /* -------------------------------------- */
 
 .conteudo-detalhe {
@@ -104,16 +104,36 @@ main {
     font-size: 1.3rem;
 }
 
-#detalhe-view p, #detalhe-view li {
+#detalhe-view p {
     margin-bottom: 15px;
     font-size: 1em;
-    overflow-wrap: break-word; /* Impede quebra de layout */
+    overflow-wrap: break-word;
 }
 
-/* (Site Builder) Estilo para a lista de equipamentos */
+/* Adiciona recuo para listas e espaçamento entre itens */
+#detalhe-view ul,
+#detalhe-view ol {
+    padding-left: 25px; /* Adiciona o recuo para o bullet point */
+    margin-bottom: 15px; /* Espaço após a lista */
+}
+
+#detalhe-view li {
+    margin-bottom: 8px; /* Espaçamento entre os itens da lista (li) */
+    font-size: 1em;
+    overflow-wrap: break-word;
+}
+
+/* (Site Builder) Estilo para a lista de equipamentos e finalidades */
+/* Remove os estilos de lista padrão que acabamos de adicionar */
+.equipment-list,
+.purpose-list {
+    padding-left: 0;
+    list-style-type: none;
+}
+
 .equipment-list li,
-.purpose-list li { /* NOVO v10.0 */
-    margin-bottom: 10px; /* Espaçamento entre os itens da lista */
+.purpose-list li {
+    margin-bottom: 10px; /* Mantém o espaçamento original dessas listas */
 }
 
 .data-table {
@@ -409,7 +429,7 @@ main {
 /* Cabeçalho da Categoria (Ex: 1.1. Termos) */
 .glossary-category-header {
     background-color: #ffffdc; /* Cor de destaque */
-    color: #ffff;
+    color: #fff;
     font-weight: bold;
     font-size: 2.1em;
     text-align: center !important; /* Centraliza o título da categoria */

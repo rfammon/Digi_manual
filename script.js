@@ -134,12 +134,12 @@ const podaPurposeData = {
     }
 };
 
-// Dados do Manual (Conteúdo das seções)
+// Dados do Manual (Conteúdo das seções - v10.9 Correção de Negrito)
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
         html: `
-            <h3>1.1. Termos Estruturais e Anatômicos</h3>
+            <h3>Termos Estruturais e Anatômicos</h3>
             <p>A correta identificação das partes da árvore é vital. Use o <span class="glossary-term" data-term-key="colar do galho">colar do galho</span> e a <span class="glossary-term" data-term-key="crista da casca">crista da casca</span> como guias.</p>
             ${imgTag('anatomia-corte.jpg', 'Anatomia correta do corte de galho')}
             <p>Termos como <span class="glossary-term" data-term-key="lenho de cicatrização">lenho de cicatrização</span>, <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span> e <span class="glossary-term" data-term-key="lenho de reação">lenho de reação</span> são importantes para a inspeção.</p>
@@ -148,7 +148,7 @@ const manualContent = {
             <p>As árvores possuem defesas naturais que protegem cortes e ferimentos, como os causados pela poda. Na casca, os ferimentos formam uma camada protetora chamada periderme necrofilática, que impede a entrada de microrganismos. Na madeira, ocorre um processo chamado compartimentalização, que isola a área danificada para evitar que o problema se espalhe pelo restante da árvore.</p>
             ${imgTag('compartimentalização.jpg', 'Diagrama do processo de compartimentalização')}
 
-            <h3>1.2. Instrumentos e Equipamentos</h3>
+            <h3>Instrumentos e Equipamentos</h3>
             <ul class="equipment-list">
                 <li><span class="equipment-term" data-term-key="serrote-manual">Serrote Manual</span></li>
                 <li><span class="equipment-term" data-term-key="motosserra">Motosserra</span></li>
@@ -159,7 +159,7 @@ const manualContent = {
                 <li><span class="equipment-term" data-term-key="podador-comum">Podador Manual Comum</span></li>
             </ul>
 
-            <h3>1.3. Finalidade da Poda</h3>
+            <h3>Finalidade da Poda</h3>
             <ul class="purpose-list">
                 <li><span class="purpose-term" data-term-key="conducao">Condução</span></li>
                 <li><span class="purpose-term" data-term-key="limpeza">Limpeza</span></li>
@@ -174,55 +174,55 @@ const manualContent = {
     'planejamento-inspecao': {
         titulo: '📋 Planejamento e Inspeção',
         html: `
-            <h3>2.1. Planejamento</h3>
-            <p>Etapa fundamental para garantir a execução **segura e eficiente**.</p>
-            <h4>2.1.2. Finalidade da Poda</h4>
-            <ul><li><strong>Limpeza:</strong> Remover ramos mortos/secos.</li><li><strong>Correção:</strong> Remover ramos com defeito estrutural (ex: <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>). ${imgTag('uniao-v-casca-inclusa.jpg', 'União em V com casca inclusa')}</li><li><strong>Adequação:</strong> Resolver conflitos com estruturas.</li><li><strong>⚠️ Poda de Raízes:</strong> Deve ser **evitada**.</li></ul>
-            <h4>2.1.3. Inspeção Visual Expedita</h4>
+            <h3>Planejamento</h3>
+            <p>Etapa fundamental para garantir a execução <strong>segura e eficiente</strong>.</p>
+            <h4>Finalidade da Poda</h4>
+            <ul><li><strong>Limpeza:</strong> Remover ramos mortos/secos.</li><li><strong>Correção:</strong> Remover ramos com defeito estrutural (ex: <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>). ${imgTag('uniao-v-casca-inclusa.jpg', 'União em V com casca inclusa')}</li><li><strong>Adequação:</strong> Resolver conflitos com estruturas.</li><li><strong>⚠️ Poda de Raízes:</strong> Deve ser <strong>evitada</strong>.</li></ul>
+            <h4>Inspeção Visual Expedita</h4>
             <p>Foco nos riscos críticos:</p>
             <ul><li>Fendas horizontais.</li><li>Presença de <strong>carpóforos (cogumelos)</strong>. ${imgTag('sinal-podridao.jpg', 'Cogumelos indicando apodrecimento')}</li><li>Galhos mortos > 5 cm.</li><li>Uniões em “V” com <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span>.</li></ul>
-            <h4>2.1.6. Classificação de Risco</h4>
-            <ul><li><strong>🔴 ALTO RISCO:</strong> Intervenção em até **48h**.</li><li><strong>🟠 MÉDIO RISCO:</strong> Intervenção em até **15 dias**.</li><li><strong>🟢 BAIXO RISCO:</strong> Monitoramento anual.</li></ul>
-            <h4>2.1.7. Raio Crítico Radicular (RCR)</h4>
+            <h4>Classificação de Risco</h4>
+            <ul><li><strong>🔴 ALTO RISCO:</strong> Intervenção em até <strong>48h</strong>.</li><li><strong>🟠 MÉDIO RISCO:</strong> Intervenção em até <strong>15 dias</strong>.</li><li><strong>🟢 BAIXO RISCO:</strong> Monitoramento anual.</li></ul>
+            <h4>Raio Crítico Radicular (RCR)</h4>
             <p><strong><span class="glossary-term" data-term-key="rcr">RCR</span> = 1,5 × <span class="glossary-term" data-term-key="dap">DAP</span></strong>.</p>
         `
     },
     'autorizacao-legal': {
-        titulo: '📜 Termos Legais e Autorização',
+        titulo: '📜 Termos Legais e Autorização (ASV)',
         html: `
-            <h3>1.5. Termos Legais e Normativos</h3>
+            <h3>Termos Legais e Normativos</h3>
             <ul>
                 <li><strong><span class="glossary-term" data-term-key="asv">ASV</span> (Autorização de Supressão de Vegetação)</strong></li>
                 <li><strong><span class="glossary-term" data-term-key="app">APP</span> (Área de Preservação Permanente)</strong></li>
                 <li><strong><span class="glossary-term" data-term-key="art">ART</span> (Anotação de Responsabilidade Técnica)</strong></li>
                 <li><strong><span class="glossary-term" data-term-key="mtr">MTR</span> (Manifesto de Transporte de Resíduos)</strong> - (Vide <span class="glossary-term" data-term-key="pnrs">PNRS</span>).</li>
             </ul>
-            <h3>2.1.9. Licenciamento da Atividade (ASV)</h3>
+            <h3>Licenciamento da Atividade (ASV)</h3>
             <p>Toda intervenção deve ter anuência do setor de meio ambiente.</p>
             <h4>Dispensa de Autorização:</h4>
-            <ul><li>Indivíduos com <span class="glossary-term" data-term-key="dap">DAP</span> < 0,05 m **fora** de <span class="glossary-term" data-term-key="app">APP</span>.</li><li>Risco iminente (Defesa Civil) - processo *a posteriori*.</li></ul>
+            <ul><li>Indivíduos com <span class="glossary-term" data-term-key="dap">DAP</span> < 0,05 m <strong>fora</strong> de <span class="glossary-term" data-term-key="app">APP</span>.</li><li>Risco iminente (Defesa Civil) - processo *a posteriori*.</li></ul>
         `
     },
     'preparacao-e-isolamento': {
         titulo: '🚧 Preparação do Local e Isolamento',
         html: `
-            <h3>2.2.2. Isolamento e Sinalização</h3>
-            <p>O isolamento é **obrigatório**.</p>
+            <h3>Isolamento e Sinalização</h3>
+            <p>O isolamento é <strong>obrigatório</strong>.</p>
             <h4>Delimitação do Perímetro de Exclusão (Raio de Perigo)</h4>
             ${imgTag('isolamento-perimetro.jpg', 'Diagrama de perímetro de segurança')}
-            <ul><li><strong>Galhos isolados:</strong> Comprimento do galho **+ 50%**.</li><li><strong>Árvore inteira:</strong> Altura total **+ 50%**.</li></ul>
+            <ul><li><strong>Galhos isolados:</strong> Comprimento do galho <strong>+ 50%</strong>.</li><li><strong>Árvore inteira:</strong> Altura total <strong>+ 50%</strong>.</li></ul>
             <p><strong>⛔ Proibição:</strong> Uso de fita zebrada (salvo emergências).</p>
-            <h3>2.2.3. Desligamento de Linhas de Energia</h3>
+            <h3>Desligamento de Linhas de Energia</h3>
             <p><strong>É proibido</strong> realizar podas em contato com redes ativas.</p>
-            <h3>2.2.4. Liberação de Permissão de Trabalho (PT)</h3>
-            <p>A PT é **obrigatória**. Qualquer alteração no escopo exige **revalidação da PT**.</p>
+            <h3>Liberação de Permissão de Trabalho (PT)</h3>
+            <p>A PT é <strong>obrigatória</strong>. Qualquer alteração no escopo exige <strong>revalidação da PT</strong>.</p>
         `
     },
     'operacoes-e-tecnicas': {
         titulo: '✂️ Operações de Poda e Corte',
         html: `
-            <h3>2.3.2. Técnicas de Poda</h3>
-            <ul><li><strong>Desbaste da copa:</strong> Limite de **até 25% da copa viva** por intervenção.</li><li><strong>Elevação da copa:</strong> Manter pelo menos **2/3 da altura total** com copa viva.</li><li><strong>Redução da copa:</strong> Preservar ramos laterais com diâmetro **≥ 1/3** do ramo removido.</li></ul>
+            <h3>Técnicas de Poda</h3>
+            <ul><li><strong>Desbaste da copa:</strong> Limite de <strong>até 25% da copa viva</strong> por intervenção.</li><li><strong>Elevação da copa:</strong> Manter pelo menos <strong>2/3 da altura total</strong> com copa viva.</li><li><strong>Redução da copa:</strong> Preservar ramos laterais com diâmetro <strong>≥ 1/3</strong> do ramo removido.</li></ul>
             
             <h4>Técnica de Corte: Poda em Três Cortes</h4>
             ${imgTag('corte-tres-passos.jpg', 'Sequência dos 3 passos para a poda segura')}
@@ -236,36 +236,36 @@ const manualContent = {
             </ul>
             ${imgTag('poda-drastica-vs-correta.jpg', 'Comparação visual: Poda Drástica vs Correta')}
             
-            <h3>2.3.2.5. Supressão (Corte de Árvore)</h3>
-            <p>Corte direcional deixando a **"dobradiça" de 10%** do diâmetro.</p>
+            <h3>Supressão (Corte de Árvore)</h3>
+            <p>Corte direcional deixando a <strong>"dobradiça" de 10%</strong> do diâmetro.</p>
             <h4>Segurança Crítica: Rota de Fuga</h4>
             ${imgTag('rota-fuga-45graus.jpg', 'Diagrama das rotas de fuga')}
-            <p>Planejar **duas rotas de fuga** livres (ângulo de **45°**).</p>
-            <h4>⚠️ Atenção a Troncos Tensionados</h4>
+            <p>Planejar <strong>duas rotas de fuga</strong> livres (ângulo de <strong>45°</strong>).</p>
+            <h4>Atenção a Troncos Tensionados</h4>
             ${imgTag('corte-tronco-tensionado.jpg', 'Técnica de corte em tronco tensionado')}
-            <h4>⚠️ Efeito Rebote (Motosserra)</h4>
+            <h4>Efeito Rebote (Motosserra)</h4>
             ${imgTag('perigo-rebote.jpg', 'Diagrama do Efeito Rebote')}
-            <p>Ocorre ao usar a ponta superior do sabre. **NUNCA use a ponta superior da lâmina para cortar.**</p>
+            <p>Ocorre ao usar a ponta superior do sabre. <strong>NUNCA use a ponta superior da lâmina para cortar.</strong></p>
         `
     },
     'riscos-e-epis': {
         titulo: '🛡️ Análise de Risco e EPIs',
         html: `
-            <h3>2.4. Análise de Risco (Perigos Recorrentes)</h3>
+            <h3>Análise de Risco (Perigos Recorrentes)</h3>
             <p>Queda de altura, Queda de ferramentas, Choque elétrico, Corte, Efeito Rebote.</p>
-            <h3>2.5. Equipamento de Proteção Individual (EPIs)</h3>
+            <h3>Equipamento de Proteção Individual (EPIs)</h3>
             ${imgTag('epis-motosserra.jpg', 'Operador com EPIs completos')}
             <h4>EPIs Anticorte e Impacto</h4>
             <ul><li>Capacete com jugular</li><li>Calça/Blusão/Luva de motosserista</li><li>Viseira/protetor facial</li><li>Perneira</li></ul>
             <h4>EPIs para Trabalho em Altura (SPIQ)</h4>
             <p>Uso de <span class="glossary-term" data-term-key="spi q">SPIQ</span> (Cinto, Talabarte, Trava-queda).</p>
-            <p><strong>⚠️ Proibição:</strong> **escalada livre** ou ancoragem nos galhos a serem cortados.</p>
+            <p><strong>⚠️ Proibição:</strong> <strong>escalada livre</strong> ou ancoragem nos galhos a serem cortados.</p>
         `
     },
     'gestao-e-desmobilizacao': {
         titulo: '♻️ Gestão de Resíduos e Desmobilização',
         html: `
-            <h3>2.3.4. Gestão de Resíduos Arbóreos (PNRS)</h3>
+            <h3>Gestão de Resíduos Arbóreos (PNRS)</h3>
             ${imgTag('segregacao-residuos.jpg', 'Segregação de resíduos')}
             <ul><li><strong>Princípios:</strong> Não geração, redução, reutilização e reciclagem.</li><li><strong>Rastreabilidade:</strong> Emissão de <span class="glossary-term" data-term-key="mtr">Manifesto de Transporte de Resíduos (MTR)</span>.</li></ul>
             
@@ -273,12 +273,10 @@ const manualContent = {
             ${imgTag('abastecimento-seguro.jpg', 'Abastecimento seguro com bacia de contenção')}
             <ul><li>Realizar em área ventilada, com <strong>bacia de contenção</strong> e <strong>Kit de Mitigação Ambiental</strong>.</li></ul>
             
-            <h3>2.3.6. Desmobilização</h3>
-            <p>Remover todos os resíduos. Retirar isolamento **somente após liberação formal** do responsável técnico.</p>
+            <h3>Desmobilização</h3>
+            <p>Remover todos os resíduos. Retirar isolamento <strong>somente após liberação formal</strong> do responsável técnico.</p>
         `
     },
-
-    // NOVO CONTEÚDO DO GLOSSÁRIO GERAL (v10.1)
     'glossario-geral': {
         titulo: '📘 Glossário Geral de Termos',
         html: `
