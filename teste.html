@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste da Biblioteca UTM</title>
+    <script src="utm-latlon.min.js"></script>
+</head>
+<body style="font-family: monospace; font-size: 1.2rem; padding: 20px;">
+
+    <h1>Testando 'utm-latlon.min.js'...</h1>
+    <div id="resultado"></div>
+
+    <script>
+        try {
+            // Verifica se a biblioteca foi carregada e criou o objeto 'Utm'
+            if (typeof Utm === 'undefined') {
+                throw new Error("A biblioteca 'Utm' não foi carregada. Verifique se o arquivo 'utm-latlon.min.js' está na pasta correta.");
+            }
+
+            // Coordenadas fictícias (Googleplex)
+            const latFicticia = 37.422;
+            const lonFicticia = -122.084;
+            
+            // Tenta a conversão
+            const utmCoords = Utm.fromLatLon(latFicticia, lonFicticia);
+
+            // Se chegou aqui, funcionou
+            const resultadoHTML = `
+                <h2 style="color: green;">TESTE BEM-SUCEDIDO</h2>
+                <p>A biblioteca 'utm-latlon.min.js' está funcional.</p>
+                <p><strong>Entrada (Lat/Lon):</strong> ${latFicticia}, ${lonFicticia}</p>
+                <p><strong>Saída (UTM):</strong></p>
+                <pre>${JSON.stringify(utmCoords, null, 2)}</pre>
+                <p><strong>Resultado Esperado:</strong> Zona 10S, Easting ~581634, Northing ~4141665</p>
+            `;
+            document.getElementById('resultado').innerHTML = resultadoHTML;
+            console.log("TESTE UTM BEM-SUCEDIDO:", utmCoords);
+
+        } catch (error) {
+            // Se falhar
+            const resultadoHTML = `
+                <h2 style="color: red;">TESTE FALHOU</h2>
+                <p>${error.message}</p>
+            `;
+            document.getElementById('resultado').innerHTML = resultadoHTML;
+            console.error("TESTE UTM FALHOU:", error.message);
+        }
+    </script>
+
+</body>
+</html>

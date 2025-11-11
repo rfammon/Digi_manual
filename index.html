@@ -1,90 +1,91 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual de Poda e Corte Interativo - Guia Rápido</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Poda e Corte Interativo - Guia Rápido</title>
     
-    <script src="utm-latlon.min.js"></script>
-    
-    <link rel="stylesheet" href="style.css?v=13.0"> 
+    <link rel="stylesheet" href="style.css?v=13.7"> 
 </head>
 <body>
 
-    <header class="header-manual">
-        <h1>Manual Interativo de Poda e Corte</h1>
-        <p>Seu guia de bolso para conceitos, técnicas e segurança.</p>
-    </header>
+    <header class="header-manual">
+        <h1>Manual Interativo de Poda e Corte</h1>
+        <p>Seu guia de bolso para conceitos, técnicas e segurança.</p>
+    </header>
 
-    <main>
-        
-        <div id="app-content">
-            <section class="mapa-navegacao">
-                <h2>Mapa Interativo do Manual</h2>
-                
-                <nav class="topicos-container">
-                    <button class="topico-btn active" data-target="conceitos-basicos">💡 Definições e Termos</button>
-                    <button class="topico-btn" data-target="planejamento-inspecao">📋 Planejamento e Risco</button>
-                    <button class="topico-btn" data-target="autorizacao-legal">📜 Termos Legais (ASV)</button>
-                    <button class="topico-btn" data-target="preparacao-e-isolamento">🚧 Preparação (Isolamento)</button>
-                    <button class="topico-btn" data-target="operacoes-e-tecnicas">✂️ Poda e Supressão</button>
-                    <button class="topico-btn" data-target="riscos-e-epis">🛡️ EPIs e Análise de Risco</button>
-                    <button class="topico-btn" data-target="gestao-e-desmobilizacao">♻️ Resíduos (MTR)</button>
-                    <button class="topico-btn" data-target="glossario-geral">📘 Glossário Geral</button>
+    <main>
+        
+        <div id="app-content">
+            <section class="mapa-navegacao">
+                <h2>Mapa Interativo do Manual</h2>
+                
+                <nav class="topicos-container">
+                    <button class="topico-btn active" data-target="conceitos-basicos">💡 Definições e Termos</button>
+                    <button class="topico-btn" data-target="planejamento-inspecao">📋 Planejamento e Risco</button>
+                    <button class="topico-btn" data-target="autorizacao-legal">📜 Termos Legais (ASV)</button>
+                    <button class="topico-btn" data-target="preparacao-e-isolamento">🚧 Preparação (Isolamento)</button>
+                    <button class="topico-btn" data-target="operacoes-e-tecnicas">✂️ Poda e Supressão</button>
+                    <button class="topico-btn" data-target="riscos-e-epis">🛡️ EPIs e Análise de Risco</button>
+                    <button class="topico-btn" data-target="gestao-e-desmobilizacao">♻️ Resíduos (MTR)</button>
+                    <button class="topico-btn" data-target="glossario-geral">📘 Glossário Geral</button>
+                    
+                    <button class="topico-btn" data-target="sobre-autor">👨‍💻 Sobre o Autor</button>
+                    
                     <button class="topico-btn" data-target="calculadora-risco">📊 Calculadora de Risco</button>
-                </nav>
-            </section>
+                </nav>
+            </section>
 
-            <section class="conteudo-detalhe">
-                <div id="detalhe-view">
-                                    </div>
-            </section>
-        </div>
+            <section class="conteudo-detalhe">
+                <div id="detalhe-view">
+                    </div>
+            </section>
+        </div>
 
-        <section id="gemini-chat">
-            <h2>🤖 Assistente Digital (Baseado no Manual)</h2>
-            <div class="chat-container">
-                <div id="chat-response-box">
-                    <p class="chat-placeholder">Faça uma pergunta específica sobre o manual (ex: "Qual a diferença entre poda drástica e redução?" ou "Quais EPIs são necessários para motosserra?").</p>
-                </div>
-                
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Digite sua pergunta aqui...">
-                    <button id="chat-send-btn">Enviar</button>
-                </div>
-            </div>
-        </section>
+        <section id="gemini-chat">
+            <h2>🤖 Assistente Digital (Baseado no Manual)</h2>
+            <div class="chat-container">
+                <div id="chat-response-box">
+                    <p class="chat-placeholder">Faça uma pergunta específica sobre o manual (ex: "Qual a diferença entre poda drástica e redução?" ou "Quais EPIs são necessários para motosserra?").</p>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Digite sua pergunta aqui...">
+                    <button id="chat-send-btn">Enviar</button>
+                </div>
+            </div>
+        </section>
 
-        <section id="fale-conosco">
-            <h2>📧 Dúvidas e Sugestões</h2>
-            <div class="contact-form-container">
-                
-                <form id="contact-form" class="contact-form">
-                    
-                    <label for="nome">Seu Nome:</label>
-                    <input type="text" id="nome" name="Nome" required placeholder="Seu nome completo">
-                    
-                    <label for="email">Seu Email (para retorno):</label>
-                    <input type="email" id="email" name="Email_de_Retorno" required placeholder="seu.email@exemplo.com.br">
-                    
-                    <label for="assunto">Assunto:</label>
-                    <input type="text" id="assunto" name="Assunto" required placeholder="Dúvida sobre o manual / Sugestão">
+        <section id="fale-conosco">
+            <h2>📧 Dúvidas e Sugestões</h2>
+            <div class="contact-form-container">
+                
+                <form id="contact-form" class="contact-form">
+                    
+                    <label for="nome">Seu Nome:</label>
+                    <input type="text" id="nome" name="Nome" required placeholder="Seu nome completo">
+                    
+                    <label for="email">Seu Email (para retorno):</label>
+                    <input type="email" id="email" name="Email_de_Retorno" required placeholder="seu.email@exemplo.com.br">
+                    
+                    <label for="assunto">Assunto:</label>
+                    <input type="text" id="assunto" name="Assunto" required placeholder="Dúvida sobre o manual / Sugestão">
 
-                    <label for="mensagem">Sua Dúvida ou Mensagem:</label>
-                    <textarea id="mensagem" name="Mensagem" rows="5" required placeholder="Escreva aqui sua pergunta ou feedback sobre o manual."></textarea>
-                    
-                    <button type="submit" class="send-btn">Enviar via Cliente de E-mail</button>
-                </form>
-            </div>
-            <p class="contact-note">Atenção: Este botão abrirá seu cliente de e-mail padrão (Ex: Outlook, Gmail App).</p>
-        </section>
+                    <label for="mensagem">Sua Dúvida ou Mensagem:</label>
+                    <textarea id="mensagem" name="Mensagem" rows="5" required placeholder="Escreva aqui sua pergunta ou feedback sobre o manual."></textarea>
+                    
+                    <button type="submit" class="send-btn">Enviar via Cliente de E-mail</button>
+                </form>
+            </div>
+            <p class="contact-note">Atenção: Este botão abrirá seu cliente de e-mail padrão (Ex: Outlook, Gmail App).</p>
+        </section>
 
-    </main>
+    </main>
 
-    <footer class="footer-manual">
-        <p>&copy; 2025 Manual Digital. Desenvolvido com Site Builder.</p>
-    </footer>
+    <footer class="footer-manual">
+        <p>&copy; 2025 Manual Digital. Desenvolvido com Site Builder.</p>
+    </footer>
 
-    <script src="script.js?v=13.0"></script>
+    <script src="script.js?v=13.7"></script>
 </body>
 </html>

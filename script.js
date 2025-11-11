@@ -1,4 +1,4 @@
-// script.js (v13.0 - Versão Completa e Consolidada)
+// script.js (v13.7 - GPS Embutido)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
@@ -132,7 +132,7 @@ const podaPurposeData = {
 };
 
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v10.9 + v12.8) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v13.7) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -170,8 +170,8 @@ const manualContent = {
         `
     },
    'planejamento-inspecao': {
-     titulo: '📋 Planejamento e Inspeção',
-     html: `
+      titulo: '📋 Planejamento e Inspeção',
+      html: `
         <h3>Planejamento</h3>
         <p>Etapa fundamental para garantir a execução <strong>segura e eficiente</strong>.</p>
         
@@ -351,6 +351,46 @@ const manualContent = {
             </table>
         `
     },
+
+    // ==========================================================
+    // NOVA SEÇÃO (v13.6/v13.7)
+    // ==========================================================
+    'sobre-autor': {
+        titulo: '👨‍💻 Sobre o Autor',
+        html: `
+            <div id="sobre-o-autor"> 
+                <div class="autor-container">
+                    <div class="autor-texto">
+                        <p>
+                            <strong>Rafael de Andrade Ammon</strong> é Engenheiro Florestal (UFRRJ),
+                            com MBA em Gestão de Projetos (USP/ESALQ) em curso. A sua carreira
+                            foca-se na conservação ambiental, restauração florestal e
+                            sustentabilidade corporativa.
+                        </p>
+                        <p>
+                            Atualmente, atua como Fiscal Operacional em áreas verdes industriais
+                            na RPBC (pela Vinil Engenharia). Possui experiência em projetos
+                            de grande escala, como o Inventário Florestal Nacional (RJ) e a
+                            restauração do COMPERJ, tendo trabalhado em empresas como EGIS
+                            e CTA Meio Ambiente.
+                        </p>
+                        <p>
+                            É certificado em Google Project Management e pela ABRAPLAN,
+                            com competências em Geoprocessamento (QGIS) e Power BI.
+                            Fluente em inglês.
+                        </p>
+                        <p class="autor-links">
+                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> | 
+                            <a href="https://www.linkedin.com/in/rafael-ammon-68601633/" target="_blank">LinkedIn</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `
+    },
+    // ==========================================================
+    // FIM DA NOVA SEÇÃO
+    // ==========================================================
 
     // (v12.8) CONTEÚDO DA CALCULADORA DE RISCO (COM GPS)
     'calculadora-risco': {
@@ -770,7 +810,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // (v12.8) --- MÓDULO DA CALCULADORA DE RISCO ---
+    // ==========================================================
+    // INÍCIO DA MODIFICAÇÃO (v13.7) - GPS EMBUTIDO
+    // ==========================================================
+
+    // (v13.7) --- MÓDULO DA CALCULADORA DE RISCO ---
     function setupRiskCalculator() {
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
@@ -861,23 +905,109 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 3. Lógica dos Botões de Exportação
-        exportCsvBtn.addEventListener('click', exportCSV);
-        sendEmailBtn.addEventListener('click', sendEmailReport);
+        if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
+        if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
         
         // 4. Renderiza a tabela ao carregar
         renderSummaryTable();
         
         // 5. (v12.6) Event Listener para Excluir
-        summaryContainer.addEventListener('click', (e) => {
-            const deleteButton = e.target.closest('.delete-tree-btn');
-            if (deleteButton) {
-                const treeId = parseInt(deleteButton.dataset.id, 10);
-                handleDeleteTree(treeId);
-            }
-        });
+        if (summaryContainer) {
+            summaryContainer.addEventListener('click', (e) => {
+                const deleteButton = e.target.closest('.delete-tree-btn');
+                if (deleteButton) {
+                    const treeId = parseInt(deleteButton.dataset.id, 10);
+                    handleDeleteTree(treeId);
+                }
+            });
+        }
     }
     
-    // (v12.8) Função de Captura de GPS
+    /**
+     * Converte Lat/Lon (WGS84) para coordenadas UTM.
+     * Esta função substitui a biblioteca externa utm-latlon.min.js
+     * @param {number} lat Latitude
+     * @param {number} lon Longitude
+     * @returns {object} {easting, northing, zoneNum, zoneLetter}
+     */
+    function convertLatLonToUtm(lat, lon) {
+        const f = 1 / 298.257223563; // WGS 84
+        const a = 6378137.0; // WGS 84
+        const k0 = 0.9996;
+        const e = Math.sqrt(f * (2 - f));
+        const e2 = e * e;
+        const e4 = e2 * e2;
+        const e6 = e4 * e2;
+        const e_2 = e2 / (1.0 - e2);
+
+        const latRad = lat * (Math.PI / 180.0);
+        const lonRad = lon * (Math.PI / 180.0);
+
+        // --- Calcula Zona UTM ---
+        let zoneNum = Math.floor((lon + 180.0) / 6.0) + 1;
+        // Exceções para Noruega e Svalbard (mantidas da lógica da biblioteca)
+        if (lat >= 56.0 && lat < 64.0 && lon >= 3.0 && lon < 12.0) zoneNum = 32;
+        if (lat >= 72.0 && lat < 84.0) {
+            if (lon >= 0.0 && lon < 9.0) zoneNum = 31;
+            else if (lon >= 9.0 && lon < 21.0) zoneNum = 33;
+            else if (lon >= 21.0 && lon < 33.0) zoneNum = 35;
+            else if (lon >= 33.0 && lon < 42.0) zoneNum = 37;
+        }
+        
+        const lonOrigin = (zoneNum - 1.0) * 6.0 - 180.0 + 3.0; // +3 para meridiano central
+        const lonOriginRad = lonOrigin * (Math.PI / 180.0);
+
+        // --- Calcula Letra da Zona ---
+        const zoneLetters = "CDEFGHJKLMNPQRSTUVWXX";
+        let zoneLetter = "Z";
+        if (lat >= -80 && lat <= 84) {
+            zoneLetter = zoneLetters.charAt(Math.floor((lat + 80) / 8));
+        }
+
+        // --- Cálculos de Projeção ---
+        const n = (a - (a * Math.sqrt(1 - e2))) / (a + (a * Math.sqrt(1 - e2)));
+        const nu = a / Math.sqrt(1.0 - e2 * Math.sin(latRad) * Math.sin(latRad));
+        const T = Math.tan(latRad) * Math.tan(latRad);
+        const C = e_2 * Math.cos(latRad) * Math.cos(latRad);
+        const A = (lonRad - lonOriginRad) * Math.cos(latRad);
+
+        const M = a * (
+            (1.0 - e2 / 4.0 - 3.0 * e4 / 64.0 - 5.0 * e6 / 256.0) * latRad -
+            (3.0 * e2 / 8.0 + 3.0 * e4 / 32.0 + 45.0 * e6 / 1024.0) * Math.sin(2.0 * latRad) +
+            (15.0 * e4 / 256.0 + 45.0 * e6 / 1024.0) * Math.sin(4.0 * latRad) -
+            (35.0 * e6 / 3072.0) * Math.sin(6.0 * latRad)
+        );
+
+        const M1 = M + nu * Math.tan(latRad) * (
+            (A * A / 2.0) +
+            (5.0 - T + 9.0 * C + 4.0 * C * C) * (A * A * A * A / 24.0) +
+            (61.0 - 58.0 * T + T * T + 600.0 * C - 330.0 * e_2) * (A * A * A * A * A * A / 720.0)
+        );
+
+        const K1 = k0 * (M1);
+        
+        const K2 = k0 * nu * (
+            A +
+            (1.0 - T + C) * (A * A * A / 6.0) +
+            (5.0 - 18.0 * T + T * T + 72.0 * C - 58.0 * e_2) * (A * A * A * A * A / 120.0)
+        );
+        
+        let northing = K1;
+        if (lat < 0.0) {
+            northing += 10000000.0; // Hemisfério Sul
+        }
+        
+        return {
+            easting: K2 + 500000.0, // Adiciona falso-leste
+            northing: northing,
+            zoneNum: zoneNum,
+            zoneLetter: zoneLetter
+        };
+    }
+
+    /**
+     * Função principal que captura o GPS e usa o conversor embutido.
+     */
     function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
         const coordXField = document.getElementById('risk-coord-x');
@@ -895,12 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Esta é a função que depende do script no index.html
-        if (typeof Utm === 'undefined') {
-             gpsStatus.textContent = "Erro: Biblioteca UTM não carregou.";
-             gpsStatus.className = 'error';
-             return;
-        }
+        // NÃO HÁ MAIS VERIFICAÇÃO 'typeof Utm', pois a função está embutida.
 
         gpsStatus.textContent = "Capturando coordenadas...";
         gpsStatus.className = ''; // Reseta cor
@@ -908,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const options = {
             enableHighAccuracy: true, 
             timeout: 10000,           
-            maximumAge: 0             
+            maximumAge: 0           
         };
 
         navigator.geolocation.getCurrentPosition(
@@ -917,8 +1042,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lon = position.coords.longitude;
 
                 try {
-                    // Converte Lat/Lon para UTM
-                    const utmCoords = Utm.fromLatLon(lat, lon);
+                    // *** CHAMA A FUNÇÃO LOCAL ***
+                    const utmCoords = convertLatLonToUtm(lat, lon); 
                     
                     coordXField.value = utmCoords.easting.toFixed(0); 
                     coordYField.value = utmCoords.northing.toFixed(0); 
@@ -926,6 +1051,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gpsStatus.textContent = `Zona UTM: ${utmCoords.zoneNum}${utmCoords.zoneLetter}`;
                     gpsStatus.className = '';
                 } catch (e) {
+                    console.error("Erro na conversão UTM:", e); // Log para depuração
                     gpsStatus.textContent = "Erro ao converter coordenadas.";
                     gpsStatus.className = 'error';
                 }
@@ -950,6 +1076,10 @@ document.addEventListener('DOMContentLoaded', () => {
             options
         );
     }
+    
+    // ==========================================================
+    // FIM DA MODIFICAÇÃO (v13.7)
+    // ==========================================================
     
     // (v12.6) Função para Excluir e Re-indexar
     function handleDeleteTree(id) {

@@ -1,4 +1,4 @@
-/* style.css (Completo - v13.3 - Revertendo para Grid + Correção de Sintaxe) */
+/* style.css (Completo v13.7 - Sintaxe Limpa) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -7,30 +7,30 @@
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box; 
+    box-sizing: border-box;
 }
 
 body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
-    background-color: #f4f4f9; 
-    color: #333; 
+    background-color: #f4f4f9;
+    color: #333;
     position: relative; /* Contexto para o Tooltip */
-    min-height: 100vh; 
+    min-height: 100vh;
     overflow-wrap: break-word; /* Impede estouro de texto global */
     word-wrap: break-word;
 }
 
-.header-manual, 
+.header-manual,
 .footer-manual {
-    background-color: #004d40; 
+    background-color: #004d40;
     color: #fff;
     padding: 1rem;
     text-align: center;
 }
 
 .header-manual h1 {
-    font-size: 1.5rem; 
+    font-size: 1.5rem;
     margin-bottom: 0.2rem;
 }
 
@@ -41,7 +41,7 @@ main {
 
 /* -------------------------------------- */
 /* 2. ESTILOS DO ÍNDICE (MAPA MENTAL) */
-/* (REVERTIDO PARA GRID - v13.3) */
+/* (CORREÇÃO v13.5/v13.7 - Sintaxe Limpa) */
 /* -------------------------------------- */
 
 .mapa-navegacao h2 {
@@ -49,45 +49,55 @@ main {
     margin-bottom: 15px;
 }
 
-/* * REVERSÃO (v13.3): Voltamos ao 'display: grid', pois 
- * é a solução correta para colunas uniformes que se auto-ajustam.
+/*
+* Lógica da v13.5 (Correta):
+* Usa 'auto-fit' com um tamanho fixo ('200px').
+* Usa 'justify-content: center' para centralizar o grid todo.
 */
 .topicos-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px; 
+    /* Cria colunas de 200px e se adapta à tela */
+    grid-template-columns: repeat(auto-fit, 200px);
+    gap: 15px;
     margin-bottom: 20px;
-}
 
-/* * REVERSÃO (v13.3): Removemos as propriedades 'flex-grow' e 'flex-basis' 
- * do botão, pois elas não são necessárias com 'display: grid'.
-*/
-.topico-btn {
-    padding: 1rem 0.5rem;
-    background-color: #00796b; 
-    color: #fff;
-    border: none;
-    border-radius: 8px; 
-    cursor: pointer;
-    font-size: 0.9rem; 
-    font-weight: bold;
-    text-align: center; 
-    transition: background-color 0.2s, transform 0.1s;
-    
-    height: 75px; 
-    
-    display: flex;
-    align-items: center;
+    /* Centraliza o bloco de botões */
     justify-content: center;
 }
 
+/*
+* Adicionamos 'width: 200px' para garantir que o botão
+* tenha exatamente o tamanho da coluna que definimos.
+*/
+.topico-btn {
+    padding: 1rem 0.5rem;
+    background-color: #00796b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-align: center;
+    transition: background-color 0.2s, transform 0.1s;
+
+    height: 75px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Garante que o botão tenha a largura da coluna */
+    width: 200px;
+}
+
 .topico-btn:hover {
-    background-color: #00695c; 
-    transform: translateY(-2px); 
+    background-color: #00695c;
+    transform: translateY(-2px);
 }
 
 .topico-btn.active {
-    background-color: #ffb300; 
+    background-color: #ffb300;
     color: #333;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -174,8 +184,8 @@ main {
     height: auto;
     border-radius: 5px;
     margin: 15px 0;
-    display: block; 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+    display: block;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* -------------------------------------- */
@@ -183,11 +193,11 @@ main {
 /* -------------------------------------- */
 
 .glossary-term {
-    color: #ff6f00; 
+    color: #ff6f00;
     font-weight: bold;
-    cursor: help; 
-    border-bottom: 1px dashed #ff6f00; 
-    
+    cursor: help;
+    border-bottom: 1px dashed #ff6f00;
+
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE */
@@ -197,13 +207,13 @@ main {
 
 #glossary-tooltip {
     position: absolute;
-    background-color: #333; 
+    background-color: #333;
     color: #fff;
     border-radius: 5px;
     padding: 10px;
     max-width: 90vw; /* Limite no mobile */
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    z-index: 1000; 
+    z-index: 1000;
     transition: opacity 0.2s, visibility 0.2s;
     opacity: 0;
     visibility: hidden;
@@ -213,7 +223,7 @@ main {
 }
 
 #glossary-tooltip strong {
-    color: #ffb300; 
+    color: #ffb300;
     display: block;
     margin-bottom: 5px;
 }
@@ -270,7 +280,7 @@ main {
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    border-top: 5px solid #ffb300; 
+    border-top: 5px solid #ffb300;
     margin-top: 20px;
 }
 
@@ -308,12 +318,8 @@ main {
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: bold;
-    /* * CORREÇÃO DE SINTAXE (v13.3): 
-     * Removido o ':' extra.
-     * Era: transition: background-color: 0.3s;
-     */
     transition: background-color 0.3s;
-    width: 100%; 
+    width: 100%;
 }
 
 .send-btn:hover {
@@ -335,7 +341,7 @@ main {
     background-color: #e8f5e9; /* Fundo verde claro */
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    border-top: 5px solid #00796b; 
+    border-top: 5px solid #00796b;
     margin-top: 20px;
 }
 
@@ -423,7 +429,7 @@ main {
     font-size: 0.9em;
 }
 
-.glossary-table th, 
+.glossary-table th,
 .glossary-table td {
     border: 1px solid #ddd;
     padding: 10px;
@@ -481,7 +487,7 @@ main {
 }
 
 .form-grid label,
-.risk-fieldset > div > label { 
+.risk-fieldset > div > label {
     font-weight: bold;
     font-size: 0.9em;
     color: #333;
@@ -492,7 +498,7 @@ main {
 .form-grid input[type="text"],
 .form-grid input[type="number"],
 .form-grid input[type="date"],
-.risk-fieldset textarea { 
+.risk-fieldset textarea {
     width: 100%;
     padding: 8px;
     border: 1px solid #ccc;
@@ -501,8 +507,8 @@ main {
     font-family: 'Helvetica Neue', Arial, sans-serif; /* Garante a mesma fonte */
 }
 
-.risk-fieldset textarea { 
-    margin-top: 10px; 
+.risk-fieldset textarea {
+    margin-top: 10px;
 }
 
 
@@ -523,23 +529,23 @@ main {
     background-color: #f0f0f0;
 }
 /* Coluna Nº */
-.risk-table td:nth-child(1) { 
-    width: 10px; 
-    text-align: center; 
+.risk-table td:nth-child(1) {
+    width: 10px;
+    text-align: center;
     font-weight: bold;
 }
 /* Coluna Peso */
-.risk-table td:nth-child(3) { 
-    width: 30px; 
-    text-align: center; 
+.risk-table td:nth-child(3) {
+    width: 30px;
+    text-align: center;
     font-weight: bold;
     font-size: 1.1em;
     color: #004d40;
 }
 /* Coluna Checkbox */
-.risk-table td:nth-child(4) { 
-    width: 50px; 
-    text-align: center; 
+.risk-table td:nth-child(4) {
+    width: 50px;
+    text-align: center;
 }
 
 .risk-checkbox {
@@ -558,7 +564,7 @@ main {
     margin-bottom: 25px; /* Espaço antes da próxima seção */
 }
 #add-tree-btn, #reset-risk-form-btn,
-.export-btn { 
+.export-btn {
     flex-grow: 1; /* Ocupam espaço igual */
     min-width: 150px; /* Largura mínima */
     padding: 12px 20px;
@@ -627,8 +633,8 @@ main {
     border: 1px solid #ccc;
     padding: 8px;
     text-align: left;
-    white-space: pre-wrap; 
-    word-break: break-word; 
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 .summary-table th {
     background-color: #004d40; /* Cabeçalho escuro */
@@ -714,4 +720,41 @@ main {
 #gps-status.error {
     color: #C62828; /* Vermelho */
     font-weight: bold;
+}
+
+/* -------------------------------------- */
+/* 12. SECÇÃO SOBRE O AUTOR (v13.6) */
+/* -------------------------------------- */
+
+#sobre-o-autor {
+    /* Este seletor agora estiliza o <div> 
+       dentro do conteúdo carregado pelo script.js */
+    padding: 0; /* O padding principal já vem do .conteudo-detalhe */
+}
+
+.autor-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.autor-texto p {
+    margin-bottom: 15px;
+    font-size: 1em;
+}
+
+.autor-texto .autor-links {
+    font-size: 0.95rem;
+    font-weight: bold;
+}
+
+.autor-texto .autor-links a {
+    color: #00796b;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.autor-texto .autor-links a:hover {
+    color: #004d40;
+    text-decoration: underline;
 }
