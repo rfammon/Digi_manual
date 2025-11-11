@@ -1,14 +1,16 @@
-// script.js (v12.9 - Versão Completa e Consolidada)
+// script.js (v13.0 - Versão Completa e Consolidada)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 
+// Função utilitária para gerar a tag de imagem
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // Dados do Glossário (COMPLETO)
 const glossaryTerms = {
+    // 1.1 Termos Estruturais e Anatômicos
     'colar do galho': 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.',
     'crista da casca': 'Elevação cortical paralela ao ângulo de inserção do galho, indicadora da zona de união.',
     'lenho de cicatrização': 'Tecido formado para selar ferimentos, também conhecido como callus.',
@@ -18,6 +20,8 @@ const glossaryTerms = {
     'entreno': 'Espaço entre dois nós consecutivos no ramo.',
     'no': 'Ponto de inserção de folhas, gemas ou ramos.',
     'lenho': 'Tecido vegetal com função de sustentação e condução de seiva.',
+    
+    // 1.2 Instrumentos e Equipamentos (para o glossário)
     'podao': 'Tesoura de poda de haste longa para alcance elevado.',
     'tesourao-poda': 'Ferramenta para galhos de até 7 cm de diâmetro.',
     'serra-poda': 'Serra com dentes especiais para madeira verde.',
@@ -26,6 +30,8 @@ const glossaryTerms = {
     'podador-bypass-glossario': 'Lâmina deslizante que realiza cortes limpos.',
     'podador-bigorna': 'Lâmina que pressiona o galho contra superfície plana.',
     'hipsometro': 'Instrumento para medir altura de árvores.',
+
+    // 1.3 Técnicas de Poda
     'poda-conducao': 'Direciona crescimento da árvore.',
     'poda-formacao': 'Define estrutura arquitetônica futura.',
     'poda-limpeza': 'Remove galhos mortos, doentes ou mal orientados.',
@@ -764,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // (v12.9) --- MÓDULO DA CALCULADORA DE RISCO ---
+    // (v12.8) --- MÓDULO DA CALCULADORA DE RISCO ---
     function setupRiskCalculator() {
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
@@ -889,6 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // Esta é a função que depende do script no index.html
         if (typeof Utm === 'undefined') {
              gpsStatus.textContent = "Erro: Biblioteca UTM não carregou.";
              gpsStatus.className = 'error';
@@ -910,6 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lon = position.coords.longitude;
 
                 try {
+                    // Converte Lat/Lon para UTM
                     const utmCoords = Utm.fromLatLon(lat, lon);
                     
                     coordXField.value = utmCoords.easting.toFixed(0); 

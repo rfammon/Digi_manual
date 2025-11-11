@@ -1,4 +1,4 @@
-/* style.css (Completo - v12.9 Correção do Grid + GPS/Delete) */
+/* style.css (Completo - v13.0 Correção de Layout do Grid de Botões) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -50,8 +50,8 @@ main {
 
 .topicos-container {
     display: grid;
-    /* CORREÇÃO (v12.9): Aumentado para 200px para corrigir quebra de layout */
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    /* CORREÇÃO (v13.0): Aumentado para 180px (de 150px) */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 15px; 
     margin-bottom: 20px;
 }
@@ -67,7 +67,12 @@ main {
     font-weight: bold;
     text-align: center; 
     transition: background-color 0.2s, transform 0.1s;
-    min-height: 60px; 
+    
+    /* CORREÇÃO (v13.0): Trocado min-height por height 
+       para garantir altura uniforme em todos os botões. 
+    */
+    height: 75px; 
+    
     display: flex;
     align-items: center;
     justify-content: center;
@@ -687,7 +692,7 @@ main {
     font-size: 0.9rem;
     font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color: 0.2s;
 }
 #get-gps-btn:hover {
     background-color: #00695c;
