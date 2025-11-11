@@ -1,11 +1,11 @@
-// script.js (v14.0 - Salvar Última Aba Ativa)
+// script.js (v14.3 - Média de 5 Leituras de GPS)
 
 // === 0. ARMAZENAMENTO DE ESTADO ===
 let registeredTrees = [];
 
 // (v13.9) Chave para o localStorage da tabela
 const STORAGE_KEY = 'manualPodaData';
-// (NOVO v14.0) Chave para a última aba ativa
+// (v14.0) Chave para a última aba ativa
 const ACTIVE_TAB_KEY = 'manualPodaActiveTab'; 
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
@@ -706,8 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
     }
-	
-// --- (NOVO v14.2) LÓGICA DO BOTÃO VOLTAR AO TOPO (IntersectionObserver) ---
+
+    // --- (v14.2) LÓGICA DO BOTÃO VOLTAR AO TOPO (IntersectionObserver) ---
     
     const backToTopButton = document.getElementById('back-to-top-btn');
     // O nosso "alvo" para observar é o header (que tem o ID 'page-top')
@@ -741,6 +741,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // O clique continua a ser tratado pelo <a href="#page-top"> e pelo CSS 'scroll-behavior: smooth'.
     }
+    // --- FIM DA ADIÇÃO v14.2 ---
+
 
     // --- MÓDULO DE TOOLTIP ---
     let currentTooltip = null; 
@@ -901,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tooltipHeight = currentTooltip.offsetHeight;
             let topPos;
             if (rect.top > tooltipHeight + 10) { 
-                topPos = rect.top + scrollY - tooltipHeight - 10;
+                topos = rect.top + scrollY - tooltipHeight - 10;
             } else { 
                 topPos = rect.bottom + scrollY + 10;
             }
@@ -916,7 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================
-    // INÍCIO DA MODIFICAÇÃO (v13.9) - GPS EMBUTIDO E LOCALSTORAGE
+    // INÍCIO DA MODIFICAÇÃO (v14.3) - GPS COM MÉDIA
     // ==========================================================
 
     // (v13.9) --- MÓDULO DA CALCULADORA DE RISCO ---
@@ -1117,9 +1119,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v13.7) Função principal que captura o GPS e usa o conversor embutido.
+     * (v14.3) Função principal que captura o GPS 5x e calcula a média.
+     * Esta função é agora 'async' para usar 'await'.
      */
-    function handleGetGPS() {
+    async function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
         const coordXField = document.getElementById('risk-coord-x');
         const coordYField = document.getElementById('risk-coord-y');
@@ -1136,60 +1139,74 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // NÃO HÁ MAIS VERIFICAÇÃO 'typeof Utm', pois a função está embutida.
-
-        gpsStatus.textContent = "Capturando coordenadas...";
+        gpsStatus.textContent = "Capturando... (1/5)";
         gpsStatus.className = ''; // Reseta cor
 
         const options = {
             enableHighAccuracy: true, 
             timeout: 10000,           
-            maximumAge: 0           
+            maximumAge: 0 // Força uma nova leitura
         };
 
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lon = position.coords.longitude;
+        // Função auxiliar que "promete" uma posição
+        const getSinglePosition = (opts) => {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, opts);
+            });
+        };
 
-                try {
-                    // *** CHAMA A FUNÇÃO LOCAL ***
-                    const utmCoords = convertLatLonToUtm(lat, lon); 
-                    
-                    coordXField.value = utmCoords.easting.toFixed(0); 
-                    coordYField.value = utmCoords.northing.toFixed(0); 
-                    
-                    gpsStatus.textContent = `Zona UTM: ${utmCoords.zoneNum}${utmCoords.zoneLetter}`;
-                    gpsStatus.className = '';
-                } catch (e) {
-                    console.error("Erro na conversão UTM:", e); // Log para depuração
-                    gpsStatus.textContent = "Erro ao converter coordenadas.";
-                    gpsStatus.className = 'error';
-                }
-            },
-            (error) => {
-                gpsStatus.className = 'error';
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        gpsStatus.textContent = "Permissão ao GPS negada.";
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        gpsStatus.textContent = "Posição indisponível.";
-                        break;
-                    case error.TIMEOUT:
-                        gpsStatus.textContent = "Tempo esgotado.";
-                        break;
-                    default:
-                        gpsStatus.textContent = "Erro ao buscar GPS.";
-                        break;
-                }
-            },
-            options
-        );
+        let readings = [];
+        try {
+            // Loop para capturar 5 leituras
+            for (let i = 0; i < 5; i++) {
+                gpsStatus.textContent = `Capturando... (${i + 1}/5)`;
+                const position = await getSinglePosition(options);
+                const utmCoords = convertLatLonToUtm(position.coords.latitude, position.coords.longitude);
+                readings.push(utmCoords);
+            }
+
+            // Se chegou aqui, temos 5 leituras. Vamos calcular a média.
+            if (readings.length === 5) {
+                const totalEasting = readings.reduce((sum, r) => sum + r.easting, 0);
+                const totalNorthing = readings.reduce((sum, r) => sum + r.northing, 0);
+                
+                const avgEasting = totalEasting / 5;
+                const avgNorthing = totalNorthing / 5;
+
+                // Usamos a zona da última leitura (é improvável mudar)
+                const lastZoneNum = readings[4].zoneNum;
+                const lastZoneLetter = readings[4].zoneLetter;
+
+                // Preenche os campos com a média
+                coordXField.value = avgEasting.toFixed(0); 
+                coordYField.value = avgNorthing.toFixed(0); 
+                
+                gpsStatus.textContent = `Média de 5 leituras (Zona: ${lastZoneNum}${lastZoneLetter})`;
+                gpsStatus.className = '';
+            }
+
+        } catch (error) {
+            // Se qualquer uma das 5 leituras falhar, cai aqui
+            gpsStatus.className = 'error';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    gpsStatus.textContent = "Permissão ao GPS negada.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    gpsStatus.textContent = "Posição indisponível.";
+                    break;
+                case error.TIMEOUT:
+                    gpsStatus.textContent = "Tempo esgotado.";
+                    break;
+                default:
+                    gpsStatus.textContent = "Erro ao buscar GPS.";
+                    break;
+            }
+        }
     }
     
     // ==========================================================
-    // FIM DA MODIFICAÇÃO (v13.7)
+    // FIM DA MODIFICAÇÃO (v14.3)
     // ==========================================================
     
     // (v12.6) Função para Excluir e Re-indexar
