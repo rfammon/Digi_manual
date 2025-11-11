@@ -1,4 +1,4 @@
-// script.js (v15.3 - Implementação de Notificações Toast)
+// script.js (v15.5 - Polimento UI: Ícones e Spinner GPS)
 
 // === 0. ARMAZENAMENTO de ESTADO ===
 let registeredTrees = [];
@@ -127,7 +127,7 @@ const podaPurposeData = {
 };
 
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v15.2) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v15.5) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -138,7 +138,7 @@ const manualContent = {
             <p>Termos como <span class="glossary-term" data-term-key="lenho de cicatrização">lenho de cicatrização</span>, <span class="glossary-term" data-term-key="casca inclusa">casca inclusa</span> e <span class="glossary-term" data-term-key="lenho de reação">lenho de reação</span> são importantes para a inspeção.</p>
             
             <h3>Compartimentalização de Árvores</h3>
-            <p>As árvores possuem defesas naturais que protegem cortes e ferimentos, como os causados pela poda. Na casca, os ferimentos formam uma camada protetora chamada periderme necrofilática, que impede a entrada de microrganismos. Na madeira, ocorre um processo chamado compartimentalização, que isola a área danificada para evitar que o problema se espalhe pelo restante da árvore.</p>
+            <p>As árvores possuem defesas naturais que protegem cortes e ferimentos, como os causados pela poda. Na casca, os ferimentos formam uma camada prototora chamada periderme necrofilática, que impede a entrada de microrganismos. Na madeira, ocorre um processo chamado compartimentalização, que isola a área danificada para evitar que o problema se espalhe pelo restante da árvore.</p>
             ${imgTag('compartimentalização.jpg', 'Diagrama do processo de compartimentalização')}
 
             <h3>Instrumentos e Equipamentos</h3>
@@ -381,7 +381,7 @@ const manualContent = {
         `
     },
 
-    // (MODIFICADO v15.1) Conteúdo da Calculadora
+    // (MODIFICADO v15.5) Conteúdo da Calculadora
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
@@ -514,7 +514,7 @@ const manualContent = {
                                 </tr>
                                 <tr>
                                     <td>11</td>
-                                    <td>A espécie é conhecida por apresentar alta taxa de falhas?</td>
+                                    <td>A árvore é conhecida por apresentar alta taxa de falhas?</td>
                                     <td>3</td>
                                     <td><input type="checkbox" class="risk-checkbox" data-weight="3"></td>
                                 </tr>
@@ -570,8 +570,8 @@ const manualContent = {
                     <div id="import-export-controls" class="risk-buttons-area">
                         
                         <input type="file" id="csv-importer" accept="text/csv,text/plain,.csv" style="display: none;">
+                        
                         <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
-    
                         <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
                         <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
                         <button type="button" id="clear-all-btn" class="export-btn">🗑️ Limpar Tabela</button>
@@ -690,12 +690,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v14.3) Função principal que captura o GPS 5x e calcula a média.
+     * (MODIFICADO v15.5) Captura GPS com estado de loading/spinner
      */
     async function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
         const coordXField = document.getElementById('risk-coord-x');
         const coordYField = document.getElementById('risk-coord-y');
+        
+        // (NOVO v15.5) Controle do botão
+        const getGpsBtn = document.getElementById('get-gps-btn');
+        const originalBtnText = getGpsBtn.innerHTML; // Salva o texto original "🛰️ Capturar GPS"
+        
+        // (NOVO v15.5) Cria o spinner
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner';
 
         if (!navigator.geolocation) {
             gpsStatus.textContent = "Geolocalização não é suportada.";
@@ -708,6 +716,11 @@ document.addEventListener('DOMContentLoaded', () => {
             gpsStatus.className = 'error';
             return;
         }
+        
+        // (NOVO v15.5) Ativa o estado de loading
+        getGpsBtn.disabled = true;
+        getGpsBtn.innerHTML = ''; // Limpa o botão
+        getGpsBtn.appendChild(spinner); // Adiciona o spinner
         
         gpsStatus.textContent = "Capturando... (1/5)";
         gpsStatus.className = '';    
@@ -767,6 +780,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     gpsStatus.textContent = "Erro ao buscar GPS.";
                     break;
             }
+        } finally {
+            // (NOVO v15.5) Restaura o botão em qualquer cenário (sucesso ou erro)
+            getGpsBtn.disabled = false;
+            getGpsBtn.innerHTML = originalBtnText; // Restaura o "🛰️ Capturar GPS"
         }
     }
 

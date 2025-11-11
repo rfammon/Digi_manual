@@ -1,4 +1,4 @@
-/* style.css (Completo v15.4 - Inclui Estilos Mobile para Checklist) */
+/* style.css (Completo v15.5 - Polimento UI: Spinner GPS) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -712,6 +712,11 @@ main {
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s;
+    /* (v15.5) Prepara para alinhamento do spinner */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 #get-gps-btn:hover {
     background-color: #00695c;
@@ -1030,5 +1035,30 @@ html {
     /* Célula do Nº (td[1]) - Oculta */
     .risk-table td:nth-child(1) {
         display: none;
+    }
+}
+
+/* -------------------------------------- */
+/* 16. SPINNER GPS (v15.5) */
+/* -------------------------------------- */
+
+#get-gps-btn:disabled {
+    background-color: #00695c; /* Cor de hover */
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }
