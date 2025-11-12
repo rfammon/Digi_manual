@@ -1,4 +1,4 @@
-// script.js (COMPLETO v19.3 - Correção de Bug de Referência e Botões Unificados)
+// script.js (COMPLETO v19.3 - Correção de Bug de Sintaxe e Botões Unificados)
 
 // === 0. ARMAZENAMENTO de ESTADO (Variáveis Globais) ===
 let registeredTrees = [];
@@ -1009,6 +1009,23 @@ document.addEventListener('DOMContentLoaded', () => {
         let tableHTML = '<table class="summary-table"><thead><tr>';
         tableHTML += `<th class="${getThClass('id')}" data-sort-key="id">ID</th>`;
         tableHTML += `<th class="${getThClass('data')}" data-sort-key="data">Data</th>`;
+        tableHTML += `<th class="${getThClass('especie')}" data-sort-key="especie">Espécie</th>`;
+        tableHTML += `<th>Foto</th>`; // Não ordenável
+        tableHTML += `<th class="${getThClass('coordX')}" data-sort-key="coordX">Coord. X</th>`;
+        tableHTML += `<th class="${getThClass('coordY')}" data-sort-key="coordY">Coord. Y</th>`;
+        tableHTML += `<th class="${getThClass('utmZoneNum')}" data-sort-key="utmZoneNum">Zona UTM</th>`;
+        tableHTML += `<th class="${getThClass('dap')}" data-sort-key="dap">DAP (cm)</th>`;
+        tableHTML += `<th class="${getThClass('local')}" data-sort-key="local">Local</th>`;
+        tableHTML += `<th class="${getThClass('avaliador')}" data-sort-key="avaliador">Avaliador</th>`;
+        tableHTML += `<th class="${getThClass('pontuacao')}" data-sort-key="pontuacao">Pontos</th>`;
+        tableHTML += `<th class="${getThClass('risco')}" data-sort-key="risco">Risco</th>`;
+        tableHTML += `<th>Observações</th>`; // Não ordenável
+        tableHTML += `<th class="col-zoom">Zoom</th>`;
+        tableHTML += `<th class="col-edit">Editar</th>`;
+        tableHTML += `<th class="col-delete">Excluir</th>`;
+        tableHTML += '</tr></thead><tbody>';
+        
+        // (NOVO v1IA" data-sort-key="data">Data</th>`;
         tableHTML += `<th class="${getThClass('especie')}" data-sort-key="especie">Espécie</th>`;
         tableHTML += `<th>Foto</th>`; // Não ordenável
         tableHTML += `<th class="${getThClass('coordX')}" data-sort-key="coordX">Coord. X</th>`;
