@@ -444,12 +444,12 @@ export function setupRiskCalculator() {
     // (v19.6) Atualiza a UI após a importação
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
         features.handleImportZip(e).then(() => {
-            renderSummaryTable(); 
+            renderSummaryTable(); // Atualiza a UI após a importação
         });
     });
     if (csvImporter) csvImporter.addEventListener('change', (e) => {
         features.handleFileImport(e);
-        renderSummaryTable(); // Atualiza a UI
+        renderSummaryTable(); // Atualiza a UI após a importação
     }); 
 
     // Listeners restantes
@@ -465,7 +465,7 @@ export function setupRiskCalculator() {
     // (v19.6) Atualiza a UI após a ação
     if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
         if (features.handleClearAll()) {
-            renderSummaryTable(); 
+            renderSummaryTable(); // Atualiza a UI
         }
     });
     
@@ -503,69 +503,22 @@ export function setupRiskCalculator() {
         }
         
         // Adicionar Árvore
+        // (REFACTOR v19.7) Chama a lógica de submissão do features.js e atualiza a UI
         form.addEventListener('submit', (event) => {
-            event.preventDefault();    
-            let totalScore = 0;
+            const submissionSuccessful = features.handleAddTreeSubmit(event);
             
-            const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
-            checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
-            
-            const allCheckboxes = form.querySelectorAll('.risk-checkbox');
-            const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
-            
-            let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
-            if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
-            else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
-            
-            const newTreeId = state.registeredTrees.length > 0 ? Math.max(...state.registeredTrees.map(t => t.id)) + 1 : 1;
-            
-            const newTree = {
-                id: newTreeId,
-                data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
-                especie: document.getElementById('risk-especie').value || 'N/A',
-                local: document.getElementById('risk-local').value || 'N/A',
-                coordX: document.getElementById('risk-coord-x').value || 'N/A',
-                coordY: document.getElementById('risk-coord-y').value || 'N/A',
-                utmZoneNum: state.lastUtmZone.num || 0,
-                utmZoneLetter: state.lastUtmZone.letter || 'Z',
-                dap: document.getElementById('risk-dap').value || 'N/A',    
-                avaliador: document.getElementById('risk-avaliador').value || 'N/A',
-                observacoes: document.getElementById('risk-obs').value || 'N/A',    
-                pontuacao: totalScore,
-                risco: classificationText,
-                riscoClass: classificationClass,
-                riskFactors: checkedRiskFactors,
-                hasPhoto: (state.currentTreePhoto !== null) 
-            };
-            
-            if (newTree.hasPhoto) {
-                db.saveImageToDB(newTree.id, state.currentTreePhoto);
+            if (submissionSuccessful) {
+                renderSummaryTable(); // Atualiza a UI
+                
+                // Lógica de UI dependente
+                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                if (isTouchDevice) {
+                    setupMobileChecklist(); // Recarrega o carrossel
+                }
+
+                const gpsStatus = document.getElementById('gps-status');
+                if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
             }
-
-            // Atualiza o estado
-            state.registeredTrees.push(newTree);
-            state.saveDataToStorage();
-            renderSummaryTable(); // Atualiza a UI
-            
-            utils.showToast(`✔️ Árvore "${newTree.especie || 'N/A'}" (ID ${newTree.id}) adicionada!`, 'success');
-
-            state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
-            form.reset();
-            features.clearPhotoPreview(); 
-            
-            try {
-                document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-                document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
-            } catch(e) { /* ignora erro */ }
-
-            document.getElementById('risk-especie').focus();
-            
-            if (isTouchDevice) {
-                setupMobileChecklist(); // Recarrega o carrossel
-            }
-
-            const gpsStatus = document.getElementById('gps-status');
-            if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
         });
         
         // Limpar Campos

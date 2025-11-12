@@ -1,12 +1,14 @@
-// js/features.js (v19.6 - CORRIGIDO - Exportando getSortValue)
+// js/features.js (v19.7 - NOVO: handleAddTreeSubmit)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
-// (REMOVIDA A IMPORTAÇÃO DO UI.JS - CORREÇÃO DE DEPENDÊNCIA CIRCULAR)
+import { renderSummaryTable, setupMobileChecklist } from './ui.js';
+
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
+
 export async function handleGetGPS() {
     const gpsStatus = document.getElementById('gps-status');
     const coordXField = document.getElementById('risk-coord-x');
@@ -94,7 +96,7 @@ export function clearPhotoPreview() {
 }
 
 export function handleDeleteTree(id) {
-    if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return false; // (v19.6) Retorna false se cancelado
+    if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return false; 
     
     const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
     
@@ -106,7 +108,7 @@ export function handleDeleteTree(id) {
     state.setRegisteredTrees(newTrees);
     state.saveDataToStorage(); 
     utils.showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); 
-    return true; // (v19.6) Retorna true em sucesso
+    return true; 
 }
 
 export function handleEditTree(id) {
@@ -157,30 +159,106 @@ export function handleEditTree(id) {
 
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     
-    // Remove o item do array
+    // Remove o item do array (será re-adicionado ao submeter)
     const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
     state.setRegisteredTrees(newTrees);
     state.saveDataToStorage();
 
     document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
     
-    return isTouchDevice; // Retorna se o carrossel precisa ser atualizado
+    return isTouchDevice; // Indica se o carrossel precisa ser atualizado
+}
+
+/**
+ * (v19.7) Processa a submissão do formulário de adição/edição de árvores.
+ * Toda a lógica de criação e salvamento de dados foi centralizada aqui.
+ * @param {Event} event - O evento de submissão do formulário.
+ */
+export function handleAddTreeSubmit(event) {
+    event.preventDefault(); // Impede o envio tradicional
+    
+    const form = event.target;
+    let totalScore = 0;
+    
+    // 1. Validação e Pontuação
+    const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
+    checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
+    
+    const allCheckboxes = form.querySelectorAll('.risk-checkbox');
+    const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
+    
+    let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
+    if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
+    else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
+    
+    // 2. Criação do Objeto (Garante ID único e campos)
+    const newTreeId = state.registeredTrees.length > 0 ? Math.max(...state.registeredTrees.map(t => t.id)) + 1 : 1;
+    
+    // Verifica se a espécie está preenchida
+    const especie = document.getElementById('risk-especie').value.trim();
+    if (!especie) {
+        utils.showToast("Erro: O campo Espécie é obrigatório.", 'error');
+        document.getElementById('risk-especie').focus();
+        return false; // Falha na submissão
+    }
+
+    const newTree = {
+        id: newTreeId,
+        data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
+        especie: especie,
+        local: document.getElementById('risk-local').value || 'N/A',
+        coordX: document.getElementById('risk-coord-x').value || 'N/A',
+        coordY: document.getElementById('risk-coord-y').value || 'N/A',
+        utmZoneNum: state.lastUtmZone.num || 0,
+        utmZoneLetter: state.lastUtmZone.letter || 'Z',
+        dap: document.getElementById('risk-dap').value || 'N/A',    
+        avaliador: document.getElementById('risk-avaliador').value || 'N/A',
+        observacoes: document.getElementById('risk-obs').value || 'N/A',    
+        pontuacao: totalScore,
+        risco: classificationText,
+        riscoClass: classificationClass,
+        riskFactors: checkedRiskFactors,
+        hasPhoto: (state.currentTreePhoto !== null) 
+    };
+    
+    // 3. Salvamento de Dados e Estado
+    if (newTree.hasPhoto) {
+        db.saveImageToDB(newTree.id, state.currentTreePhoto);
+    }
+
+    state.registeredTrees.push(newTree);
+    state.saveDataToStorage();
+    
+    utils.showToast(`✔️ Árvore "${newTree.especie}" (ID ${newTree.id}) adicionada!`, 'success');
+
+    // 4. Limpeza da UI (valores no DOM)
+    state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
+    form.reset();
+    clearPhotoPreview(); 
+    
+    try {
+        document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+        document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
+    } catch(e) { /* ignora erro */ }
+
+    document.getElementById('risk-especie').focus();
+    
+    return true; // Sucesso
 }
 
 export function handleClearAll() {
-    if (confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) {
-        state.registeredTrees.forEach(tree => {
-            if (tree.hasPhoto) {
-                db.deleteImageFromDB(tree.id);
-            }
-        });
-        
-        state.setRegisteredTrees([]); 
-        state.saveDataToStorage(); 
-        utils.showToast('🗑️ Tabela limpa.', 'error'); 
-        return true; // (v19.6) Retorna true em sucesso
-    }
-    return false;
+    if (!confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) return false;
+    
+    state.registeredTrees.forEach(tree => {
+        if (tree.hasPhoto) {
+            db.deleteImageFromDB(tree.id);
+        }
+    });
+    
+    state.setRegisteredTrees([]); 
+    state.saveDataToStorage(); 
+    utils.showToast('🗑️ Tabela limpa.', 'error'); 
+    return true;
 }
 
 export function handleTableFilter() {
@@ -206,7 +284,6 @@ export function handleSort(sortKey) {
     } else {
         state.setSortState(sortKey, 'asc');
     }
-    // A UI irá redesenhar
 }
 
 // === 4. LÓGICA DE INTERAÇÃO (MAPA E TABELA) ===
@@ -422,7 +499,7 @@ async function handleExportZip() {
         return;
     }
     if (state.registeredTrees.length === 0) {
-        utils.showToast("Nenhum dado para exportar.", 'error');
+        utils.showToast("Nenhuma árvore cadastrada para exportar.", 'error');
         return;
     }
 
@@ -487,7 +564,7 @@ async function handleExportZip() {
     }
 }
 
-export async function handleImportZip(event) {
+async function handleImportZip(event) {
     if (typeof JSZip === 'undefined') {
         utils.showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
         console.error("Falha na importação: JSZip não está definido.");
@@ -524,7 +601,7 @@ export async function handleImportZip(event) {
         zipStatusText.textContent = 'Processando manifesto de dados...';
         
         let newTrees = append ? [...state.registeredTrees] : [];
-        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) : 0;
+        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) + 1 : 0;
         let imageSavePromises = []; 
 
         if (!append) {
@@ -589,7 +666,7 @@ export async function handleImportZip(event) {
         state.setRegisteredTrees(newTrees);
         state.saveDataToStorage();
         
-        utils.showToast(`📤 Importação do .zip concluída! ${newTrees.length} registos carregados.`, 'success');
+        utils.showToast(`📤 Importação do .zip concluída! ${newTrees.length} registros carregados.`, 'success');
 
     } catch (error) {
         console.error("Erro ao importar o .zip:", error);
@@ -615,7 +692,7 @@ export function handleFileImport(event) {
         const append = confirm("Deseja ADICIONAR os dados à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual pelos dados do ficheiro.");
         
         let newTrees = append ? [...state.registeredTrees] : [];
-        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) : 0;
+        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) + 1 : 0;
         
         if (!append) {
             const transaction = state.db.transaction(["treeImages"], "readwrite");
@@ -667,13 +744,13 @@ export function handleFileImport(event) {
                     coordY: row[4] || 'N/A',
                     utmZoneNum: utmNum,
                     utmZoneLetter: utmLetter,
-                    dap: row[dapIdx] || 'N/A',
-                    local: row[localIdx] || 'N/A',
-                    avaliador: row[avaliadorIdx] || 'N/A',
+                    dap: row[7] || 'N/A',
+                    local: row[8] || 'N/A',
+                    avaliador: row[9] || 'N/A',
                     pontuacao: pontuacao,
-                    risco: row[riscoIdx] || 'N/A',
-                    observacoes: row[obsIdx] || 'N/A',
-                    riskFactors: (row[factorsIdx] || '').split(',').map(item => parseInt(item, 10)),
+                    risco: row[11] || 'N/A',
+                    observacoes: row[12] || 'N/A',
+                    riskFactors: (row[13] || '').split(',').map(item => parseInt(item, 10)),
                     riscoClass: riscoClass,
                     hasPhoto: hasPhoto 
                 };
@@ -681,7 +758,6 @@ export function handleFileImport(event) {
             }
             state.setRegisteredTrees(newTrees);
             state.saveDataToStorage();
-            // A UI precisa ser atualizada
             utils.showToast(`📤 Importação de CSV concluída! ${newTrees.length} registos carregados.`, 'success'); 
         } catch (error) {
             console.error("Erro ao processar o ficheiro CSV:", error);
@@ -786,10 +862,6 @@ export async function handleChatSend() {
     }
 }
 
-/**
- * (v19.6) CORREÇÃO: Adicionado 'export' para que o ui.js possa usá-lo.
- * Helper para ordenação (lido pelo ui.js)
- */
 export function getSortValue(tree, key) {
     const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
     if (numericKeys.includes(key)) {
