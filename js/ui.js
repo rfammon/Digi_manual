@@ -3,7 +3,7 @@
 // === 1. IMPORTAÇÕES ===
 
 // Importa o Estado (para ler dados e modificar o estado da UI)
-import *s state from './state.js';
+import * as state from './state.js';
 
 // Importa os Dados (para os tooltips)
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
@@ -16,6 +16,7 @@ import { getImageFromDB } from './database.js';
 
 // Importa as Features (para conectar botões às suas ações)
 import * as features from './features.js';
+
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO PRINCIPAL ===
 
@@ -408,15 +409,18 @@ export function setupRiskCalculator() {
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
-        // Event Delegation para as abas
-        subNav.addEventListener('click', (e) => {
+        // (Correção v19.4) Usa Event Delegation, mas limpa listeners antigos clonando
+        const newNav = subNav.cloneNode(true);
+        subNav.parentNode.replaceChild(newNav, subNav);
+        
+        newNav.addEventListener('click', (e) => {
             const button = e.target.closest('.sub-nav-btn');
             if (button) {
                 e.preventDefault();
                 showSubTab(button.getAttribute('data-target'));
             }
         });
-        // Define a aba padrão (ou a última ativa, se implementado)
+        // Define a aba padrão
         showSubTab('tab-content-register');
     }
 
@@ -424,10 +428,13 @@ export function setupRiskCalculator() {
     const form = document.getElementById('risk-calculator-form');
     const summaryContainer = document.getElementById('summary-table-container');
     
+    // (v19.2) Botões Unificados
     const importDataBtn = document.getElementById('import-data-btn');
     const exportDataBtn = document.getElementById('export-data-btn');
     const zipImporter = document.getElementById('zip-importer');
     const csvImporter = document.getElementById('csv-importer');
+
+    // Botões Antigos
     const sendEmailBtn = document.getElementById('send-email-btn');
     const getGpsBtn = document.getElementById('get-gps-btn');    
     const clearAllBtn = document.getElementById('clear-all-btn');    
@@ -437,24 +444,35 @@ export function setupRiskCalculator() {
     const removePhotoBtn = document.getElementById('remove-photo-btn');
     const resetBtn = document.getElementById('reset-risk-form-btn');
 
-    // Botões de Import/Export (v19.2)
+    // (v19.2) Lógica dos Botões Unificados de Import/Export
     if (importDataBtn) importDataBtn.addEventListener('click', features.handleImportData);
     if (exportDataBtn) exportDataBtn.addEventListener('click', features.handleExportData);
-    if (zipImporter) zipImporter.addEventListener('change', features.handleImportZip); 
-    if (csvImporter) csvImporter.addEventListener('change', features.handleFileImport); 
+    if (zipImporter) zipImporter.addEventListener('change', (e) => {
+        features.handleImportZip(e).then(() => {
+            renderSummaryTable(); // Atualiza a UI após a importação
+        });
+    });
+    if (csvImporter) csvImporter.addEventListener('change', (e) => {
+        features.handleFileImport(e);
+        renderSummaryTable(); // Atualiza a UI após a importação
+    }); 
 
-    // Botões de Ação
-    if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
-    if (clearAllBtn) clearAllBtn.addEventListener('click', features.handleClearAll);
-    if (getGpsBtn) getGpsBtn.addEventListener('click', features.handleGetGPS);
+    // Listeners restantes
     if (zoomBtn) zoomBtn.addEventListener('click', features.handleZoomToExtent);
     
-    // Filtro (v19.4 - Otimizado com Debounce)
+    // (ATUALIZAÇÃO v19.4) Aplicando o Debounce ao filtro
     if (filterInput) {
         filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
     }
     
-    // Lógica de Fotos
+    if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
+    if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
+        features.handleClearAll();
+        renderSummaryTable(); // Atualiza a UI
+    });
+    if (getGpsBtn) getGpsBtn.addEventListener('click', features.handleGetGPS);
+    
+    // Listeners de Foto
     if (photoInput) {
         photoInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -475,12 +493,10 @@ export function setupRiskCalculator() {
 
     // Lógica do Formulário (Adicionar e Limpar)
     if (form) {
-        // Preenche o nome do avaliador (se já salvo no estado)
         if (state.lastEvaluatorName) {
             document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
         }
 
-        // Esconde o botão de GPS em Desktops
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
@@ -530,7 +546,7 @@ export function setupRiskCalculator() {
             // Atualiza o estado
             state.registeredTrees.push(newTree);
             state.saveDataToStorage();
-            renderSummaryTable(); 
+            renderSummaryTable(); // Atualiza a UI
             
             utils.showToast(`✔️ Árvore "${newTree.especie || 'N/A'}" (ID ${newTree.id}) adicionada!`, 'success');
 
@@ -578,9 +594,13 @@ export function setupRiskCalculator() {
     // Renderiza a tabela inicial
     renderSummaryTable(); 
     
-    // (v18.1) Event Delegation para Lupa/Editar/Excluir/Ordenar/Foto
+    // (v19.4) Event Delegation com atualização de UI
     if (summaryContainer) {
-        summaryContainer.addEventListener('click', (e) => {
+        // Clona para limpar listeners antigos
+        const newSummaryContainer = summaryContainer.cloneNode(true);
+        summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
+        
+        newSummaryContainer.addEventListener('click', (e) => {
             const deleteButton = e.target.closest('.delete-tree-btn');
             const editButton = e.target.closest('.edit-tree-btn');    
             const zoomButton = e.target.closest('.zoom-tree-btn'); 
@@ -589,19 +609,26 @@ export function setupRiskCalculator() {
     
             if (deleteButton) {
                 features.handleDeleteTree(parseInt(deleteButton.dataset.id, 10));
+                renderSummaryTable(); // Atualiza a UI
             }
             
             if (editButton) {    
-                features.handleEditTree(parseInt(editButton.dataset.id, 10));
+                const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
                 showSubTab('tab-content-register'); 
+                if (needsCarouselUpdate && isTouchDevice) {
+                    setupMobileChecklist(); // Recarrega o carrossel
+                }
+                renderSummaryTable(); // Atualiza a UI
             }
 
             if (zoomButton) { 
                 features.handleZoomToPoint(parseInt(zoomButton.dataset.id, 10));
+                // A UI (aba) será atualizada pela própria feature
             }
             
             if (sortButton) { 
                 features.handleSort(sortButton.dataset.sortKey);
+                renderSummaryTable(); // Atualiza a UI
             }
 
             if (photoButton) { 
