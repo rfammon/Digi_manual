@@ -1,20 +1,12 @@
-// js/ui.js (v19.4 - O "Painel" - Renderização e Interação da UI)
+// js/ui.js (v19.5 - CORRIGIDO - Erro de sintaxe 'import *s')
 
 // === 1. IMPORTAÇÕES ===
 
-// Importa o Estado (para ler dados e modificar o estado da UI)
+// (CORREÇÃO v19.5) Corrigido de 'import *s' para 'import * as'
 import * as state from './state.js';
-
-// Importa os Dados (para os tooltips)
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-
-// Importa as Ferramentas (para helpers de UI e performance)
 import { showToast, debounce } from './utils.js';
-
-// Importa o Banco de Dados (para buscar fotos para tooltips e popups)
 import { getImageFromDB } from './database.js';
-
-// Importa as Features (para conectar botões às suas ações)
 import * as features from './features.js';
 
 
@@ -266,6 +258,7 @@ export function showSubTab(targetId) {
     
     // (v18.0) Lógica de Destaque da Linha
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
+        // A função highlightTableRow está em features.js
         features.highlightTableRow(state.highlightTargetId);
         state.setHighlightTargetId(null); // Limpa o alvo
     }
@@ -454,7 +447,7 @@ export function setupRiskCalculator() {
     });
     if (csvImporter) csvImporter.addEventListener('change', (e) => {
         features.handleFileImport(e);
-        renderSummaryTable(); // Atualiza a UI após a importação
+        // A função handleFileImport já chama renderSummaryTable() internamente
     }); 
 
     // Listeners restantes
