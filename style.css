@@ -1,4 +1,4 @@
-/* style.css (Completo v16.0 - Inclui Toast, Abas e Spinner) */
+/* style.css (Completo v16.1 - Inclui Spinner GPS) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -15,9 +15,9 @@ body {
     line-height: 1.6;
     background-color: #f4f4f9;
     color: #333;
-    position: relative;
+    position: relative; /* Contexto para o Tooltip */
     min-height: 100vh;
-    overflow-wrap: break-word;
+    overflow-wrap: break-word; /* Impede estouro de texto global */
     word-wrap: break-word;
 }
 
@@ -543,8 +543,8 @@ main {
     font-size: 1.1rem;
     font-weight: bold;
     transition: background-color 0.3s;
-    /* (v16.0) Alinhamento de ícone e texto */
-    display: flex;
+    /* (v16.1) Alinha ícone e texto */
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -577,7 +577,6 @@ main {
 #clear-all-btn:hover {
     background-color: #E53935;
 }
-
 
 /* Tabela de Resumo */
 #summary-table-container {
@@ -650,7 +649,6 @@ main {
     white-space: nowrap;
 }
 
-
 /* -------------------------------------- */
 /* 11. BOTÃO GPS (CALCULADORA) */
 /* -------------------------------------- */
@@ -672,18 +670,21 @@ main {
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s;
-    /* (v16.0) Alinhamento do spinner */
-    display: flex;
+    /* (v16.1) Alinha ícone e spinner */
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
 }
 #get-gps-btn:hover {
     background-color: #00695c;
 }
+/* (v16.1) Estilo quando desativado */
 #get-gps-btn:disabled {
-    background-color: #757575;
+    background-color: #00695c;
     cursor: not-allowed;
 }
+
 
 #gps-status {
     font-size: 0.85rem;
@@ -694,20 +695,6 @@ main {
     color: #C62828;
     font-weight: bold;
 }
-
-/* (NOVO v16.0) Spinner do GPS */
-.spinner {
-    width: 14px;
-    height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
 
 /* -------------------------------------- */
 /* 12. SECÇÃO SOBRE O AUTOR */
@@ -994,5 +981,31 @@ html {
         font-size: 1.1rem;
         font-weight: bold;
         color: #004d40;
+    }
+}
+
+/* -------------------------------------- */
+/* 17. SPINNER GPS (v16.1) */
+/* -------------------------------------- */
+
+.spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+#get-gps-btn:disabled .spinner {
+    display: inline-block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }
