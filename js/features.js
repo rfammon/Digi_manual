@@ -1,9 +1,10 @@
-// js/features.js (v19.4 - CORRIGIDO - Sem dependência circular)
+// js/features.js (v19.6 - CORRIGIDO - Exportando getSortValue)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
+// (REMOVIDA A IMPORTAÇÃO DO UI.JS - CORREÇÃO DE DEPENDÊNCIA CIRCULAR)
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
@@ -93,7 +94,7 @@ export function clearPhotoPreview() {
 }
 
 export function handleDeleteTree(id) {
-    if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return;
+    if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return false; // (v19.6) Retorna false se cancelado
     
     const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
     
@@ -104,13 +105,13 @@ export function handleDeleteTree(id) {
     const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
     state.setRegisteredTrees(newTrees);
     state.saveDataToStorage(); 
-    // A função renderSummaryTable() será chamada pelo ui.js
     utils.showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); 
+    return true; // (v19.6) Retorna true em sucesso
 }
 
 export function handleEditTree(id) {
     const treeIndex = state.registeredTrees.findIndex(tree => tree.id === id);
-    if (treeIndex === -1) return;
+    if (treeIndex === -1) return false;
     
     const treeToEdit = state.registeredTrees[treeIndex];
 
@@ -155,19 +156,15 @@ export function handleEditTree(id) {
     });
 
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    if (isTouchDevice) {
-        // A função setupMobileChecklist() será chamada pelo ui.js
-        return true; // Indica ao UI.js para recarregar o carrossel
-    }
-
+    
     // Remove o item do array
     const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
     state.setRegisteredTrees(newTrees);
     state.saveDataToStorage();
-    // A função renderSummaryTable() será chamada pelo ui.js
 
     document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
-    return false; // Não precisa recarregar o carrossel
+    
+    return isTouchDevice; // Retorna se o carrossel precisa ser atualizado
 }
 
 export function handleClearAll() {
@@ -180,9 +177,10 @@ export function handleClearAll() {
         
         state.setRegisteredTrees([]); 
         state.saveDataToStorage(); 
-        // A função renderSummaryTable() será chamada pelo ui.js
         utils.showToast('🗑️ Tabela limpa.', 'error'); 
+        return true; // (v19.6) Retorna true em sucesso
     }
+    return false;
 }
 
 export function handleTableFilter() {
@@ -208,7 +206,7 @@ export function handleSort(sortKey) {
     } else {
         state.setSortState(sortKey, 'asc');
     }
-    // A função renderSummaryTable() será chamada pelo ui.js
+    // A UI irá redesenhar
 }
 
 // === 4. LÓGICA DE INTERAÇÃO (MAPA E TABELA) ===
@@ -590,7 +588,7 @@ export async function handleImportZip(event) {
 
         state.setRegisteredTrees(newTrees);
         state.saveDataToStorage();
-        // A função renderSummaryTable() será chamada pelo ui.js
+        
         utils.showToast(`📤 Importação do .zip concluída! ${newTrees.length} registos carregados.`, 'success');
 
     } catch (error) {
@@ -665,3 +663,143 @@ export function handleFileImport(event) {
                     id: ++maxId, 
                     data: row[1] || 'N/A',
                     especie: row[2] || 'N/A',
+                    coordX: row[3] || 'N/A',
+                    coordY: row[4] || 'N/A',
+                    utmZoneNum: utmNum,
+                    utmZoneLetter: utmLetter,
+                    dap: row[dapIdx] || 'N/A',
+                    local: row[localIdx] || 'N/A',
+                    avaliador: row[avaliadorIdx] || 'N/A',
+                    pontuacao: pontuacao,
+                    risco: row[riscoIdx] || 'N/A',
+                    observacoes: row[obsIdx] || 'N/A',
+                    riskFactors: (row[factorsIdx] || '').split(',').map(item => parseInt(item, 10)),
+                    riscoClass: riscoClass,
+                    hasPhoto: hasPhoto 
+                };
+                newTrees.push(treeData);
+            }
+            state.setRegisteredTrees(newTrees);
+            state.saveDataToStorage();
+            // A UI precisa ser atualizada
+            utils.showToast(`📤 Importação de CSV concluída! ${newTrees.length} registos carregados.`, 'success'); 
+        } catch (error) {
+            console.error("Erro ao processar o ficheiro CSV:", error);
+            utils.showToast("Erro ao processar o ficheiro.", 'error'); 
+        } finally { event.target.value = null; }
+    };
+    reader.onerror = () => { utils.showToast("Erro ao ler o ficheiro.", 'error'); event.target.value = null; };
+    reader.readAsText(file);
+}
+
+// === 6. LÓGICA DE FEATURES COMPLEMENTARES (CHAT, CONTATO, EMAIL) ===
+
+function generateEmailSummaryText() {
+    if (state.registeredTrees.length === 0) return "Nenhuma árvore foi cadastrada na tabela de resumo.";
+    let textBody = "Segue o relatório resumido das árvores avaliadas:\n\n";
+    textBody += "ID\t|\tData\t\t|\tEspécie (Nome/Tag)\t|\tLocal\t\t|\tClassificação de Risco\t|\tObservações\n";
+    textBody += "----------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+    
+    state.registeredTrees.forEach(tree => {
+        const [y, m, d] = (tree.data || '---').split('-');
+        const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
+        const cleanEspecie = (tree.especie || 'N/A').padEnd(20, ' ').substring(0, 20);
+        const cleanLocal = (tree.local || 'N/A').padEnd(15, ' ').substring(0, 15);
+        const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30);
+        textBody += `${tree.id}\t|\t${displayDate}\t|\t${cleanEspecie}\t|\t${cleanLocal}\t|\t${tree.risco}\t|\t${cleanObs}\n`;
+    });
+    
+    textBody += "\n\n";
+    textBody += "Instrução Importante:\n";
+    textBody += "Para o relatório completo (com coordenadas, DAP, etc.), clique em 'Exportar Dados' no aplicativo e anexe o arquivo baixado a este e-mail antes de enviar.\n";
+    return textBody;
+}
+
+export function sendEmailReport() {
+    const targetEmail = "";
+    const subject = "Relatório de Avaliação de Risco Arbóreo";
+    const emailBody = generateEmailSummaryText();
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(emailBody);
+    const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
+    
+    if (mailtoLink.length > 2000) { 
+        utils.showToast("Muitos dados para e-mail. Use 'Exportar Dados'.", 'error'); 
+        return; 
+    }
+    window.location.href = mailtoLink;
+}
+
+export function handleContactForm(event) {
+    event.preventDefault();    
+    const targetEmail = "rafael.ammon.prestserv@petrobras.com.br";
+    const nome = document.getElementById('nome').value;
+    const emailRetorno = document.getElementById('email').value;
+    const assunto = document.getElementById('assunto').value;
+    const mensagem = document.getElementById('mensagem').value;
+    const emailBody = `
+Prezado(a),
+
+Esta é uma dúvida enviada através do Manual Digital de Poda e Corte.
+---------------------------------------------------
+Enviado por: ${nome}
+Email de Retorno: ${emailRetorno}
+---------------------------------------------------
+
+Mensagem:
+${mensagem}
+    `;
+    const encodedSubject = encodeURIComponent(assunto);
+    const encodedBody = encodeURIComponent(emailBody);
+    const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
+    window.location.href = mailtoLink;
+}
+
+export async function handleChatSend() {
+    const chatInput = document.getElementById('chat-input');
+    const chatResponseBox = document.getElementById('chat-response-box');
+    const userQuery = chatInput.value.trim();
+    if (userQuery === "") return;
+    
+    chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
+    chatInput.value = "";
+    
+    try {
+        const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI";
+        if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
+             chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: gray;"><strong>Status:</strong> O assistente digital ainda precisa ser configurado com uma URL de API válida (Google Cloud Function).</p>`;
+             return;
+        }
+        
+        const response = await fetch(PONTESEGURA_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: userQuery }) 
+        });
+        if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+        const data = await response.json();
+        chatResponseBox.innerHTML = `<p class="chat-response-text">${data.response}</p>`;
+        
+    } catch (error) {
+        console.error('Erro na API Gemini:', error);
+        chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: red;"><strong>Erro:</strong> ${error.message}</p>`;
+    }
+}
+
+/**
+ * (v19.6) CORREÇÃO: Adicionado 'export' para que o ui.js possa usá-lo.
+ * Helper para ordenação (lido pelo ui.js)
+ */
+export function getSortValue(tree, key) {
+    const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
+    if (numericKeys.includes(key)) {
+        const value = tree[key];
+        return parseFloat(value) || 0;
+    }
+    
+    const value = tree[key];
+    if (typeof value === 'string') {
+        return value.toLowerCase();
+    }
+    return value || '';
+}

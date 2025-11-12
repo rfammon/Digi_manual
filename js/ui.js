@@ -1,4 +1,4 @@
-// js/ui.js (v19.5 - CORRIGIDO - Erro de sintaxe 'import *s')
+// js/ui.js (v19.6 - CORRIGIDO - Erro de sintaxe 'import *s' e lógica de UI)
 
 // === 1. IMPORTAÇÕES ===
 
@@ -440,14 +440,16 @@ export function setupRiskCalculator() {
     // (v19.2) Lógica dos Botões Unificados de Import/Export
     if (importDataBtn) importDataBtn.addEventListener('click', features.handleImportData);
     if (exportDataBtn) exportDataBtn.addEventListener('click', features.handleExportData);
+    
+    // (v19.6) Atualiza a UI após a importação
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
         features.handleImportZip(e).then(() => {
-            renderSummaryTable(); // Atualiza a UI após a importação
+            renderSummaryTable(); 
         });
     });
     if (csvImporter) csvImporter.addEventListener('change', (e) => {
         features.handleFileImport(e);
-        // A função handleFileImport já chama renderSummaryTable() internamente
+        renderSummaryTable(); // Atualiza a UI
     }); 
 
     // Listeners restantes
@@ -459,10 +461,14 @@ export function setupRiskCalculator() {
     }
     
     if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
+    
+    // (v19.6) Atualiza a UI após a ação
     if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
-        features.handleClearAll();
-        renderSummaryTable(); // Atualiza a UI
+        if (features.handleClearAll()) {
+            renderSummaryTable(); 
+        }
     });
+    
     if (getGpsBtn) getGpsBtn.addEventListener('click', features.handleGetGPS);
     
     // Listeners de Foto
@@ -587,7 +593,7 @@ export function setupRiskCalculator() {
     // Renderiza a tabela inicial
     renderSummaryTable(); 
     
-    // (v19.4) Event Delegation com atualização de UI
+    // (v19.6) Event Delegation com atualização de UI
     if (summaryContainer) {
         // Clona para limpar listeners antigos
         const newSummaryContainer = summaryContainer.cloneNode(true);
@@ -601,8 +607,9 @@ export function setupRiskCalculator() {
             const photoButton = e.target.closest('.photo-preview-btn'); 
     
             if (deleteButton) {
-                features.handleDeleteTree(parseInt(deleteButton.dataset.id, 10));
-                renderSummaryTable(); // Atualiza a UI
+                if (features.handleDeleteTree(parseInt(deleteButton.dataset.id, 10))) {
+                    renderSummaryTable(); // Atualiza a UI
+                }
             }
             
             if (editButton) {    
