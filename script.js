@@ -1,4 +1,4 @@
-// script.js (COMPLETO v18.1 - Correção de Bugs + Foto, Filtro, Lupa e Interação Mapa-Tabela)
+// script.js (COMPLETO v19.0 - Implementação de Import/Export .ZIP)
 
 // === 0. ARMAZENAMENTO de ESTADO (Variáveis Globais) ===
 let registeredTrees = [];
@@ -137,7 +137,7 @@ const podaPurposeData = {
     }
 };
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v18.1) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v19.0) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -381,7 +381,7 @@ const manualContent = {
                             Fluente em inglês.
                         </p>
                         <p class="autor-links">
-                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |   
+                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
                             <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
                         </p>
                     </div>
@@ -390,7 +390,7 @@ const manualContent = {
         `
     },
 
-    // (ATUALIZADO v18.1) HTML da Calculadora: Adiciona Input de Zona UTM e Filtro de Tabela
+    // (ATUALIZADO v19.0) HTML da Calculadora: Adiciona botões ZIP e status
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
@@ -517,12 +517,23 @@ const manualContent = {
                     </div>
                     
                     <div id="import-export-controls" class="risk-buttons-area">
+                        <input type="file" id="zip-importer" accept=".zip,application/zip,application/x-zip-compressed" style="display: none;">
+                        <label for="zip-importer" class="export-btn zip-import-label">📤 Importar Pacote .ZIP</label>
+                        <button type="button" id="export-zip-btn" class="export-btn">📥 Exportar Pacote .ZIP</button>
+                        
                         <input type="file" id="csv-importer" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain" style="display: none;">
-                        <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
-                        <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
+                        <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV (s/ fotos)</label>
+                        <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV (s/ fotos)</button>
+                        
                         <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
                         <button type="button" id="clear-all-btn" class="export-btn">🗑️ Limpar Tabela</button>
                     </div>
+                    
+                    <div id="zip-status" style="display: none;">
+                        <span class="spinner" style="display: inline-block;"></span>
+                        <span id="zip-status-text" style="margin-left: 10px; font-weight: bold; color: #004d40;">Processando pacote...</span>
+                    </div>
+
                 </fieldset>
             </div>
             
@@ -866,8 +877,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSummaryTable();
         showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); 
     }
-
-    /**
+	
+	/**
      * (v18.0) Função para pré-preencher o formulário para edição (com Zona UTM e Foto)
      */
     function handleEditTree(id) {
@@ -978,6 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
             if (importExportControls) {
                 document.getElementById('export-csv-btn')?.setAttribute('style', 'display:none');
+                document.getElementById('export-zip-btn')?.setAttribute('style', 'display:none'); // (v19.0)
                 document.getElementById('send-email-btn')?.setAttribute('style', 'display:none');
                 document.getElementById('clear-all-btn')?.setAttribute('style', 'display:none');
             }
@@ -986,9 +998,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Mostra os botões de exportação
         if (importExportControls) {
-            document.getElementById('export-csv-btn')?.setAttribute('style', 'display:block');
-            document.getElementById('send-email-btn')?.setAttribute('style', 'display:block');
-            document.getElementById('clear-all-btn')?.setAttribute('style', 'display:block');
+            document.getElementById('export-csv-btn')?.setAttribute('style', 'display:inline-flex'); // (v19.0 usa inline-flex)
+            document.getElementById('export-zip-btn')?.setAttribute('style', 'display:inline-flex'); // (v19.0)
+            document.getElementById('send-email-btn')?.setAttribute('style', 'display:inline-flex');
+            document.getElementById('clear-all-btn')?.setAttribute('style', 'display:inline-flex');
         }
 
         // (NOVO v18.0) Helper para adicionar classes de ordenação
@@ -1458,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /**
-     * (v18.1) Módulo da Calculadora de Risco (com lógica de aba de mapa)
+     * (v19.0) Módulo da Calculadora de Risco (com lógica de aba de mapa e ZIP)
      */
     function setupRiskCalculator() {
         
@@ -1654,11 +1667,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // 3. Lógica dos Botões de Importação/Exportação
+        // 3. Lógica dos Botões de Importação/Exportação (ATUALIZADO v19.0)
         if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
         if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
         if (clearAllBtn) clearAllBtn.addEventListener('click', handleClearAll);
         if (csvImporter) csvImporter.addEventListener('change', handleFileImport);
+        
+        // (NOVO v19.0) Adiciona os listeners do ZIP
+        const exportZipBtn = document.getElementById('export-zip-btn');
+        const zipImporter = document.getElementById('zip-importer');
+        
+        if (exportZipBtn) exportZipBtn.addEventListener('click', handleExportZip);
+        if (zipImporter) zipImporter.addEventListener('change', handleImportZip);
         
         // 4. Renderiza a tabela ao carregar
         renderSummaryTable(); // (v18.0) renderSummaryTable agora aplica a ordenação
@@ -1856,29 +1876,6 @@ document.addEventListener('DOMContentLoaded', () => {
             showPurposeTooltip(event); 
         }
     }
-    
-    /** (NOVO v18.1) Mostra a foto (da tabela) no pop-up do glossário */
-    function handlePhotoPreviewClick(id, targetElement) {
-        getImageFromDB(id, (imageBlob) => {
-            if (!imageBlob) {
-                showToast("Foto não encontrada no banco de dados.", "error");
-                return;
-            }
-            
-            const imgUrl = URL.createObjectURL(imageBlob);
-            currentTooltip = createTooltip();
-            
-            // Adiciona um estilo inline para limitar o tamanho no viewport
-            currentTooltip.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" style="max-width: 80vw; max-height: 70vh;">`;
-            
-            // Posição e exibição
-            positionTooltip(targetElement); // Usa o ícone 📷 como âncora
-            currentTooltip.style.opacity = '1';
-            currentTooltip.style.visibility = 'visible';
-            currentTooltip.dataset.currentElement = `photo-${id}`; // ID único para toggle
-        });
-    }
-
 
     function positionTooltip(termElement) {
         const rect = termElement.getBoundingClientRect();
@@ -2059,6 +2056,243 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.onerror = () => { showToast("Erro ao ler o ficheiro.", 'error'); event.target.value = null; };
         reader.readAsText(file);
+    }
+
+    // === (NOVO v19.0) FUNÇÕES DE BACKUP .ZIP ===
+
+    /**
+     * (v19.0) Helper: Busca TODOS os pares de {id, imageBlob} do IndexedDB.
+     * Retorna uma Promise com um array de resultados.
+     */
+    function getAllImagesFromDB() {
+        return new Promise((resolve, reject) => {
+            if (!db) {
+                console.error("IndexedDB não está pronto.");
+                return reject(new Error("IndexedDB não está pronto."));
+            }
+            
+            const transaction = db.transaction(["treeImages"], "readonly");
+            const objectStore = transaction.objectStore("treeImages");
+            const request = objectStore.getAll(); // Pega todos os registros
+
+            request.onsuccess = (event) => {
+                resolve(event.target.result); // Retorna o array de {id, imageBlob}
+            };
+            request.onerror = (event) => {
+                console.error("Erro ao buscar todas as imagens:", event);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    /**
+     * (v19.0) Manipulador de EXPORTAÇÃO de Pacote .ZIP
+     */
+    async function handleExportZip() {
+        if (typeof JSZip === 'undefined') {
+            showToast("Erro: Biblioteca JSZip não carregada.", 'error');
+            return;
+        }
+        if (registeredTrees.length === 0) {
+            showToast("Nenhum dado para exportar.", 'error');
+            return;
+        }
+
+        const zipStatus = document.getElementById('zip-status');
+        const zipStatusText = document.getElementById('zip-status-text');
+        if (zipStatus) {
+            zipStatusText.textContent = 'Gerando pacote .zip...';
+            zipStatus.style.display = 'flex';
+        }
+
+        try {
+            const zip = new JSZip();
+
+            // 1. Adiciona o manifesto CSV (os metadados)
+            const csvContent = getCSVData();
+            if (csvContent) {
+                // Remove o BOM \uFEFF se existir, pois alguns parsers de zip não gostam
+                zip.file("manifesto_dados.csv", csvContent.replace(/^\uFEFF/, ''), {
+                    encoding: "UTF-8"
+                });
+            }
+
+            // 2. Adiciona a pasta de imagens
+            zipStatusText.textContent = 'Coletando imagens do banco de dados...';
+            const images = await getAllImagesFromDB();
+            
+            if (images.length > 0) {
+                const imgFolder = zip.folder("images");
+                
+                // Adiciona cada imagem ao .zip usando o ID da árvore como nome
+                images.forEach(imgData => {
+                    // Tenta determinar a extensão (fallback para .jpg)
+                    const extension = (imgData.imageBlob.type.split('/')[1] || 'jpg').split('+')[0];
+                    const filename = `tree_id_${imgData.id}.${extension}`;
+                    imgFolder.file(filename, imgData.imageBlob, { binary: true });
+                });
+            }
+
+            // 3. Gera o arquivo .zip e inicia o download
+            zipStatusText.textContent = 'Compactando arquivos... (pode levar um momento)';
+            const zipBlob = await zip.generateAsync({
+                type: "blob",
+                compression: "DEFLATE",
+                compressionOptions: {
+                    level: 6 // Bom equilíbrio entre velocidade e tamanho
+                }
+            });
+
+            const d = String(new Date().getDate()).padStart(2, '0');
+            const m = String(new Date().getMonth() + 1).padStart(2, '0');
+            const y = new Date().getFullYear();
+            const filename = `backup_completo_risco_${d}${m}${y}.zip`;
+
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(zipBlob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('📦 Pacote .zip exportado com sucesso!', 'success');
+
+        } catch (error) {
+            console.error("Erro ao gerar o .zip:", error);
+            showToast("Erro ao gerar o pacote .zip.", 'error');
+        } finally {
+            if (zipStatus) zipStatus.style.display = 'none';
+        }
+    }
+
+    /**
+     * (v19.0) Manipulador de IMPORTAÇÃO de Pacote .ZIP
+     */
+    async function handleImportZip(event) {
+        if (typeof JSZip === 'undefined') {
+            showToast("Erro: Biblioteca JSZip não carregada.", 'error');
+            return;
+        }
+        
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const zipStatus = document.getElementById('zip-status');
+        const zipStatusText = document.getElementById('zip-status-text');
+        if (zipStatus) {
+            zipStatusText.textContent = 'Lendo o pacote .zip...';
+            zipStatus.style.display = 'flex';
+        }
+
+        try {
+            const zip = await JSZip.loadAsync(file);
+            
+            // 1. Procura o manifesto CSV
+            const csvFile = zip.file("manifesto_dados.csv");
+            if (!csvFile) {
+                throw new Error("O arquivo 'manifesto_dados.csv' não foi encontrado no .zip.");
+            }
+            
+            const csvContent = await csvFile.async("string");
+            const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+            
+            if (lines.length <= 1) {
+                throw new Error("O manifesto CSV está vazio.");
+            }
+
+            const append = confirm("Deseja ADICIONAR os dados do .zip à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual.");
+            
+            zipStatusText.textContent = 'Processando manifesto de dados...';
+            
+            let newTrees = append ? [...registeredTrees] : [];
+            let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) : 0;
+            let imageSavePromises = []; // Array para salvar imagens em paralelo
+
+            // Limpa o DB de imagens se for substituir
+            if (!append) {
+                const transaction = db.transaction(["treeImages"], "readwrite");
+                transaction.objectStore("treeImages").clear();
+            }
+
+            // 2. Processa as linhas do CSV (começa do 1 para pular o cabeçalho)
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i].split(';');
+                if (row.length < 15) { // Validação do formato v18+
+                    console.warn("Linha CSV mal formatada, ignorada:", lines[i]);
+                    continue;
+                }
+
+                const oldId = row[0]; // O ID original (usado para o nome do arquivo da foto)
+                const newId = ++maxId; // O NOVO ID no banco de dados
+                
+                // Reutiliza a lógica de parsing do seu 'handleFileImport'
+                const pontuacao = parseInt(row[10], 10) || 0;
+                let riscoClass = 'risk-col-low';
+                if (pontuacao >= 20) riscoClass = 'risk-col-high';
+                else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
+
+                const treeData = {
+                    id: newId, // Define o NOVO ID
+                    data: row[1] || 'N/A',
+                    especie: row[2] || 'N/A',
+                    coordX: row[3] || 'N/A',
+                    coordY: row[4] || 'N/A',
+                    utmZoneNum: parseInt(row[5], 10) || 0,
+                    utmZoneLetter: row[6] || 'Z',
+                    dap: row[7] || 'N/A',
+                    local: row[8] || 'N/A',
+                    avaliador: row[9] || 'N/A',
+                    pontuacao: pontuacao,
+                    risco: row[11] || 'N/A',
+                    observacoes: row[12] || 'N/A',
+                    riskFactors: (row[13] || '').split(',').map(item => parseInt(item, 10)),
+                    riscoClass: riscoClass,
+                    hasPhoto: (row[14] && row[14].trim().toLowerCase() === 'sim')
+                };
+
+                // 3. Se a árvore tem foto, procura no zip e prepara para salvar
+                if (treeData.hasPhoto) {
+                    // Tenta encontrar a foto com base no ID ANTIGO
+                    // (Procura por .jpg, .png, .jpeg)
+                    const imgFile = zip.file(new RegExp(`^images/tree_id_${oldId}\\.(jpg|jpeg|png|webp)$`, "i"))[0];
+                    
+                    if (imgFile) {
+                        // Adiciona a promessa de salvar a imagem ao array
+                        // A imagem será salva no IndexedDB com o NOVO ID
+                        imageSavePromises.push(
+                            imgFile.async("blob").then(blob => {
+                                saveImageToDB(newId, blob);
+                            })
+                        );
+                    } else {
+                        console.warn(`Foto para o ID ${oldId} não encontrada no .zip.`);
+                        treeData.hasPhoto = false; // Atualiza o status
+                    }
+                }
+                newTrees.push(treeData);
+            } // Fim do loop do CSV
+
+            // 4. Espera todas as imagens serem salvas no IndexedDB
+            zipStatusText.textContent = `Salvando ${imageSavePromises.length} imagens no banco de dados...`;
+            await Promise.all(imageSavePromises);
+
+            // 5. Salva os metadados e atualiza a interface
+            registeredTrees = newTrees;
+            saveDataToStorage();
+            renderSummaryTable();
+            
+            showToast(`📤 Importação do .zip concluída! ${newTrees.length} registros carregados.`, 'success');
+
+        } catch (error) {
+            console.error("Erro ao importar o .zip:", error);
+            showToast(`Erro: ${error.message}`, 'error');
+        } finally {
+            if (zipStatus) zipStatus.style.display = 'none';
+            event.target.value = null; // Limpa o input de arquivo
+        }
     }
 
     /**

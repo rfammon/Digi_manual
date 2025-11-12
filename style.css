@@ -1291,3 +1291,42 @@ html {
          height: 180px; 
     }
 }
+
+/* -------------------------------------- */
+/* 20. IMPORT/EXPORT PACOTE (.ZIP) (v19.0) */
+/* -------------------------------------- */
+
+/* Botão de Importar ZIP (Laranja/Âmbar) */
+.zip-import-label {
+    background-color: #ffb300;
+    color: #333;
+    text-align: center;
+}
+.zip-import-label:hover {
+    background-color: #ffa000;
+}
+
+/* Botão de Exportar ZIP (Verde Principal) */
+#export-zip-btn {
+    background-color: #00796b;
+    color: white;
+}
+#export-zip-btn:hover {
+    background-color: #00695c;
+}
+
+/* Feedback de processamento (Spinner) */
+#zip-status {
+    display: none; /* Oculto por padrão */
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: #004d40;
+}
+#zip-status .spinner {
+    /* (v19.0) Reutilizando o spinner do GPS, mas com cor verde */
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 77, 64, 0.3);
+    border-top-color: #004d40;
+}
