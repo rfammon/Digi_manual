@@ -497,7 +497,7 @@ const manualContent = {
                         </div>
                     
                     <div id="import-export-controls" class="risk-buttons-area">
-                        <input type="file" id="csv-importer" accept=".csv" style="display: none;">
+                        <input type="file" id="csv-importer" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain" style="display: none;">
                         <label for="csv-importer" class="export-btn csv-import-label">📤 Importar CSV</label>
                         <button type="button" id="export-csv-btn" class="export-btn">📥 Exportar CSV</button>
                         <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
