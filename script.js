@@ -1,21 +1,18 @@
-// script.js (COMPLETO v16.0 - Final, Limpo e com Polimento)
+// script.js (COMPLETO v17.6 - Estrutura Estável + Mapa GIS, Conversão UTM e Lupa)
 
-// === 0. ARMAZENAMENTO de ESTADO ===
+// === 0. ARMAZENAMENTO de ESTADO (Variáveis Globais) ===
 let registeredTrees = [];
-
-// Chave para o localStorage da tabela
 const STORAGE_KEY = 'manualPodaData';
-// Chave para a última aba ativa
 const ACTIVE_TAB_KEY = 'manualPodaActiveTab';
-
-// (v15.0) Variável para reter o nome do avaliador
 let lastEvaluatorName = '';
-
-// (v15.1) Variável global para o timer do toast
 let toastTimer;
+let mapInstance = null;
+let lastUtmZone = { num: 0, letter: 'Z' }; // Default para Zona UTM
+let zoomTargetCoords = null; // (v17.4) Armazena o alvo do zoom da lupa
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
+
 const glossaryTerms = {
     'colar do galho': 'Zona especializada na base do galho, responsável pela compartimentalização de ferimentos.',
     'crista da casca': 'Elevação cortical paralela ao ângulo de inserção do galho, indicadora da zona de união.',
@@ -129,8 +126,7 @@ const podaPurposeData = {
     }
 };
 
-
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v16.0) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v17.6) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -349,7 +345,6 @@ const manualContent = {
             </table>
         `
     },
-
     'sobre-autor': {
         titulo: '👨‍💻 Sobre o Autor',
         html: `
@@ -375,7 +370,7 @@ const manualContent = {
                             Fluente em inglês.
                         </p>
                         <p class="autor-links">
-                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
+                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |   
                             <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
                         </p>
                     </div>
@@ -384,22 +379,25 @@ const manualContent = {
         `
     },
 
-    // (MODIFICADO v16.0) Conteúdo da Calculadora (Polimento de ícones)
+    // (ATUALIZADO v17.5) HTML da Calculadora: Remove 'active' (JS controla) e adiciona input de Zona UTM
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
-            <p>Use a aba "Registrar" para nova coleta e "Resumo" para ver, editar ou exportar os dados.</p>
+            <p>Use o mapa para visualização geoespacial do risco, a aba "Registrar" para coleta e "Resumo" para gerenciar os dados.</p>
             
             <nav class="sub-nav">
-                <button type="button" class="sub-nav-btn active" data-target="tab-content-register">
+                <button type="button" class="sub-nav-btn" data-target="tab-content-register">
                     Registrar Árvore
                 </button>
                 <button type="button" class="sub-nav-btn" data-target="tab-content-summary">
                     Resumo da Vistoria <span id="summary-badge" class="badge"></span>
                 </button>
+                <button type="button" class="sub-nav-btn" data-target="tab-content-mapa">
+                    Mapa GIS 🗺️
+                </button>
             </nav>
-    
-            <div id="tab-content-register" class="sub-tab-content active">
+
+            <div id="tab-content-register" class="sub-tab-content">
                 <form id="risk-calculator-form">
                     <fieldset class="risk-fieldset">
                         <legend>1. Identificação da Árvore</legend>
@@ -417,14 +415,14 @@ const manualContent = {
                                 <input type="text" id="risk-local" name="risk-local">
                             </div>
                             <div>
-                                <label for="risk-coord-x">Coord. X (UTM):</label>
+                                <label for="risk-coord-x">Coord. X (UTM ou Lon):</label>
                                 <input type="text" id="risk-coord-x" name="risk-coord-x">
                             </div>
                             <div>
-                                <label for="risk-coord-y">Coord. Y (UTM):</label>
+                                <label for="risk-coord-y">Coord. Y (UTM ou Lat):</label>
                                 <input type="text" id="risk-coord-y" name="risk-coord-y">
                             </div>
-                             <div class="gps-button-container">
+                            <div class="gps-button-container">
                                 <button type="button" id="get-gps-btn">🛰️ Capturar GPS</button>
                                 <span id="gps-status"></span>
                             </div>
@@ -445,7 +443,6 @@ const manualContent = {
                     
                     <fieldset class="risk-fieldset">
                         <legend>2. Lista de Verificação de Risco</legend>
-
                         <table class="risk-table">
                             <thead>
                                 <tr><th>Nº</th><th>Pergunta</th><th>Peso</th><th>Sim</th></tr>
@@ -469,17 +466,14 @@ const manualContent = {
                                 <tr><td>16</td><td>Há apodrecimento em raízes primárias (>3 cm)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
                             </tbody>
                         </table>
-
                         <div class="mobile-checklist-wrapper">
-                            <div class="mobile-checklist-card">
-                                </div>
+                            <div class="mobile-checklist-card"></div>
                             <div class="mobile-checklist-nav">
                                 <button type="button" id="checklist-prev">❮ Anterior</button>
                                 <span class="checklist-counter">1 / 16</span>
                                 <button type="button" id="checklist-next">Próxima ❯</button>
                             </div>
                         </div>
-
                     </fieldset>
                     
                     <div class="risk-buttons-area">
@@ -488,13 +482,13 @@ const manualContent = {
                     </div>
                 </form>
             </div>
-    
+            
             <div id="tab-content-summary" class="sub-tab-content">
                 <fieldset class="risk-fieldset">
                     <legend>3. Árvores Cadastradas</legend>
                     <div id="summary-table-container">
                         <p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>
-                        </div>
+                    </div>
                     
                     <div id="import-export-controls" class="risk-buttons-area">
                         <input type="file" id="csv-importer" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain" style="display: none;">
@@ -505,142 +499,124 @@ const manualContent = {
                     </div>
                 </fieldset>
             </div>
+            
+            <div id="tab-content-mapa" class="sub-tab-content mapa-tab">
+                <fieldset class="risk-fieldset">
+                    <legend>Mapa de Localização e Risco</legend>
+                    <div id="map-container"></div>
+                    
+                    <div class="form-grid" style="margin-top: 15px; gap: 10px;">
+                        <div>
+                            <label for="default-utm-zone">Zona UTM Padrão (Ex: 23K):</label>
+                            <input type="text" id="default-utm-zone" placeholder="Ex: 23K" style="height: 38px;">
+                            <small style="color: #555; font-size: 0.8em;">(Necessário para dados antigos ou importados)</small>
+                        </div>
+                        <button type="button" id="zoom-to-extent-btn" class="export-btn">📍 Aproximar dos Pontos</button>
+                    </div>
+
+                    <p style="margin-top: 15px; font-size: 0.9em; color: #555;">
+                        Simbologia: <span style="color: #C62828; font-weight: bold;">🔴 Alto Risco</span> | 
+                        <span style="color: #E65100; font-weight: bold;">🟠 Médio Risco</span> | 
+                        <span style="color: #2E7D32; font-weight: bold;">🟢 Baixo Risco</span>
+                    </p>
+                </fieldset>
+            </div>
         `
     }
 };
 
-
 // === 3. LÓGICA DE INICIALIZAÇÃO ===
-
-// (NOVO v16.0) Lógica do Carrossel Mobile movida para o escopo global
-// para poder ser chamada por setupRiskCalculator e handleEditTree
-let mobileChecklist = {
-    currentIndex: 0,
-    totalQuestions: 0,
-    questions: null,
-    wrapper: null,
-    card: null,
-    navPrev: null,
-    navNext: null,
-    counter: null
-};
-
-/**
- * (v16.0) Mostra a pergunta do carrossel no índice especificado
- */
-function showMobileQuestion(index) {
-    const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
-    
-    const questionRow = questions[index];
-    if (!questionRow) return;
-
-    // Extrai dados da tabela
-    const num = questionRow.cells[0].textContent;
-    const pergunta = questionRow.cells[1].textContent;
-    const peso = questionRow.cells[2].textContent;
-    const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
-
-    // Injeta HTML no cartão
-    card.innerHTML = `
-        <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
-        <span class="checklist-card-peso">(Peso: ${peso})</span>
-        <label class="checklist-card-toggle">
-            <input type="checkbox" class="mobile-checkbox-proxy" data-target-index="${index}" ${realCheckbox.checked ? 'checked' : ''}>
-            <span class="toggle-label">Não</span>
-            <span class="toggle-switch"></span>
-            <span class="toggle-label">Sim</span>
-        </label>
-    `;
-
-    // Atualiza navegação
-    counter.textContent = `${index + 1} / ${totalQuestions}`;
-    navPrev.disabled = (index === 0);
-    navNext.disabled = (index === totalQuestions - 1);
-    mobileChecklist.currentIndex = index;
-}
-
-/**
- * (v16.0) Inicializa o carrossel mobile
- */
-function setupMobileChecklist() {
-    mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
-    if (!mobileChecklist.wrapper) return; // Só continua se os elementos existirem
-
-    mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
-    mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
-    mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
-    mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
-    
-    // Fonte da verdade: a tabela desktop (que está oculta)
-    mobileChecklist.questions = document.querySelectorAll('.risk-table tbody tr');
-    if (mobileChecklist.questions.length === 0) return; // Segurança
-
-    mobileChecklist.currentIndex = 0;
-    mobileChecklist.totalQuestions = mobileChecklist.questions.length;
-
-    // Limpa listeners antigos para evitar duplicatas
-    mobileChecklist.card.replaceWith(mobileChecklist.card.cloneNode(true));
-    mobileChecklist.navPrev.replaceWith(mobileChecklist.navPrev.cloneNode(true));
-    mobileChecklist.navNext.replaceWith(mobileChecklist.navNext.cloneNode(true));
-
-    // Re-seleciona os elementos clonados
-    mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
-    mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
-    mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
-
-    // Event listener para o "toggle" (proxy)
-    mobileChecklist.card.addEventListener('change', (e) => {
-        const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
-        if (proxyCheckbox) {
-            const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
-            const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
-            realCheckbox.checked = proxyCheckbox.checked;
-        }
-    });
-
-    // Event listeners da Navegação
-    mobileChecklist.navPrev.addEventListener('click', () => {
-        if (mobileChecklist.currentIndex > 0) {
-            showMobileQuestion(mobileChecklist.currentIndex - 1);
-        }
-    });
-
-    mobileChecklist.navNext.addEventListener('click', () => {
-        if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) {
-            showMobileQuestion(mobileChecklist.currentIndex + 1);
-        }
-    });
-
-    // Mostra a primeira pergunta
-    showMobileQuestion(0);
-}
-
-
-
 document.addEventListener('DOMContentLoaded', () => {
+
+    // (NOVO v16.0) Lógica do Carrossel Mobile
+    let mobileChecklist = {
+        currentIndex: 0,
+        totalQuestions: 0,
+        questions: null,
+        wrapper: null,
+        card: null,
+        navPrev: null,
+        navNext: null,
+        counter: null
+    };
+    
+    /** (v16.0) Mostra a pergunta do carrossel no índice especificado */
+    function showMobileQuestion(index) {
+        const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
+        const questionRow = questions[index];
+        if (!questionRow) return;
+        const num = questionRow.cells[0].textContent;
+        const pergunta = questionRow.cells[1].textContent;
+        const peso = questionRow.cells[2].textContent;
+        const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
+        card.innerHTML = `
+            <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
+            <span class="checklist-card-peso">(Peso: ${peso})</span>
+            <label class="checklist-card-toggle">
+                <input type="checkbox" class="mobile-checkbox-proxy" data-target-index="${index}" ${realCheckbox.checked ? 'checked' : ''}>
+                <span class="toggle-label">Não</span>
+                <span class="toggle-switch"></span>
+                <span class="toggle-label">Sim</span>
+            </label>
+        `;
+        counter.textContent = `${index + 1} / ${totalQuestions}`;
+        navPrev.disabled = (index === 0);
+        navNext.disabled = (index === totalQuestions - 1);
+        mobileChecklist.currentIndex = index;
+    }
+
+    /** (v16.0) Inicializa o carrossel mobile */
+    function setupMobileChecklist() {
+        mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
+        if (!mobileChecklist.wrapper) return;
+        mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
+        mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
+        mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
+        mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
+        mobileChecklist.questions = document.querySelectorAll('.risk-table tbody tr');
+        if (mobileChecklist.questions.length === 0) return;
+        mobileChecklist.currentIndex = 0;
+        mobileChecklist.totalQuestions = mobileChecklist.questions.length;
+        mobileChecklist.card.replaceWith(mobileChecklist.card.cloneNode(true));
+        mobileChecklist.navPrev.replaceWith(mobileChecklist.navPrev.cloneNode(true));
+        mobileChecklist.navNext.replaceWith(mobileChecklist.navNext.cloneNode(true));
+        mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
+        mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
+        mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
+        mobileChecklist.card.addEventListener('change', (e) => {
+            const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
+            if (proxyCheckbox) {
+                const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
+                const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
+                realCheckbox.checked = proxyCheckbox.checked;
+            }
+        });
+        mobileChecklist.navPrev.addEventListener('click', () => {
+            if (mobileChecklist.currentIndex > 0) {
+                showMobileQuestion(mobileChecklist.currentIndex - 1);
+            }
+        });
+        mobileChecklist.navNext.addEventListener('click', () => {
+            if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) {
+                showMobileQuestion(mobileChecklist.currentIndex + 1);
+            }
+        });
+        showMobileQuestion(0);
+    }
+
 
     // ==========================================================
     // (v15.1) FUNÇÃO DE FEEDBACK (TOAST)
     // ==========================================================
-    /**
-     * Mostra uma notificação toast (Sugestão 2)
-     * @param {string} message A mensagem a ser exibida.
-     * @param {string} type 'success' (verde) ou 'error' (vermelho).
-     */
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast-notification');
         if (!toast) return;
-
-        // Limpa timer anterior se houver
         if (toastTimer) {
             clearTimeout(toastTimer);
         }
-
         toast.textContent = message;
-        toast.className = 'show'; // Remove classes antigas
-        toast.classList.add(type); // Adiciona 'success' ou 'error'
-
-        // Esconde após 3 segundos
+        toast.className = 'show';
+        toast.classList.add(type);
         toastTimer = setTimeout(() => {
             toast.className = toast.className.replace('show', '');
             toastTimer = null;
@@ -651,18 +627,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // FUNÇÕES PRIMÁRIAS (LocalStorage, GPS, CRUD)
     // ==========================================================
 
-    /**
-     * Salva a lista 'registeredTrees' no localStorage.
-     */
     function saveDataToStorage() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredTrees));
         } catch (e) { console.error("Erro ao salvar no localStorage:", e); }
     }
 
-    /**
-     * Carrega 'registeredTrees' do localStorage.
-     */
     function loadDataFromStorage() {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
@@ -670,9 +640,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error("Erro ao ler do localStorage:", e); }
     }
 
-    /**
-     * Converte Lat/Lon (WGS84) para coordenadas UTM.
-     */
     function convertLatLonToUtm(lat, lon) {
         const f = 1 / 298.257223563, a = 6378137.0, k0 = 0.9996;
         const e = Math.sqrt(f * (2 - f)), e2 = e * e, e4 = e2 * e2, e6 = e4 * e2, e_2 = e2 / (1.0 - e2);
@@ -700,7 +667,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v16.0) Função principal que captura o GPS (com spinner)
+     * (v17.5) Função principal que captura o GPS (com spinner e salvando a Zona)
      */
     async function handleGetGPS() {
         const gpsStatus = document.getElementById('gps-status');
@@ -720,7 +687,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // (NOVO v16.0) Desativa botão e mostra spinner
         getGpsBtn.disabled = true;
         getGpsBtn.innerHTML = '🛰️ Capturando... <span class="spinner"></span>';
         gpsStatus.textContent = "Capturando... (1/5)";
@@ -742,8 +708,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const avgNorthing = readings.reduce((sum, r) => sum + r.northing, 0) / 5;
                 coordXField.value = avgEasting.toFixed(0);    
                 coordYField.value = avgNorthing.toFixed(0);    
-                gpsStatus.textContent = `Média de 5 leituras (Zona: ${readings[4].zoneNum}${readings[4].zoneLetter})`;
+                
+                const zoneStr = `${readings[4].zoneNum}${readings[4].zoneLetter}`;
+                gpsStatus.textContent = `Média de 5 leituras (Zona: ${zoneStr})`;
                 gpsStatus.className = '';
+
+                // (NOVO v17.1) SALVA A ÚLTIMA ZONA UTM CAPTURADA (CRÍTICO PARA O MAPA)
+                lastUtmZone.num = readings[4].zoneNum;
+                lastUtmZone.letter = readings[4].zoneLetter;
+                
+                // (NOVO v17.5) Atualiza o campo de zona padrão no mapa
+                const defaultZoneInput = document.getElementById('default-utm-zone');
+                if (defaultZoneInput) {
+                    defaultZoneInput.value = zoneStr;
+                }
             }
         } catch (error) {
             gpsStatus.className = 'error';
@@ -754,7 +732,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 default: gpsStatus.textContent = "Erro ao buscar GPS."; break;
             }
         } finally {
-            // (NOVO v16.0) Re-ativa o botão
             getGpsBtn.disabled = false;
             getGpsBtn.innerHTML = '🛰️ Capturar GPS';
         }
@@ -770,11 +747,11 @@ document.addEventListener('DOMContentLoaded', () => {
         registeredTrees.forEach((tree, index) => { tree.id = index + 1; }); // Re-indexa
         saveDataToStorage();
         renderSummaryTable();
-        showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); // (v15.1)
+        showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); 
     }
 
     /**
-     * (v16.0) Função para pré-preencher o formulário para edição
+     * (v17.5) Função para pré-preencher o formulário para edição (com Zona UTM)
      */
     function handleEditTree(id) {
         const treeIndex = registeredTrees.findIndex(tree => tree.id === id);
@@ -791,10 +768,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('risk-avaliador').value = treeToEdit.avaliador;
         document.getElementById('risk-obs').value = treeToEdit.observacoes;
         
+        // (v17.2) Carrega a zona UTM do item para a memória
+        lastUtmZone.num = treeToEdit.utmZoneNum || 0;
+        lastUtmZone.letter = treeToEdit.utmZoneLetter || 'Z';
+        if(document.getElementById('gps-status')) {
+            document.getElementById('gps-status').textContent = `Zona (da árvore): ${lastUtmZone.num}${lastUtmZone.letter}`;
+        }
+
         // 2. Preenche checkboxes (na tabela oculta)
         const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
         allCheckboxes.forEach((cb, index) => {
-            cb.checked = treeToEdit.riskFactors[index] === 1 || false;
+            cb.checked = (treeToEdit.riskFactors && treeToEdit.riskFactors[index] === 1) || false;
         });
 
         // (v16.0) Sincroniza o carrossel mobile (se existir)
@@ -821,20 +805,20 @@ document.addEventListener('DOMContentLoaded', () => {
             registeredTrees = [];
             saveDataToStorage();
             renderSummaryTable();
-            showToast('🗑️ Tabela limpa.', 'error'); // (v15.1)
+            showToast('🗑️ Tabela limpa.', 'error'); 
         }
     }
 
     /**
-     * (v15.0) Renderiza a tabela e atualiza o badge
+     * (v17.4) Renderiza a tabela e atualiza o badge (com coluna UTM e Lupa)
      */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
         const importExportControls = document.getElementById('import-export-controls');
         const summaryBadge = document.getElementById('summary-badge');
-    
+        
         if (!container) return;    
-    
+        
         // Atualiza o badge
         if (summaryBadge) {
             if (registeredTrees.length > 0) {
@@ -845,7 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 summaryBadge.style.display = 'none';
             }
         }
-    
+        
         // Oculta os botões de exportação se a tabela estiver vazia
         if (registeredTrees.length === 0) {
             container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
@@ -863,11 +847,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('send-email-btn')?.setAttribute('style', 'display:block');
             document.getElementById('clear-all-btn')?.setAttribute('style', 'display:block');
         }
-    
+        
         let tableHTML = '<table class="summary-table"><thead><tr>';
-        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
+        // (ATUALIZADO v17.4) Inclui coluna de Lupa
+        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>Zona UTM</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-zoom">Zoom</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
         tableHTML += '</tr></thead><tbody>';
-    
+        
         registeredTrees.forEach(tree => {
             const [y, m, d] = (tree.data || '---').split('-');
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
@@ -879,39 +864,295 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${tree.especie}</td>
                     <td>${tree.coordX}</td>
                     <td>${tree.coordY}</td>
+                    <td>${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}</td>
                     <td>${tree.dap}</td>
                     <td>${tree.local}</td>
                     <td>${tree.avaliador}</td>
                     <td>${tree.pontuacao}</td>
                     <td class="${tree.riscoClass}">${tree.risco}</td>
                     <td>${tree.observacoes}</td>
+                    <td class="col-zoom"><button type="button" class="zoom-tree-btn" data-id="${tree.id}">🔎</button></td>
                     <td class="col-edit"><button type="button" class="edit-tree-btn" data-id="${tree.id}">✏️</button></td>
                     <td class="col-delete"><button type="button" class="delete-tree-btn" data-id="${tree.id}">🗑️</button></td>
                 </tr>
             `;
         });
-    
+        
         tableHTML += '</tbody></table>';
         container.innerHTML = tableHTML;
     }
+
+    // ==========================================================
+    // (NOVO v17.5) LÓGICA DO MAPA GIS (CONVERSÃO PRECISA E FALLBACK)
+    // ==========================================================
+    
+    /** (NOVO v17.5) Lê a zona UTM padrão do input manual */
+    function getManualDefaultZone() {
+        const zoneInput = document.getElementById('default-utm-zone');
+        if (zoneInput && zoneInput.value) {
+            const match = zoneInput.value.trim().match(/^(\d+)([A-Z])$/i); // Ex: "23K"
+            if (match) {
+                return { num: parseInt(match[1], 10), letter: match[2].toUpperCase() };
+            }
+        }
+        // Se falhar, tenta usar a última zona capturada pelo GPS
+        if (lastUtmZone.num > 0) {
+            return lastUtmZone;
+        }
+        return { num: 0, letter: 'Z' }; // Falha
+    }
     
     /**
-     * (v16.0) Módulo da Calculadora de Risco (Toast, Abas e Carrossel Mobile)
+     * (v17.5) Converte Coordenadas para Lat/Lon [Latitude, Longitude]
+     */
+    function convertToLatLon(tree) {
+        // Verifica se a biblioteca Proj4js está disponível
+        if (typeof proj4 === 'undefined') {
+            console.error("Proj4js não carregado. Não é possível converter UTM.");
+            return null; 
+        }
+
+        const lon = parseFloat(tree.coordX); // Easting
+        const lat = parseFloat(tree.coordY); // Northing
+
+        // Determina qual Zona UTM usar
+        let zNum, zLetter;
+
+        // Cenário 1: O dado (v17.2+) tem a zona salva (GPS ou importação)
+        if (tree.utmZoneNum > 0 && tree.utmZoneLetter !== 'Z') {
+            zNum = tree.utmZoneNum;
+            zLetter = tree.utmZoneLetter;
+        } 
+        // Cenário 2: O dado é antigo (v16.0) ou importado sem zona. Usa o input manual.
+        else {
+            const defaultZone = getManualDefaultZone(); // Pega do input
+            zNum = defaultZone.num;
+            zLetter = defaultZone.letter;
+        }
+
+        // Tenta a conversão UTM Precisa (Assume que Coords > 1000 são UTM)
+        if (!isNaN(lon) && !isNaN(lat) && !isNaN(zNum) && zNum > 0 && zLetter !== 'Z' && zLetter !== '' && lon > 1000 && lat > 1000) {
+            const isSouthern = (zLetter.toUpperCase() >= 'C' && zLetter.toUpperCase() <= 'M');
+            const hemisphere = isSouthern ? 'south' : 'north';
+            const projString = `+proj=utm +zone=${zNum} +${hemisphere} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`;
+            try {
+                const [longitude, latitude] = proj4(projString, "EPSG:4326", [lon, lat]);
+                return [latitude, longitude]; // Leaflet format [Lat, Lon]
+            } catch (e) {
+                console.warn("Falha na conversão Proj4js.", e);
+            }
+        }
+
+        // Fallback (se a conversão UTM falhar OU os dados parecerem ser Lat/Lon)
+        if (!isNaN(lon) && !isNaN(lat) && (lat >= -90 && lat <= 90) && (lon >= -180 && lon <= 180)) {
+            console.warn(`Dados (ID ${tree.id}) parecem ser Lat/Lon. Usando fallback.`);
+            return [lat, lon]; // [Lat, Lon]
+        }
+
+        console.warn(`Ponto (ID ${tree.id}) ignorado: Coordenadas inválidas.`, tree);
+        return null;
+    }
+
+
+    /**
+     * (v17.4) Inicializa o mapa Leaflet e renderiza os pontos.
+     */
+    function initMap() {
+        const mapContainer = document.getElementById('map-container');
+        if (!mapContainer) return; 
+        
+        if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
+            mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Adicione-as ao index.html.</p>';
+            return;
+        }
+
+        if (mapInstance !== null) {
+            mapInstance.remove();
+            mapInstance = null;
+        }
+        
+        // 1. Filtra e Converte árvores
+        let boundsArray = [];
+        let treesToRender = registeredTrees.map(tree => {
+            const coords = convertToLatLon(tree); // Passa o objeto 'tree' inteiro
+            if (coords) {
+                tree.coordsLatLon = coords; // Armazena Lat/Lon para uso
+                boundsArray.push(coords);
+                return tree;
+            }
+            return null;
+        }).filter(tree => tree !== null); 
+        
+        let mapCenter = [-15.7801, -47.9292]; // Padrão Brasil Central (Brasília)
+        let initialZoom = 4; 
+
+        if (boundsArray.length > 0) {
+            mapCenter = boundsArray[0]; 
+            initialZoom = 16;
+        }
+        
+        // 2. Inicializa o mapa
+        mapInstance = L.map('map-container').setView(mapCenter, initialZoom);
+
+        // 3. Camada Base - Imagem de Satélite (ESRI)
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        }).addTo(mapInstance);
+
+        // 4. Renderiza os marcadores
+        renderTreesOnMap(treesToRender);
+        
+        // 5. (v17.4) Aplica o Zoom (Lupa ou Extent)
+        if (zoomTargetCoords) {
+            mapInstance.setView(zoomTargetCoords, 18); // Zoom 18 para ponto único
+            zoomTargetCoords = null; // Limpa o alvo
+        } else if (boundsArray.length > 0) {
+            handleZoomToExtent(); // Chama a função de zoom automático
+        }
+    }
+
+    /**
+     * (v17.4) Desenha círculos (marcadores) no mapa.
+     */
+    function renderTreesOnMap(treesData) {
+        if (!mapInstance) return;
+
+        mapInstance.eachLayer(function (layer) {
+            if (layer.options && layer.options.isTreeMarker) {
+                mapInstance.removeLayer(layer);
+            }
+        });
+
+        treesData.forEach(tree => {
+            const coords = tree.coordsLatLon; 
+            let color, radius, riskText;
+
+            if (tree.risco === 'Alto Risco') {
+                color = '#C62828'; // Vermelho
+                radius = 12; 
+                riskText = '🔴 Alto Risco';
+            } else if (tree.risco === 'Médio Risco') {
+                color = '#E65100'; // Laranja
+                radius = 8; 
+                riskText = '🟠 Médio Risco';
+            } else {
+                color = '#2E7D32'; // Verde
+                radius = 5; 
+                riskText = '🟢 Baixo Risco';
+            }
+
+            const circle = L.circle(coords, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.6,
+                radius: radius, 
+                weight: 1,
+                isTreeMarker: true
+            }).addTo(mapInstance);
+
+            const popupContent = `
+                <strong>ID: ${tree.id}</strong><br>
+                Espécie: ${tree.especie}<br>
+                Risco: <span style="color:${color}; font-weight:bold;">${riskText}</span><br>
+                Local: ${tree.local}<br>
+                Coord. UTM: ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})
+            `;
+            circle.bindPopup(popupContent);
+        });
+    }
+
+    /**
+     * (NOVO v17.3 - Corrigido v17.5) Função para o botão "Aproximar dos Pontos"
+     */
+    function handleZoomToExtent() {
+        if (!mapInstance) {
+            showToast("O mapa não está inicializado.", "error");
+            return;
+        }
+
+        let boundsArray = [];
+        registeredTrees.forEach(tree => {
+            // (BUG 1 CORRIGIDO v17.5) Usa a função de conversão correta
+            const coords = convertToLatLon(tree); // Passa o objeto 'tree'
+            if (coords) {
+                boundsArray.push(coords);
+            }
+        });
+
+        if (boundsArray.length > 0) {
+            mapInstance.fitBounds(boundsArray, { padding: [50, 50], maxZoom: 18 });
+        } else {
+            showToast("Não há coordenadas válidas. Verifique a Zona UTM Padrão.", "error");
+        }
+    }
+
+    /** (NOVO v17.4) Função para o botão "Lupa" 🔎 */
+    function handleZoomToPoint(id) {
+        const tree = registeredTrees.find(t => t.id === id);
+        if (!tree) {
+            showToast("Árvore não encontrada.", "error");
+            return;
+        }
+
+        const coords = convertToLatLon(tree); // Passa o objeto 'tree'
+        
+        if (coords) {
+            zoomTargetCoords = coords; // Define o alvo
+            // Encontra e clica no botão da aba Mapa GIS
+            const mapTabButton = document.querySelector('.sub-nav-btn[data-target="tab-content-mapa"]');
+            if (mapTabButton) {
+                mapTabButton.click();
+            }
+        } else {
+            showToast(`Coordenadas inválidas para a Árvore ID ${id}. Verifique a Zona UTM Padrão.`, "error");
+        }
+    }
+
+
+    /**
+     * (v17.5) Módulo da Calculadora de Risco (com lógica de aba de mapa)
      */
     function setupRiskCalculator() {
         
-        // (v15.0) Lógica de controle das Abas Secundárias
-        const subNavButtons = document.querySelectorAll('.sub-nav-btn');
+        // (BUG 2 CORRIGIDO v17.5) Lógica de Abas com Event Delegation
+        const subNav = document.querySelector('.sub-nav');
         const subTabPanes = document.querySelectorAll('.sub-tab-content');
+        
         function showSubTab(targetId) {
             subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
+            
+            // Atualiza botões
+            const subNavButtons = document.querySelectorAll('.sub-nav-btn');
             subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
+
+            // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
+            if (targetId === 'tab-content-mapa') {
+                // (v17.3) Atraso leve para garantir que o container do mapa tenha tamanho
+                setTimeout(() => {
+                    initMap(); 
+                }, 50); 
+            }
         }
-        subNavButtons.forEach(button => {
-            button.addEventListener('click', () => showSubTab(button.getAttribute('data-target')));
-        });
-    
-        // --- Elementos do Formulário Principal ---
+        
+        if (subNav) {
+            // Limpa listeners antigos (caso setupRiskCalculator seja chamado múltiplas vezes)
+            const newNav = subNav.cloneNode(true);
+            subNav.parentNode.replaceChild(newNav, subNav);
+            
+            // Um único listener no container pai (Event Delegation)
+            newNav.addEventListener('click', (e) => {
+                const button = e.target.closest('.sub-nav-btn');
+                if (button) {
+                    e.preventDefault();
+                    showSubTab(button.getAttribute('data-target'));
+                }
+            });
+        }
+        // Define a aba padrão
+        showSubTab('tab-content-register');
+
+        // --- Restante do setup ---
         const form = document.getElementById('risk-calculator-form');
         const summaryContainer = document.getElementById('summary-table-container');
         const exportCsvBtn = document.getElementById('export-csv-btn');
@@ -919,13 +1160,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const getGpsBtn = document.getElementById('get-gps-btn');    
         const clearAllBtn = document.getElementById('clear-all-btn');    
         const csvImporter = document.getElementById('csv-importer');
-    
+        
+        // (NOVO v17.3) Listener para o botão de Zoom Extent
+        const zoomBtn = document.getElementById('zoom-to-extent-btn');
+        if (zoomBtn) {
+            zoomBtn.addEventListener('click', handleZoomToExtent);
+        }
+
         if (!form) return;    
-    
+        
         if (lastEvaluatorName) {
             document.getElementById('risk-avaliador').value = lastEvaluatorName;
         }
-    
+        
         const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
@@ -933,22 +1180,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (getGpsBtn) getGpsBtn.addEventListener('click', handleGetGPS);
-    
-        // 1. Lógica de Adicionar Árvore
+        
+        // 1. Lógica de Adicionar Árvore (ATUALIZADA v17.2: Salvando Zona UTM)
         form.addEventListener('submit', (event) => {
             event.preventDefault();    
             let totalScore = 0;
-            // Lê os checkboxes da tabela (fonte da verdade)
+            
             const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
             checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
-    
+            
             const allCheckboxes = form.querySelectorAll('.risk-checkbox');
             const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
-    
+            
             let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
             if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
             else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
-    
+            
             const newTree = {
                 id: registeredTrees.length + 1,
                 data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
@@ -956,6 +1203,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 local: document.getElementById('risk-local').value || 'N/A',
                 coordX: document.getElementById('risk-coord-x').value || 'N/A',
                 coordY: document.getElementById('risk-coord-y').value || 'N/A',
+                // (NOVO v17.1) SALVANDO ZONA UTM PARA CONVERSÃO PRECISA NO MAPA
+                utmZoneNum: lastUtmZone.num || 0,
+                utmZoneLetter: lastUtmZone.letter || 'Z',
                 dap: document.getElementById('risk-dap').value || 'N/A',    
                 avaliador: document.getElementById('risk-avaliador').value || 'N/A',
                 observacoes: document.getElementById('risk-obs').value || 'N/A',    
@@ -964,15 +1214,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 riscoClass: classificationClass,
                 riskFactors: checkedRiskFactors
             };
-    
+            
             registeredTrees.push(newTree);
             saveDataToStorage();
             renderSummaryTable();
             
-            // (NOVO v15.1) Mostra o Toast de sucesso
             showToast(`✔️ Árvore "${newTree.especie || 'N/A'}" (ID ${newTree.id}) adicionada!`, 'success');
 
-            // (v14.7) Salva o nome do avaliador
             lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
             form.reset();
             try {
@@ -980,12 +1228,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('risk-avaliador').value = lastEvaluatorName;
             } catch(e) { /* ignora erro */ }
 
-            // (MODIFICADO v15.1) Não muda de aba. Apenas foca no campo.
             document.getElementById('risk-especie').focus();
             
-            // (v15.1) Reseta o carrossel mobile para a P1
             if (isTouchDevice) {
-                setupMobileChecklist(); // Re-inicia o carrossel
+                setupMobileChecklist(); 
             }
 
             const gpsStatus = document.getElementById('gps-status');
@@ -999,20 +1245,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();    
                 lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
                 form.reset();    
-                 try {
-                    document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-                    document.getElementById('risk-avaliador').value = lastEvaluatorName;
-                } catch(e) { /* ignora erro */ }
+                    try {
+                        document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+                        document.getElementById('risk-avaliador').value = lastEvaluatorName;
+                    } catch(e) { /* ignora erro */ }
                 
                 if (isTouchDevice) {
-                    setupMobileChecklist(); // (v15.1) Reseta o carrossel
+                    setupMobileChecklist(); 
                 }
 
                 const gpsStatus = document.getElementById('gps-status');
                 if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
             });
         }
-    
+        
         // 3. Lógica dos Botões de Importação/Exportação
         if (exportCsvBtn) exportCsvBtn.addEventListener('click', exportCSV);
         if (sendEmailBtn) sendEmailBtn.addEventListener('click', sendEmailReport);
@@ -1022,12 +1268,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // 4. Renderiza a tabela ao carregar
         renderSummaryTable();
         
-        // 5. (v14.6) Event Listener para Editar e Excluir
+        // 5. (v17.4) Event Listener para Editar, Excluir e LUPA (ZOOM)
         if (summaryContainer) {
-            summaryContainer.addEventListener('click', (e) => {
+            // (BUG 2 CORRIGIDO v17.5) Usando Event Delegation para evitar quebra de listener
+            const newSummaryContainer = summaryContainer.cloneNode(true);
+            summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
+            
+            newSummaryContainer.addEventListener('click', (e) => {
                 const deleteButton = e.target.closest('.delete-tree-btn');
                 const editButton = e.target.closest('.edit-tree-btn');    
-    
+                const zoomButton = e.target.closest('.zoom-tree-btn'); // (NOVO v17.4)
+        
                 if (deleteButton) {
                     const treeId = parseInt(deleteButton.dataset.id, 10);
                     handleDeleteTree(treeId);
@@ -1036,20 +1287,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (editButton) {    
                     const treeId = parseInt(editButton.dataset.id, 10);
                     handleEditTree(treeId);
-                    showSubTab('tab-content-register'); // Volta para a aba de registro
+                    showSubTab('tab-content-register'); 
+                }
+
+                if (zoomButton) { // (NOVO v17.4)
+                    const treeId = parseInt(zoomButton.dataset.id, 10);
+                    handleZoomToPoint(treeId);
                 }
             });
         }
 
-        // (v16.0) Só ativa o carrossel no mobile
         if (isTouchDevice) {
             setupMobileChecklist();
         }
 
     } // Fim de setupRiskCalculator()
 
-    // --- Definições de Funções (Tooltip, Export, etc.) ---
-
+    // --- Funções de Tooltip (Glossário, Equipamentos, Propósito) ---
+    
     let currentTooltip = null;    
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     const termClickEvent = isTouchDevice ? 'touchend' : 'click';
@@ -1191,16 +1446,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Gera dados CSV com a coluna RiskFactors
+     * (v17.2) Gera dados CSV com a coluna RiskFactors E Zona UTM
      */
     function getCSVData() {
         if (registeredTrees.length === 0) return null;
-        const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors"];
+        const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "Zona UTM Num", "Zona UTM Letter", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors"];
         let csvContent = "\uFEFF" + headers.join(";") + "\n";
         registeredTrees.forEach(tree => {
-            const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ','), cleanLocal = (tree.local || '').replace(/[\n;]/g, ','), cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ','), cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ',');
+            const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ','), cleanLocal = (tree.local || '').replace(/[\n;];/g, ','), cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ','), cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ',');
             const riskFactorsString = (tree.riskFactors || []).join(',');
-            const row = [tree.id, tree.data, cleanEspecie, tree.coordX, tree.coordY, tree.dap, cleanLocal, cleanAvaliador, tree.pontuacao, tree.risco, cleanObservacoes, riskFactorsString];
+            const row = [
+                tree.id, 
+                tree.data, 
+                cleanEspecie, 
+                tree.coordX, 
+                tree.coordY, 
+                tree.utmZoneNum || '', // (NOVO)
+                tree.utmZoneLetter || '', // (NOVO)
+                tree.dap, 
+                cleanLocal, 
+                cleanAvaliador, 
+                tree.pontuacao, 
+                tree.risco, 
+                cleanObservacoes, 
+                riskFactorsString
+            ];
             csvContent += row.join(";") + "\n";
         });
         return csvContent;
@@ -1252,7 +1522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Função para importar dados de um CSV
+     * (v17.2) Função para importar dados de um CSV (lendo 14 colunas com fallback)
      */
     function handleFileImport(event) {
         const file = event.target.files[0];
@@ -1267,36 +1537,50 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 for (let i = 1; i < lines.length; i++) {
                     const row = lines[i].split(';');
-                    if (row.length < 12) { console.warn("Linha mal formatada, ignorada:", lines[i]); continue; }
                     
-                    const pontuacao = parseInt(row[8], 10) || 0;
+                    // (ATUALIZADO v17.2) Verifica se é um formato antigo (12 cols) ou novo (14 cols)
+                    let treeData;
+                    const pontuacaoIdx = (row.length >= 14) ? 10 : 8;
+                    const riscoIdx = (row.length >= 14) ? 11 : 9;
+                    const obsIdx = (row.length >= 14) ? 12 : 10;
+                    const factorsIdx = (row.length >= 14) ? 13 : 11;
+                    
+                    if (row.length < 12) { 
+                        console.warn("Linha CSV mal formatada, ignorada:", lines[i]); 
+                        continue; 
+                    }
+
+                    const pontuacao = parseInt(row[pontuacaoIdx], 10) || 0;
                     let riscoClass = 'risk-col-low';
                     if (pontuacao >= 20) riscoClass = 'risk-col-high';
                     else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
 
-                    newTrees.push({
+                    treeData = {
                         id: newTrees.length + 1,
                         data: row[1] || 'N/A',
                         especie: row[2] || 'N/A',
                         coordX: row[3] || 'N/A',
                         coordY: row[4] || 'N/A',
-                        dap: row[5] || 'N/A',
-                        local: row[6] || 'N/A',
-                        avaliador: row[7] || 'N/A',
+                        utmZoneNum: (row.length >= 14) ? parseInt(row[5], 10) : 0, // NOVO
+                        utmZoneLetter: (row.length >= 14) ? row[6] : 'Z', // NOVO
+                        dap: (row.length >= 14) ? row[7] : row[5], // Ajusta índice
+                        local: (row.length >= 14) ? row[8] : row[6], // Ajusta índice
+                        avaliador: (row.length >= 14) ? row[9] : row[7], // Ajusta índice
                         pontuacao: pontuacao,
-                        risco: row[9] || 'N/A',
-                        observacoes: row[10] || 'N/A',
-                        riskFactors: (row[11] || '').split(',').map(item => parseInt(item, 10)),
+                        risco: row[riscoIdx] || 'N/A',
+                        observacoes: row[obsIdx] || 'N/A',
+                        riskFactors: (row[factorsIdx] || '').split(',').map(item => parseInt(item, 10)),
                         riscoClass: riscoClass
-                    });
+                    };
+                    newTrees.push(treeData);
                 }
                 registeredTrees = newTrees;
                 saveDataToStorage();
                 renderSummaryTable();
-                showToast(`📤 Importação concluída! ${newTrees.length} registos carregados.`, 'success'); // (v15.1)
+                showToast(`📤 Importação concluída! ${newTrees.length} registos carregados.`, 'success'); 
             } catch (error) {
                 console.error("Erro ao processar o ficheiro CSV:", error);
-                showToast("Erro ao processar o ficheiro.", 'error'); // (v15.1)
+                showToast("Erro ao processar o ficheiro.", 'error'); 
             } finally { event.target.value = null; }
         };
         reader.onerror = () => { showToast("Erro ao ler o ficheiro.", 'error'); event.target.value = null; };
@@ -1307,6 +1591,8 @@ document.addEventListener('DOMContentLoaded', () => {
      * Manipulador do Chat (Esqueleto)
      */
     async function handleChatSend() {
+        const chatInput = document.getElementById('chat-input');
+        const chatResponseBox = document.getElementById('chat-response-box');
         const userQuery = chatInput.value.trim();
         if (userQuery === "") return;
         chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
@@ -1314,7 +1600,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI";
             if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
-                 throw new Error("A função de back-end (Google Cloud Function) ainda não foi configurada.");
+                 chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: gray;"><strong>Status:</strong> O assistente digital ainda precisa ser configurado com uma URL de API válida (Google Cloud Function).</p>`;
+                 return;
             }
             const response = await fetch(PONTESEGURA_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userQuery }) });
             if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
@@ -1331,7 +1618,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // PONTO DE ENTRADA / EXECUÇÃO DO SCRIPT
     // ==========================================================
 
-    // --- Variáveis Globais de Elementos ---
     const detailView = document.getElementById('detalhe-view');
     const activeTopicButtons = document.querySelectorAll('.topico-btn');
 
@@ -1343,11 +1629,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const content = manualContent[targetKey];
         if (content) {
             detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
-            // Re-vincular os eventos de tooltip
+            
             setupGlossaryInteractions();    
             setupEquipmentInteractions();
             setupPurposeInteractions();
-            // Ativa a calculadora se for a aba correta
+            
             if (targetKey === 'calculadora-risco') {
                 setupRiskCalculator();    
             }
@@ -1444,7 +1730,6 @@ ${mensagem}
     // --- 4. Inicialização do Chat (Esqueleto) ---
     const chatInput = document.getElementById('chat-input');
     const chatSendBtn = document.getElementById('chat-send-btn');
-    const chatResponseBox = document.getElementById('chat-response-box');
     if (chatSendBtn) {
         chatSendBtn.addEventListener('click', handleChatSend);
         chatInput.addEventListener('keyup', (event) => {

@@ -1009,3 +1009,56 @@ html {
         transform: rotate(360deg);
     }
 }
+
+/* -------------------------------------- */
+/* 17. ESTILOS DO MAPA WEBGIS (v17.6) */
+/* -------------------------------------- */
+#map-container {
+    height: 60vh; /* Altura decente para o mapa */
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* Garante que o Leaflet não "vaze" */
+    overflow: hidden; 
+}
+
+/* (v17.5) Ajuste no botão de zoom para alinhar no grid */
+#zoom-to-extent-btn {
+    flex-grow: 0; 
+    min-width: 200px; 
+    background-color: #004d40;
+    align-self: end; /* Alinha ao final do grid */
+    height: 38px; /* Altura padrão do input */
+    padding: 8px 12px; /* Ajusta padding */
+    font-size: 1rem; /* Reduz fonte */
+}
+#zoom-to-extent-btn:hover {
+    background-color: #00695c;
+}
+
+/* (v17.4) Nova Coluna de Zoom (Lupa) na Tabela de Resumo */
+.summary-table th.col-zoom,
+.summary-table td.col-zoom {
+    text-align: center;
+    width: 30px;
+    white-space: nowrap;
+}
+
+.zoom-tree-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    width: 100%;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    color: #004d40; /* Verde escuro */
+}
+.zoom-tree-btn:hover { 
+    color: #00695c; 
+    background-color: #e8f5e9; /* Verde claro */
+}
