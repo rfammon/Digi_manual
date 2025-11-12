@@ -1118,3 +1118,141 @@ html {
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     display: none; /* Começa oculto */
 }
+
+/* -------------------------------------- */
+/* 17. ESTILOS DO MAPA WEBGIS (v18.2) */
+/* -------------------------------------- */
+#map-container {
+    height: 60vh;
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    overflow: hidden; 
+}
+
+#zoom-to-extent-btn {
+    flex-grow: 0; 
+    min-width: 200px; 
+    background-color: #004d40;
+    align-self: end;
+    height: 38px;
+    padding: 8px 12px;
+    font-size: 1rem;
+}
+#zoom-to-extent-btn:hover {
+    background-color: #00695c;
+}
+
+/* Coluna de Zoom (Lupa) na Tabela de Resumo */
+.summary-table th.col-zoom,
+.summary-table td.col-zoom {
+    text-align: center;
+    width: 30px;
+    white-space: nowrap;
+}
+
+.zoom-tree-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    width: 100%;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    color: #004d40;
+}
+.zoom-tree-btn:hover { 
+    color: #00695c; 
+    background-color: #e8f5e9;
+}
+
+/* -------------------------------------- */
+/* 18. FILTRO, FOTO E SELEÇÃO (v18.2) */
+/* -------------------------------------- */
+
+/* Habilita a seleção de texto (Copiar) */
+.summary-table, .glossary-table {
+    user-select: text; 
+    -webkit-user-select: text;
+    -moz-user-select: text;
+}
+
+/* Estilo para a barra de filtro */
+.table-filter-container {
+    margin-bottom: 15px;
+}
+#table-filter-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+}
+#table-filter-input:focus {
+    outline: none;
+    border-color: #00796b;
+    box-shadow: 0 0 5px rgba(0,121,107,0.5);
+}
+
+/* Destaque para a linha (Lupa/Duplo Clique) */
+.summary-table tr.highlight {
+    background-color: #fffde7; /* Amarelo claro */
+    transition: background-color 0.3s ease-out;
+}
+
+/* (v18.0) Input de Foto */
+.photo-upload-container {
+    margin-top: 15px;
+}
+
+.photo-btn {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #004d40; 
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+}
+.photo-btn:hover {
+    background-color: #00695c;
+}
+
+#photo-preview-container {
+    margin-top: 15px;
+    position: relative;
+    max-width: 300px;
+}
+
+#photo-preview {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#remove-photo-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: #C62828;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 30px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: none; /* Começa oculto */
+}

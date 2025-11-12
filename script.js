@@ -1,4 +1,4 @@
-// script.js (COMPLETO v17.7 - Estrutura Estável + Mapa GIS, Conversão UTM e Lupa)
+// script.js (COMPLETO v18.2 - Correção de Bugs + Foto, Filtro, Lupa e Interação Mapa-Tabela)
 
 // === 0. ARMAZENAMENTO de ESTADO (Variáveis Globais) ===
 let registeredTrees = [];
@@ -9,6 +9,11 @@ let toastTimer;
 let mapInstance = null;
 let lastUtmZone = { num: 0, letter: 'Z' }; // Default para Zona UTM
 let zoomTargetCoords = null; // (v17.4) Armazena o alvo do zoom da lupa
+let highlightTargetId = null; // (v18.0) Armazena o ID da linha para destacar
+
+// (NOVO v18.0) Variáveis de Imagem
+let currentTreePhoto = null; // Armazena o File/Blob da foto atual
+let db; // Instância do IndexedDB
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -126,7 +131,7 @@ const podaPurposeData = {
     }
 };
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v17.6) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v18.1) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -379,7 +384,7 @@ const manualContent = {
         `
     },
 
-    // (ATUALIZADO v17.6) HTML da Calculadora: Remove 'active' (JS controla) e adiciona input de Zona UTM
+    // (ATUALIZADO v18.1) HTML da Calculadora: Adiciona Input de Zona UTM e Filtro de Tabela
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
@@ -439,6 +444,16 @@ const manualContent = {
                             <label for="risk-obs">Observações (Opcional):</label>
                             <textarea id="risk-obs" name="risk-obs" rows="3" placeholder="Ex: Cavidade no tronco, presença de pragas, galho sobre telhado..."></textarea>
                         </div>
+
+                        <div class="photo-upload-container">
+                            <label for="tree-photo-input" class="photo-btn">📷 Adicionar Foto</label>
+                            <input type="file" id="tree-photo-input" accept="image/*" capture="environment" style="display: none;">
+                            
+                            <div id="photo-preview-container">
+                                <button type="button" id="remove-photo-btn" style="display:none;">&times;</button>
+                            </div>
+                        </div>
+                        
                     </fieldset>
                     
                     <fieldset class="risk-fieldset">
@@ -486,6 +501,11 @@ const manualContent = {
             <div id="tab-content-summary" class="sub-tab-content">
                 <fieldset class="risk-fieldset">
                     <legend>3. Árvores Cadastradas</legend>
+                    
+                    <div class="table-filter-container">
+                        <input type="text" id="table-filter-input" placeholder="🔎 Filtrar por ID, espécie, local, risco...">
+                    </div>
+                    
                     <div id="summary-table-container">
                         <p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>
                     </div>
@@ -625,6 +645,86 @@ document.addEventListener('DOMContentLoaded', () => {
             toastTimer = null;
         }, 3000);
     }
+    
+    // ==========================================================
+    // (NOVO v18.0) LÓGICA DO BANCO DE DADOS (IndexedDB)
+    // ==========================================================
+    
+    /** Inicializa o IndexedDB */
+    function initImageDB() {
+        const request = indexedDB.open("treeImageDB", 1);
+
+        request.onerror = (event) => {
+            console.error("Erro ao abrir IndexedDB:", event);
+            showToast("Erro: Não foi possível carregar o banco de dados de imagens.", "error");
+        };
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            // Cria um "object store" (como uma tabela) para as imagens.
+            // Usamos 'id' (o ID da árvore) como a chave.
+            db.createObjectStore("treeImages", { keyPath: "id" });
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            console.log("Banco de dados de imagens carregado com sucesso.");
+        };
+    }
+
+    /** Salva (ou atualiza) uma imagem no IndexedDB */
+    function saveImageToDB(id, blob) {
+        if (!db) {
+            showToast("Erro: Banco de dados de imagem não está pronto.", "error");
+            return;
+        }
+        const transaction = db.transaction(["treeImages"], "readwrite");
+        const objectStore = transaction.objectStore("treeImages");
+        const request = objectStore.put({ id: id, imageBlob: blob });
+        
+        request.onsuccess = () => {
+            console.log(`Imagem da Árvore ID ${id} salva no IndexedDB.`);
+        };
+        request.onerror = (event) => {
+            console.error("Erro ao salvar imagem no IndexedDB:", event);
+            showToast("Erro ao salvar a foto.", "error");
+        };
+    }
+
+    /** Busca uma imagem no IndexedDB */
+    function getImageFromDB(id, callback) {
+        if (!db) return;
+        const transaction = db.transaction(["treeImages"], "readonly");
+        const objectStore = transaction.objectStore("treeImages");
+        const request = objectStore.get(id);
+
+        request.onsuccess = (event) => {
+            if (event.target.result) {
+                callback(event.target.result.imageBlob);
+            } else {
+                callback(null); // Nenhuma imagem encontrada
+            }
+        };
+        request.onerror = (event) => {
+            console.error("Erro ao buscar imagem:", event);
+            callback(null);
+        };
+    }
+
+    /** Deleta uma imagem do IndexedDB */
+    function deleteImageFromDB(id) {
+        if (!db) return;
+        const transaction = db.transaction(["treeImages"], "readwrite");
+        const objectStore = transaction.objectStore("treeImages");
+        const request = objectStore.delete(id);
+
+        request.onsuccess = () => {
+            console.log(`Imagem da Árvore ID ${id} deletada do IndexedDB.`);
+        };
+        request.onerror = (event) => {
+            console.error("Erro ao deletar imagem:", event);
+        };
+    }
 
     // ==========================================================
     // FUNÇÕES PRIMÁRIAS (LocalStorage, GPS, CRUD)
@@ -741,20 +841,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Função para Excluir e Re-indexar
+     * (v18.0) Função para Excluir e Re-indexar (com exclusão de imagem)
      */
     function handleDeleteTree(id) {
         if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return;
         
+        const treeToDelete = registeredTrees.find(tree => tree.id === id);
+        
+        // (NOVO v18.0) Deleta a imagem do IndexedDB se ela existir
+        if (treeToDelete && treeToDelete.hasPhoto) {
+            deleteImageFromDB(id);
+        }
+        
         registeredTrees = registeredTrees.filter(tree => tree.id !== id);
-        registeredTrees.forEach((tree, index) => { tree.id = index + 1; }); // Re-indexa
+        // (v18.0) Não re-indexa IDs para manter a integridade do IndexedDB
+        // registeredTrees.forEach((tree, index) => { tree.id = index + 1; }); 
         saveDataToStorage();
         renderSummaryTable();
         showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); 
     }
 
     /**
-     * (v17.5) Função para pré-preencher o formulário para edição (com Zona UTM)
+     * (v18.0) Função para pré-preencher o formulário para edição (com Zona UTM e Foto)
      */
     function handleEditTree(id) {
         const treeIndex = registeredTrees.findIndex(tree => tree.id === id);
@@ -778,6 +886,26 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('gps-status').textContent = `Zona (da árvore): ${lastUtmZone.num}${lastUtmZone.letter}`;
         }
 
+        // (NOVO v18.0) Carrega a imagem do IndexedDB para o preview
+        const previewContainer = document.getElementById('photo-preview-container');
+        const removePhotoBtn = document.getElementById('remove-photo-btn');
+        clearPhotoPreview(); // Limpa qualquer preview anterior
+        
+        if (treeToEdit.hasPhoto) {
+            getImageFromDB(id, (imageBlob) => {
+                if (imageBlob) {
+                    const preview = document.createElement('img');
+                    preview.id = 'photo-preview';
+                    preview.src = URL.createObjectURL(imageBlob);
+                    previewContainer.prepend(preview); // Adiciona a imagem
+                    removePhotoBtn.style.display = 'block'; // Mostra o 'X'
+                    currentTreePhoto = imageBlob; // Armazena o blob para o caso de salvar sem alterar
+                } else {
+                    console.warn(`Árvore ID ${id} marcada com foto, mas não encontrada no IndexedDB.`);
+                }
+            });
+        }
+
         // 2. Preenche checkboxes (na tabela oculta)
         const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
         allCheckboxes.forEach((cb, index) => {
@@ -790,9 +918,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setupMobileChecklist(); // Re-inicia o carrossel para ler os novos valores
         }
 
-        // 3. Remove e Re-indexa
+        // 3. Remove (mas não re-indexa IDs)
         registeredTrees.splice(treeIndex, 1);
-        registeredTrees.forEach((tree, index) => { tree.id = index + 1; });
         saveDataToStorage();
         renderSummaryTable();
 
@@ -805,6 +932,13 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function handleClearAll() {
         if (confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) {
+            // (NOVO v18.0) Deleta todas as imagens do IndexedDB
+            registeredTrees.forEach(tree => {
+                if (tree.hasPhoto) {
+                    deleteImageFromDB(tree.id);
+                }
+            });
+            
             registeredTrees = [];
             saveDataToStorage();
             renderSummaryTable();
@@ -813,7 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v17.4) Renderiza a tabela e atualiza o badge (com coluna UTM e Lupa)
+     * (v18.1) Renderiza a tabela e atualiza o badge (com coluna UTM, Lupa e Foto)
      */
     function renderSummaryTable() {
         const container = document.getElementById('summary-table-container');
@@ -852,20 +986,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         let tableHTML = '<table class="summary-table"><thead><tr>';
-        // (ATUALIZADO v17.4) Inclui coluna de Lupa
-        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Coord. X</th><th>Coord. Y</th><th>Zona UTM</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-zoom">Zoom</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
+        // (ATUALIZADO v18.0) Inclui coluna de Lupa e Foto
+        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Foto</th><th>Coord. X</th><th>Coord. Y</th><th>Zona UTM</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-zoom">Zoom</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
         tableHTML += '</tr></thead><tbody>';
         
         registeredTrees.forEach(tree => {
             const [y, m, d] = (tree.data || '---').split('-');
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
+            const photoIcon = tree.hasPhoto ? '📷' : '—'; // (NOVO v18.0)
             
             tableHTML += `
-                <tr>
+                <tr data-tree-id="${tree.id}">
                     <td>${tree.id}</td>
                     <td>${displayDate}</td>    
                     <td>${tree.especie}</td>
-                    <td>${tree.coordX}</td>
+                    <td style="text-align: center;">${photoIcon}</td> <td>${tree.coordX}</td>
                     <td>${tree.coordY}</td>
                     <td>${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}</td>
                     <td>${tree.dap}</td>
@@ -1016,7 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v17.4) Desenha círculos (marcadores) no mapa.
+     * (v18.0) Desenha círculos (marcadores) no mapa com interação de clique duplo.
      */
     function renderTreesOnMap(treesData) {
         if (!mapInstance) return;
@@ -1062,8 +1197,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 Coord. UTM: ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})
             `;
             circle.bindPopup(popupContent);
+            
+            // (NOVO v18.0) Evento de clique duplo no mapa
+            circle.on('dblclick', () => {
+                handleMapMarkerClick(tree.id);
+            });
         });
     }
+    
+    /**
+     * (NOVO v18.0) Destaque da linha da tabela (chamado pelo Mapa ou Lupa)
+     */
+    function highlightTableRow(id) {
+        // Garante que a tabela de resumo esteja visível
+        const summaryTab = document.querySelector('.sub-nav-btn[data-target="tab-content-summary"]');
+        if (summaryTab && !summaryTab.classList.contains('active')) {
+            summaryTab.click();
+        }
+
+        // Aguarda a aba mudar (se necessário) antes de procurar a linha
+        setTimeout(() => {
+            // Remove destaques antigos
+            const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
+            oldHighlights.forEach(row => row.classList.remove('highlight'));
+
+            const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
+            if (row) {
+                row.classList.add('highlight');
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Remove o destaque após 2.5 segundos
+                setTimeout(() => {
+                    row.classList.remove('highlight');
+                }, 2500);
+            } else {
+                console.warn(`Linha da tabela [data-tree-id="${id}"] não encontrada.`);
+            }
+        }, 100); // 100ms de delay para a troca de aba
+    }
+    
+    /**
+     * (NOVO v18.0) Ação de clique duplo no mapa
+     */
+    function handleMapMarkerClick(id) {
+        highlightTargetId = id; // Armazena o ID para destacar
+        const summaryTabButton = document.querySelector('.sub-nav-btn[data-target="tab-content-summary"]');
+        if (summaryTabButton) {
+            summaryTabButton.click(); // Muda para a aba de resumo
+        }
+    }
+
 
     /**
      * (NOVO v17.3 - Corrigido v17.5) Função para o botão "Aproximar dos Pontos"
@@ -1090,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /** (NOVO v17.4) Função para o botão "Lupa" 🔎 */
+    /** (NOVO v17.4 - Atualizado v18.0) Função para o botão "Lupa" 🔎 */
     function handleZoomToPoint(id) {
         const tree = registeredTrees.find(t => t.id === id);
         if (!tree) {
@@ -1101,8 +1284,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const coords = convertToLatLon(tree); // Passa o objeto 'tree'
         
         if (coords) {
-            zoomTargetCoords = coords; // Define o alvo
-            // Encontra e clica no botão da aba Mapa GIS
+            zoomTargetCoords = coords; // Define o alvo de zoom
+            highlightTargetId = id; // (v18.0) Define o alvo do highlight
+            
             const mapTabButton = document.querySelector('.sub-nav-btn[data-target="tab-content-mapa"]');
             if (mapTabButton) {
                 mapTabButton.click();
@@ -1111,10 +1295,49 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(`Coordenadas inválidas para a Árvore ID ${id}. Verifique a Zona UTM Padrão.`, "error");
         }
     }
+    
+    /** (NOVO v18.0) Função para filtrar a tabela de resumo */
+    function handleTableFilter() {
+        const filterInput = document.getElementById('table-filter-input');
+        if (!filterInput) return;
+        const filterText = filterInput.value.toLowerCase();
+        const rows = document.querySelectorAll("#summary-table-container tbody tr");
+        
+        rows.forEach(row => {
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.includes(filterText)) {
+                row.style.display = ""; // Mostra a linha
+            } else {
+                row.style.display = "none"; // Esconde a linha
+            }
+        });
+    }
+
+    /** (NOVO v18.0) Limpa o preview da foto */
+    function clearPhotoPreview() {
+        const previewContainer = document.getElementById('photo-preview-container');
+        const removePhotoBtn = document.getElementById('remove-photo-btn');
+        const oldPreview = document.getElementById('photo-preview');
+
+        if (oldPreview) {
+            URL.revokeObjectURL(oldPreview.src); // Libera memória
+            previewContainer.removeChild(oldPreview);
+        }
+        if (removePhotoBtn) {
+            removePhotoBtn.style.display = 'none';
+        }
+        currentTreePhoto = null; // Limpa a foto temporária
+        
+        // Limpa o input de arquivo
+        const photoInput = document.getElementById('tree-photo-input');
+        if (photoInput) {
+            photoInput.value = null;
+        }
+    }
 
 
     /**
-     * (v17.6) Módulo da Calculadora de Risco (com lógica de aba de mapa)
+     * (v18.1) Módulo da Calculadora de Risco (com lógica de aba de mapa)
      */
     function setupRiskCalculator() {
         
@@ -1131,10 +1354,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
             if (targetId === 'tab-content-mapa') {
-                // (v17.3) Atraso leve para garantir que o container do mapa tenha tamanho
                 setTimeout(() => {
                     initMap(); 
                 }, 50); 
+            }
+            
+            // (NOVO v18.0) Lógica de Destaque da Linha
+            if (targetId === 'tab-content-summary' && highlightTargetId) {
+                highlightTableRow(highlightTargetId);
+                highlightTargetId = null; // Limpa o alvo
             }
         }
         
@@ -1169,6 +1397,38 @@ document.addEventListener('DOMContentLoaded', () => {
         if (zoomBtn) {
             zoomBtn.addEventListener('click', handleZoomToExtent);
         }
+        
+        // (NOVO v18.0) Listener para o Filtro da Tabela
+        const filterInput = document.getElementById('table-filter-input');
+        if (filterInput) {
+            filterInput.addEventListener('keyup', handleTableFilter);
+        }
+        
+        // (NOVO v18.0) Listeners para a Foto
+        const photoInput = document.getElementById('tree-photo-input');
+        const previewContainer = document.getElementById('photo-preview-container');
+        const removePhotoBtn = document.getElementById('remove-photo-btn');
+
+        if (photoInput) {
+            photoInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    clearPhotoPreview(); // Limpa preview antigo
+                    
+                    const preview = document.createElement('img');
+                    preview.id = 'photo-preview';
+                    preview.src = URL.createObjectURL(file);
+                    previewContainer.prepend(preview); // Adiciona a imagem
+                    removePhotoBtn.style.display = 'block'; // Mostra o 'X'
+                    
+                    currentTreePhoto = file; // Armazena o ARQUIVO (Blob)
+                }
+            });
+        }
+        if (removePhotoBtn) {
+            removePhotoBtn.addEventListener('click', clearPhotoPreview);
+        }
+
 
         if (!form) return;    
         
@@ -1184,7 +1444,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (getGpsBtn) getGpsBtn.addEventListener('click', handleGetGPS);
         
-        // 1. Lógica de Adicionar Árvore (ATUALIZADA v17.2: Salvando Zona UTM)
+        // 1. Lógica de Adicionar Árvore (ATUALIZADA v18.0: Salvando Foto)
         form.addEventListener('submit', (event) => {
             event.preventDefault();    
             let totalScore = 0;
@@ -1199,14 +1459,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
             else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
             
+            // (v18.0) Garante ID único mesmo após exclusões
+            const newTreeId = registeredTrees.length > 0 ? Math.max(...registeredTrees.map(t => t.id)) + 1 : 1;
+            
             const newTree = {
-                id: registeredTrees.length + 1,
+                id: newTreeId,
                 data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
                 especie: document.getElementById('risk-especie').value || 'N/A',
                 local: document.getElementById('risk-local').value || 'N/A',
                 coordX: document.getElementById('risk-coord-x').value || 'N/A',
                 coordY: document.getElementById('risk-coord-y').value || 'N/A',
-                // (NOVO v17.1) SALVANDO ZONA UTM PARA CONVERSÃO PRECISA NO MAPA
                 utmZoneNum: lastUtmZone.num || 0,
                 utmZoneLetter: lastUtmZone.letter || 'Z',
                 dap: document.getElementById('risk-dap').value || 'N/A',    
@@ -1215,9 +1477,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 pontuacao: totalScore,
                 risco: classificationText,
                 riscoClass: classificationClass,
-                riskFactors: checkedRiskFactors
+                riskFactors: checkedRiskFactors,
+                hasPhoto: (currentTreePhoto !== null) // (NOVO v18.0)
             };
             
+            // (NOVO v18.0) Salva a foto no IndexedDB se ela existir
+            if (newTree.hasPhoto) {
+                saveImageToDB(newTree.id, currentTreePhoto);
+            }
+
             registeredTrees.push(newTree);
             saveDataToStorage();
             renderSummaryTable();
@@ -1226,6 +1494,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
             form.reset();
+            clearPhotoPreview(); // (NOVO v18.0) Limpa o preview
+            
             try {
                 document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
                 document.getElementById('risk-avaliador').value = lastEvaluatorName;
@@ -1248,6 +1518,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();    
                 lastEvaluatorName = document.getElementById('risk-avaliador').value || '';
                 form.reset();    
+                clearPhotoPreview(); // (NOVO v18.0)
                     try {
                         document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
                         document.getElementById('risk-avaliador').value = lastEvaluatorName;
@@ -1449,11 +1720,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * (v17.2) Gera dados CSV com a coluna RiskFactors E Zona UTM
+     * (v18.0) Gera dados CSV (agora inclui o status da foto)
      */
     function getCSVData() {
         if (registeredTrees.length === 0) return null;
-        const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "Zona UTM Num", "Zona UTM Letter", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors"];
+        const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "Zona UTM Num", "Zona UTM Letter", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors", "HasPhoto"];
         let csvContent = "\uFEFF" + headers.join(";") + "\n";
         registeredTrees.forEach(tree => {
             const cleanEspecie = (tree.especie || '').replace(/[\n;]/g, ','), cleanLocal = (tree.local || '').replace(/[\n;]/g, ','), cleanAvaliador = (tree.avaliador || '').replace(/[\n;]/g, ','), cleanObservacoes = (tree.observacoes || '').replace(/[\n;]/g, ',');
@@ -1464,15 +1735,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 cleanEspecie, 
                 tree.coordX, 
                 tree.coordY, 
-                tree.utmZoneNum || '', // (NOVO)
-                tree.utmZoneLetter || '', // (NOVO)
+                tree.utmZoneNum || '', 
+                tree.utmZoneLetter || '', 
                 tree.dap, 
                 cleanLocal, 
                 cleanAvaliador, 
                 tree.pontuacao, 
                 tree.risco, 
                 cleanObservacoes, 
-                riskFactorsString
+                riskFactorsString,
+                tree.hasPhoto ? 'Sim' : 'Nao' // (NOVO v18.0)
             ];
             csvContent += row.join(";") + "\n";
         });
@@ -1525,7 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * (v17.6) Função para importar dados de um CSV (lendo 14 colunas com fallback)
+     * (v18.0) Função para importar dados de um CSV (com fallback de foto/zona)
      */
     function handleFileImport(event) {
         const file = event.target.files[0];
@@ -1537,23 +1809,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lines.length <= 1) { showToast("Erro: O ficheiro CSV está vazio ou é inválido.", 'error'); return; }
             const append = confirm("Deseja ADICIONAR os dados à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual pelos dados do ficheiro.");
             let newTrees = append ? [...registeredTrees] : [];
+            let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) : 0;
+            
             try {
                 for (let i = 1; i < lines.length; i++) {
                     const row = lines[i].split(';');
                     
                     let treeData;
-                    const isV17Format = row.length >= 14; // Formato com Zona UTM
+                    // Detecta formato antigo (12 colunas) vs novo (15 colunas)
+                    const isV18Format = row.length >= 15; // Formato com Foto
+                    const isV17Format = row.length >= 14 && row.length < 15; 
                     const isV16Format = row.length >= 12 && row.length < 14; // Formato antigo
 
-                    if (!isV16Format && !isV17Format) { 
+                    if (!isV16Format && !isV17Format && !isV18Format) { 
                         console.warn("Linha CSV mal formatada, ignorada:", lines[i]); 
                         continue; 
                     }
 
                     let pontuacaoIdx, riscoIdx, obsIdx, factorsIdx, dapIdx, localIdx, avaliadorIdx;
-                    let utmNum = 0, utmLetter = 'Z';
+                    let utmNum = 0, utmLetter = 'Z', hasPhoto = false;
 
-                    if (isV17Format) {
+                    if (isV18Format) {
+                        utmNum = parseInt(row[5], 10) || 0;
+                        utmLetter = row[6] || 'Z';
+                        dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
+                        riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
+                        hasPhoto = (row[14] && row[14].trim().toLowerCase() === 'sim');
+                    } else if (isV17Format) {
                         utmNum = parseInt(row[5], 10) || 0;
                         utmLetter = row[6] || 'Z';
                         dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
@@ -1569,7 +1851,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
 
                     treeData = {
-                        id: newTrees.length + 1,
+                        id: ++maxId, // ID Seguro
                         data: row[1] || 'N/A',
                         especie: row[2] || 'N/A',
                         coordX: row[3] || 'N/A',
@@ -1583,8 +1865,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         risco: row[riscoIdx] || 'N/A',
                         observacoes: row[obsIdx] || 'N/A',
                         riskFactors: (row[factorsIdx] || '').split(',').map(item => parseInt(item, 10)),
-                        riscoClass: riscoClass
-                        // hasPhoto removido
+                        riscoClass: riscoClass,
+                        hasPhoto: hasPhoto
                     };
                     newTrees.push(treeData);
                 }
@@ -1670,6 +1952,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 1. Inicialização da Navegação (Carregamento da Página) ---
+    initImageDB(); // (NOVO v18.0) Inicializa o banco de dados de imagens
     loadDataFromStorage();
 
     if (activeTopicButtons.length > 0) {
