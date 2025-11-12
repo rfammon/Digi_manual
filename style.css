@@ -1171,12 +1171,12 @@ html {
 }
 
 /* -------------------------------------- */
-/* 18. FILTRO, FOTO E SELEÇÃO (v18.2) */
+/* 18. FILTRO, FOTO E SELEÇÃO (v18.0) */
 /* -------------------------------------- */
 
 /* Habilita a seleção de texto (Copiar) */
 .summary-table, .glossary-table {
-    user-select: text; 
+    user-select: text; /* Permite Copiar/Colar */
     -webkit-user-select: text;
     -moz-user-select: text;
 }
@@ -1255,4 +1255,58 @@ html {
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     display: none; /* Começa oculto */
+}
+
+/* -------------------------------------- */
+/* 19. SORTING DE TABELA (v18.0) */
+/* -------------------------------------- */
+
+/* Ajuste para imagens de preview dentro do popup do Leaflet */
+.leaflet-popup-content .manual-img {
+    max-width: 250px; /* Limita a largura da foto no balão do mapa */
+    height: auto;
+    margin-top: 10px;
+}
+
+.summary-table th.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px; /* Espaço para o ícone */
+}
+.summary-table th.sortable:hover {
+    background-color: #00695c; /* Verde mais escuro no hover */
+}
+/* Ícones de Seta */
+.summary-table th.sortable::after {
+    content: ' ';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    border: 4px solid transparent;
+}
+/* Seta padrão (para cima e para baixo) */
+.summary-table th.sortable::after {
+    border-top-color: #aaa;
+    border-bottom-color: #aaa;
+    top: 40%;
+}
+.summary-table th.sortable:hover::after {
+    border-top-color: #fff;
+    border-bottom-color: #fff;
+}
+/* Seta Ativa (para cima) */
+.summary-table th.sort-asc::after {
+    border-top-color: transparent;
+    border-bottom-color: #fff; /* Seta para cima */
+    opacity: 1;
+    top: 35%;
+}
+/* Seta Ativa (para baixo) */
+.summary-table th.sort-desc::after {
+    border-bottom-color: transparent;
+    border-top-color: #fff; /* Seta para baixo */
+    opacity: 1;
+    top: 45%;
 }

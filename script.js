@@ -1,4 +1,4 @@
-// script.js (COMPLETO v18.2 - Correção de Bugs + Foto, Filtro, Lupa e Interação Mapa-Tabela)
+// script.js (COMPLETO v18.1 - Correção de Bugs + Foto, Filtro, Lupa e Interação Mapa-Tabela)
 
 // === 0. ARMAZENAMENTO de ESTADO (Variáveis Globais) ===
 let registeredTrees = [];
@@ -14,6 +14,12 @@ let highlightTargetId = null; // (v18.0) Armazena o ID da linha para destacar
 // (NOVO v18.0) Variáveis de Imagem
 let currentTreePhoto = null; // Armazena o File/Blob da foto atual
 let db; // Instância do IndexedDB
+
+// (NOVO v18.0) Estado de Ordenação da Tabela
+let sortState = {
+    key: 'id',
+    direction: 'asc' // 'asc' ou 'desc'
+};
 
 // === 1. DEFINIÇÃO DE DADOS (GLOSSÁRIO, CONTEÚDO) ===
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -984,16 +990,58 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('send-email-btn')?.setAttribute('style', 'display:block');
             document.getElementById('clear-all-btn')?.setAttribute('style', 'display:block');
         }
-        
+
+        // (NOVO v18.0) Helper para adicionar classes de ordenação
+        const getThClass = (key) => {
+            let classes = 'sortable';
+            if (sortState.key === key) {
+                classes += sortState.direction === 'asc' ? ' sort-asc' : ' sort-desc';
+            }
+            return classes;
+        };
+
+        // (NOVO v18.0) Adiciona cabeçalhos ordenáveis
         let tableHTML = '<table class="summary-table"><thead><tr>';
-        // (ATUALIZADO v18.0) Inclui coluna de Lupa e Foto
-        tableHTML += '<th>ID</th><th>Data</th><th>Espécie</th><th>Foto</th><th>Coord. X</th><th>Coord. Y</th><th>Zona UTM</th><th>DAP (cm)</th><th>Local</th><th>Avaliador</th><th>Pontos</th><th>Risco</th><th>Observações</th><th class="col-zoom">Zoom</th><th class="col-edit">Editar</th><th class="col-delete">Excluir</th>';
+        tableHTML += `<th class="${getThClass('id')}" data-sort-key="id">ID</th>`;
+        tableHTML += `<th class="${getThClass('data')}" data-sort-key="data">Data</th>`;
+        tableHTML += `<th class="${getThClass('especie')}" data-sort-key="especie">Espécie</th>`;
+        tableHTML += `<th>Foto</th>`; // Não ordenável
+        tableHTML += `<th class="${getThClass('coordX')}" data-sort-key="coordX">Coord. X</th>`;
+        tableHTML += `<th class="${getThClass('coordY')}" data-sort-key="coordY">Coord. Y</th>`;
+        tableHTML += `<th class="${getThClass('utmZoneNum')}" data-sort-key="utmZoneNum">Zona UTM</th>`;
+        tableHTML += `<th class="${getThClass('dap')}" data-sort-key="dap">DAP (cm)</th>`;
+        tableHTML += `<th class="${getThClass('local')}" data-sort-key="local">Local</th>`;
+        tableHTML += `<th class="${getThClass('avaliador')}" data-sort-key="avaliador">Avaliador</th>`;
+        tableHTML += `<th class="${getThClass('pontuacao')}" data-sort-key="pontuacao">Pontos</th>`;
+        tableHTML += `<th class="${getThClass('risco')}" data-sort-key="risco">Risco</th>`;
+        tableHTML += `<th>Observações</th>`; // Não ordenável
+        tableHTML += `<th class="col-zoom">Zoom</th>`;
+        tableHTML += `<th class="col-edit">Editar</th>`;
+        tableHTML += `<th class="col-delete">Excluir</th>`;
         tableHTML += '</tr></thead><tbody>';
         
-        registeredTrees.forEach(tree => {
+        // (NOVO v18.0) Ordena os dados ANTES de renderizar
+        const sortedData = [...registeredTrees].sort((a, b) => {
+            const valA = getSortValue(a, sortState.key);
+            const valB = getSortValue(b, sortState.key);
+
+            if (valA < valB) {
+                return sortState.direction === 'asc' ? -1 : 1;
+            }
+            if (valA > valB) {
+                return sortState.direction === 'asc' ? 1 : -1;
+            }
+            return 0;
+        });
+
+        sortedData.forEach(tree => {
             const [y, m, d] = (tree.data || '---').split('-');
             const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
-            const photoIcon = tree.hasPhoto ? '📷' : '—'; // (NOVO v18.0)
+            
+            // (NOVO v18.1) Cria o botão de foto se 'hasPhoto' for true
+            const photoIcon = tree.hasPhoto 
+                ? `<button type="button" class="photo-preview-btn" data-id="${tree.id}">📷</button>` 
+                : '—'; 
             
             tableHTML += `
                 <tr data-tree-id="${tree.id}">
@@ -1151,7 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * (v18.0) Desenha círculos (marcadores) no mapa com interação de clique duplo.
+     * (v18.1) Desenha círculos (marcadores) no mapa com interação de clique duplo e foto.
      */
     function renderTreesOnMap(treesData) {
         if (!mapInstance) return;
@@ -1189,6 +1237,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isTreeMarker: true
             }).addTo(mapInstance);
 
+            // (ATUALIZADO v18.1) Define o conteúdo base do popup
             const popupContent = `
                 <strong>ID: ${tree.id}</strong><br>
                 Espécie: ${tree.especie}<br>
@@ -1196,7 +1245,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 Local: ${tree.local}<br>
                 Coord. UTM: ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})
             `;
-            circle.bindPopup(popupContent);
+            
+            circle.bindPopup(popupContent + (tree.hasPhoto ? "<p>Carregando foto...</p>" : ""));
+
+            // (NOVO v18.1) Evento para carregar a foto (apenas se existir)
+            if (tree.hasPhoto) {
+                circle.on('popupopen', (e) => {
+                    getImageFromDB(tree.id, (imageBlob) => {
+                        if (imageBlob) {
+                            const imgUrl = URL.createObjectURL(imageBlob);
+                            const finalContent = popupContent + `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
+                            e.popup.setContent(finalContent);
+                            // Revoga o URL da memória quando o popup fechar
+                            mapInstance.once('popupclose', () => URL.revokeObjectURL(imgUrl));
+                        } else {
+                            e.popup.setContent(popupContent + '<p style="color:red;">Foto não encontrada.</p>');
+                        }
+                    });
+                });
+            }
             
             // (NOVO v18.0) Evento de clique duplo no mapa
             circle.on('dblclick', () => {
@@ -1333,6 +1400,60 @@ document.addEventListener('DOMContentLoaded', () => {
         if (photoInput) {
             photoInput.value = null;
         }
+    }
+    
+    // (NOVO v18.0) Funções de Ordenação da Tabela
+    
+    /** Retorna o valor correto para ordenação (número ou string) */
+    function getSortValue(tree, key) {
+        // Converte valores N/A ou vazios para 0 em colunas numéricas
+        const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
+        if (numericKeys.includes(key)) {
+            const value = tree[key];
+            return parseFloat(value) || 0;
+        }
+        
+        // Trata strings
+        const value = tree[key];
+        if (typeof value === 'string') {
+            return value.toLowerCase();
+        }
+        return value || ''; // Default
+    }
+
+    /** Atualiza o estado de ordenação e re-renderiza a tabela */
+    function handleSort(sortKey) {
+        if (sortState.key === sortKey) {
+            // Inverte a direção se for a mesma coluna
+            sortState.direction = (sortState.direction === 'asc') ? 'desc' : 'asc';
+        } else {
+            // Define a nova coluna e reseta a direção
+            sortState.key = sortKey;
+            sortState.direction = 'asc';
+        }
+        renderSummaryTable();
+    }
+    
+    /** (NOVO v18.1) Mostra a foto (da tabela) no pop-up do glossário */
+    function handlePhotoPreviewClick(id, targetElement) {
+        getImageFromDB(id, (imageBlob) => {
+            if (!imageBlob) {
+                showToast("Foto não encontrada no banco de dados.", "error");
+                return;
+            }
+            
+            const imgUrl = URL.createObjectURL(imageBlob);
+            currentTooltip = createTooltip();
+            
+            // Adiciona um estilo inline para limitar o tamanho no viewport
+            currentTooltip.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" style="max-width: 80vw; max-height: 70vh;">`;
+            
+            // Posição e exibição
+            positionTooltip(targetElement); // Usa o ícone 📷 como âncora
+            currentTooltip.style.opacity = '1';
+            currentTooltip.style.visibility = 'visible';
+            currentTooltip.dataset.currentElement = `photo-${id}`; // ID único para toggle
+        });
     }
 
 
@@ -1488,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             registeredTrees.push(newTree);
             saveDataToStorage();
-            renderSummaryTable();
+            renderSummaryTable(); // (v18.0) renderSummaryTable agora aplica a ordenação
             
             showToast(`✔️ Árvore "${newTree.especie || 'N/A'}" (ID ${newTree.id}) adicionada!`, 'success');
 
@@ -1540,18 +1661,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (csvImporter) csvImporter.addEventListener('change', handleFileImport);
         
         // 4. Renderiza a tabela ao carregar
-        renderSummaryTable();
+        renderSummaryTable(); // (v18.0) renderSummaryTable agora aplica a ordenação
         
-        // 5. (v17.4) Event Listener para Editar, Excluir e LUPA (ZOOM)
+        // 5. (v18.1) Event Delegation para Lupa/Editar/Excluir/Ordenar/Foto
         if (summaryContainer) {
-            // (BUG 2 CORRIGIDO v17.5) Usando Event Delegation para evitar quebra de listener
             const newSummaryContainer = summaryContainer.cloneNode(true);
             summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
             
             newSummaryContainer.addEventListener('click', (e) => {
                 const deleteButton = e.target.closest('.delete-tree-btn');
                 const editButton = e.target.closest('.edit-tree-btn');    
-                const zoomButton = e.target.closest('.zoom-tree-btn'); // (NOVO v17.4)
+                const zoomButton = e.target.closest('.zoom-tree-btn'); 
+                const sortButton = e.target.closest('th.sortable'); 
+                const photoButton = e.target.closest('.photo-preview-btn'); // (NOVO v18.1)
         
                 if (deleteButton) {
                     const treeId = parseInt(deleteButton.dataset.id, 10);
@@ -1564,9 +1686,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     showSubTab('tab-content-register'); 
                 }
 
-                if (zoomButton) { // (NOVO v17.4)
+                if (zoomButton) { 
                     const treeId = parseInt(zoomButton.dataset.id, 10);
                     handleZoomToPoint(treeId);
+                }
+                
+                if (sortButton) { 
+                    const sortKey = sortButton.dataset.sortKey;
+                    handleSort(sortKey);
+                }
+
+                if (photoButton) { // (NOVO v18.1)
+                    e.preventDefault();
+                    handlePhotoPreviewClick(parseInt(photoButton.dataset.id, 10), photoButton);
                 }
             });
         }
@@ -1598,8 +1730,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return tooltip;
     }
 
+    /** (ATUALIZADO v18.1) Limpa URLs de Blob ao fechar */
     function hideTooltip() {
         if (currentTooltip) {
+            // Libera memória de ObjectURLs (para fotos)
+            const img = currentTooltip.querySelector('img');
+            if (img && img.src.startsWith('blob:')) {
+                URL.revokeObjectURL(img.src);
+            }
+            
             currentTooltip.style.opacity = '0';
             currentTooltip.style.visibility = 'hidden';
             delete currentTooltip.dataset.currentElement;
@@ -1633,9 +1772,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleGlossaryTooltip(event) {
         event.preventDefault(); event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+        // (v18.1) Não fecha o popup de foto se clicar no termo
+        const isPhoto = tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
+        
+        if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && 
+            tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
-        } else { showGlossaryTooltip(event); }
+        } else { 
+            showGlossaryTooltip(event); 
+        }
     }
 
     function setupEquipmentInteractions() {
@@ -1665,9 +1810,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleEquipmentTooltip(event) {
         event.preventDefault(); event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+        const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
+
+        if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && 
+            tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
-        } else { showEquipmentTooltip(event); }
+        } else { 
+            showEquipmentTooltip(event); 
+        }
     }
 
     function setupPurposeInteractions() {
@@ -1697,10 +1847,38 @@ document.addEventListener('DOMContentLoaded', () => {
     function togglePurposeTooltip(event) {
         event.preventDefault(); event.stopPropagation();
         const tooltip = document.getElementById('glossary-tooltip');
-        if (tooltip && tooltip.style.visibility === 'visible' && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+        const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
+
+        if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
+            tooltip.dataset.currentElement === event.currentTarget.textContent) {
             hideTooltip();
-        } else { showPurposeTooltip(event); }
+        } else { 
+            showPurposeTooltip(event); 
+        }
     }
+    
+    /** (NOVO v18.1) Mostra a foto (da tabela) no pop-up do glossário */
+    function handlePhotoPreviewClick(id, targetElement) {
+        getImageFromDB(id, (imageBlob) => {
+            if (!imageBlob) {
+                showToast("Foto não encontrada no banco de dados.", "error");
+                return;
+            }
+            
+            const imgUrl = URL.createObjectURL(imageBlob);
+            currentTooltip = createTooltip();
+            
+            // Adiciona um estilo inline para limitar o tamanho no viewport
+            currentTooltip.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" style="max-width: 80vw; max-height: 70vh;">`;
+            
+            // Posição e exibição
+            positionTooltip(targetElement); // Usa o ícone 📷 como âncora
+            currentTooltip.style.opacity = '1';
+            currentTooltip.style.visibility = 'visible';
+            currentTooltip.dataset.currentElement = `photo-${id}`; // ID único para toggle
+        });
+    }
+
 
     function positionTooltip(termElement) {
         const rect = termElement.getBoundingClientRect();
