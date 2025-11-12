@@ -1258,55 +1258,36 @@ html {
 }
 
 /* -------------------------------------- */
-/* 19. SORTING DE TABELA (v18.0) */
+/* 19. ESTILO DA FOTO NO POP-UP (v18.2) */
 /* -------------------------------------- */
 
-/* Ajuste para imagens de preview dentro do popup do Leaflet */
+/* * Define o estilo para a imagem (classe .manual-img) 
+ * APENAS quando ela está dentro de um pop-up do Leaflet.
+ */
 .leaflet-popup-content .manual-img {
-    max-width: 250px; /* Limita a largura da foto no balão do mapa */
-    height: auto;
+    width: 100%; /* Ocupa a largura do pop-up */
+    
+    /* Define um tamanho máximo e altura fixa para criar o quadrado */
+    max-width: 220px; 
+    height: 220px; 
+    
+    /* * A 'mágica' do CSS: Preenche o quadrado (220x220)
+     * sem distorcer a imagem (corta o excesso). 
+     */
+    object-fit: cover; 
+    
+    border-radius: 6px;
     margin-top: 10px;
+    display: block; /* Garante que fique centralizado e sem espaço extra */
 }
 
-.summary-table th.sortable {
-    cursor: pointer;
-    position: relative;
-    padding-right: 20px; /* Espaço para o ícone */
-}
-.summary-table th.sortable:hover {
-    background-color: #00695c; /* Verde mais escuro no hover */
-}
-/* Ícones de Seta */
-.summary-table th.sortable::after {
-    content: ' ';
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.5;
-    border: 4px solid transparent;
-}
-/* Seta padrão (para cima e para baixo) */
-.summary-table th.sortable::after {
-    border-top-color: #aaa;
-    border-bottom-color: #aaa;
-    top: 40%;
-}
-.summary-table th.sortable:hover::after {
-    border-top-color: #fff;
-    border-bottom-color: #fff;
-}
-/* Seta Ativa (para cima) */
-.summary-table th.sort-asc::after {
-    border-top-color: transparent;
-    border-bottom-color: #fff; /* Seta para cima */
-    opacity: 1;
-    top: 35%;
-}
-/* Seta Ativa (para baixo) */
-.summary-table th.sort-desc::after {
-    border-bottom-color: transparent;
-    border-top-color: #fff; /* Seta para baixo */
-    opacity: 1;
-    top: 45%;
+/* * (v18.2) Ajuste Fino para Mobile: 
+ * Em telas menores, o pop-up é mais estreito, 
+ * então reduzimos o quadrado.
+ */
+@media (max-width: 768px) {
+    .leaflet-popup-content .manual-img {
+         max-width: 180px; 
+         height: 180px; 
+    }
 }
