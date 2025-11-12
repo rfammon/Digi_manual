@@ -1,4 +1,4 @@
-// script.js (COMPLETO v19.2 - Unificação de Botões Import/Export)
+// script.js (COMPLETO v19.3 - Correção de Bug de Referência e Botões Unificados)
 
 // === 0. ARMAZENAMENTO de ESTADO (Variáveis Globais) ===
 let registeredTrees = [];
@@ -137,7 +137,7 @@ const podaPurposeData = {
     }
 };
 
-// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v19.2) ===
+// === 2. DADOS DO MANUAL (CONTEÚDO COMPLETO v19.3 - CORREÇÃO DE BUG) ===
 const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -390,7 +390,7 @@ const manualContent = {
         `
     },
 
-    // (ATUALIZADO v19.2) HTML da Calculadora: Botões UNIFICADOS
+    // (CORRIGIDO v19.3) HTML da Calculadora: HTML estático completo (sem auto-referência)
     'calculadora-risco': {
         titulo: '📊 Calculadora de Risco Arbóreo',
         html: `
@@ -2110,8 +2110,10 @@ document.addEventListener('DOMContentLoaded', () => {
      * (v19.0) Manipulador de EXPORTAÇÃO de Pacote .ZIP
      */
     async function handleExportZip() {
+        // (v19.3) Verificação robusta do JSZip
         if (typeof JSZip === 'undefined') {
-            showToast("Erro: Biblioteca JSZip não carregada.", 'error');
+            showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
+            console.error("Falha na exportação: JSZip não está definido. Verifique se o arquivo 'libs/jszip.min.js' foi carregado corretamente no index.html.");
             return;
         }
         if (registeredTrees.length === 0) {
@@ -2191,7 +2193,8 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function handleImportZip(event) {
         if (typeof JSZip === 'undefined') {
-            showToast("Erro: Biblioteca JSZip não carregada.", 'error');
+            showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
+            console.error("Falha na importação: JSZip não está definido.");
             return;
         }
         
@@ -2349,39 +2352,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadContent(targetKey) {
         if (!detailView) return;    
         
-        // (v19.2) Solução para a referência de 'manualContent'
-        // Se a chave for 'calculadora-risco', injeta o HTML dela diretamente.
-        let contentHtml, contentTitle;
-        if (targetKey === 'calculadora-risco') {
-            const calcData = manualContent['calculadora-risco'];
-            contentTitle = calcData.titulo;
-            
-            // (v19.2) Lógica de auto-referência para o HTML da calculadora
-            // Isso evita que o formulário e o mapa desapareçam
-            const formHtmlMatch = calcData.html.match(/<form id="risk-calculator-form">[\s\S]*<\/form>/m);
-            const mapHtmlMatch = calcData.html.match(/<div id="tab-content-mapa"[\s\S]*<\/div>\s*$/m);
-            
-            let finalHtml = calcData.html;
-            
-            if(formHtmlMatch) {
-                finalHtml = finalHtml.replace(/<div id="tab-content-register" class="sub-tab-content">[\s\S]*<\/div>/m, 
-                    `<div id="tab-content-register" class="sub-tab-content">${formHtmlMatch[0]}</div>`);
-            }
-            if(mapHtmlMatch) {
-                finalHtml = finalHtml.replace(/<div id="tab-content-mapa"[\s\S]*<\/div>\s*$/m, 
-                    mapHtmlMatch[0]);
-            }
-            
-            contentHtml = finalHtml;
-            
-        } else if (manualContent[targetKey]) {
-            const contentData = manualContent[targetKey];
-            contentTitle = contentData.titulo;
-            contentHtml = contentData.html;
-        }
+        const content = manualContent[targetKey];
 
-        if (contentHtml) {
-            detailView.innerHTML = `<h3>${contentTitle}</h3>${contentHtml}`;
+        if (content) {
+            detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
             
             setupGlossaryInteractions();    
             setupEquipmentInteractions();
