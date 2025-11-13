@@ -1,5 +1,4 @@
-// js/ui.js (v20.2 - FINAL)
-// Removida a clonagem desnecessária para evitar flicker e conflito de eventos.
+// js/ui.js (v20.3 - FINAL - Sem Conteúdo Truncado)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -45,7 +44,9 @@ let mobileChecklist = {
     counter: null
 };
 
-// ... (showMobileQuestion - Permanece o mesmo) ...
+/**
+ * (v16.0) Mostra a pergunta do carrossel mobile no índice especificado.
+ */
 export function showMobileQuestion(index) {
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
@@ -83,8 +84,7 @@ export function showMobileQuestion(index) {
 }
 
 /**
- * (v16.0) Inicializa o carrossel mobile (lendo a tabela desktop).
- * (v20.2) Preserva a lógica de clonagem para garantir a remoção de listeners antigos no re-setup (modo edição).
+ * (v20.2) Inicializa o carrossel mobile (mantém a lógica de clonagem para re-setup de edição).
  */
 export function setupMobileChecklist() {
     mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
@@ -104,8 +104,7 @@ export function setupMobileChecklist() {
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
-    // --- CORREÇÃO ANTIGA (V16.1): MANTIDA PARA RE-SETUP DE CARROSSEL ---
-    // A clonagem aqui é para limpar listeners antigos se o carrossel for recarregado.
+    // --- Clonagem para limpeza de listeners em re-setup (modo edição) ---
     const newCard = mobileChecklist.card.cloneNode(true);
     mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
     mobileChecklist.card = newCard;
@@ -143,7 +142,10 @@ export function setupMobileChecklist() {
     showMobileQuestion(0);
 }
 
-// ... (renderSummaryTable - Permanece o mesmo) ...
+/**
+ * (v18.1) Renderiza a tabela de resumo de árvores.
+ * Lê o estado global 'registeredTrees' e 'sortState'.
+ */
 export function renderSummaryTable() {
     const container = document.getElementById('summary-table-container');
     const importExportControls = document.getElementById('import-export-controls');
@@ -252,7 +254,6 @@ export function renderSummaryTable() {
     container.innerHTML = tableHTML;
 }
 
-// ... (showSubTab e highlightTableRow - Permanecem os mesmos) ...
 /**
  * (v17.6) Mostra a sub-aba correta (Registrar, Resumo, Mapa).
  */
@@ -301,8 +302,9 @@ function highlightTableRow(id) {
     }, 100);
 }
 
-// ... (initMap e renderTreesOnMap - Permanecem os mesmos) ...
-
+/**
+ * (v20.0) Inicializa o mapa Leaflet
+ */
 function initMap() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
@@ -355,6 +357,9 @@ function initMap() {
     }
 }
 
+/**
+ * (v20.0) Desenha as árvores no mapa
+ */
 function renderTreesOnMap(treesData) {
     if (!state.mapInstance) return;
 
@@ -420,12 +425,14 @@ function renderTreesOnMap(treesData) {
 
 // === Lógica de Inicialização de Inputs de Arquivo (CRÍTICO PARA IMPORTAÇÃO) ===
 
-// (v20.0 - NOVO) Funções para garantir que os inputs de arquivo sejam limpos de listeners antigos.
+/**
+ * (v20.0 - NOVO) Funções para garantir que os inputs de arquivo sejam limpos de listeners antigos.
+ */
 function setupFileImporters() {
     let zipImporter = document.getElementById('zip-importer');
     let csvImporter = document.getElementById('csv-importer');
 
-    // Clona os inputs para remover listeners antigos e reanexar o evento de 'change'
+    // Clonagem necessária para o browser aceitar o .click() e remover listeners de 'change'
     // Isso é crucial para evitar que o evento seja disparado múltiplas vezes, 
     // resultando em comportamento inesperado na importação.
     
@@ -465,8 +472,8 @@ function setupFileImporters() {
 
 
 /**
- * (v20.2 - CORREÇÃO CRÍTICA) Função principal que inicializa todos os listeners da Calculadora.
- * REMOVIDA A CLONAGEM DO SUBNAV E SUMMARY CONTAINER PARA EVITAR FLICKER.
+ * (v20.3 - CORREÇÃO DE CRASH) Função principal que inicializa todos os listeners da Calculadora.
+ * Removido o perigoso removeEventListener.
  */
 export function setupRiskCalculator() {
         
@@ -475,12 +482,10 @@ export function setupRiskCalculator() {
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
-        // [CORREÇÃO: REMOVIDA CLONAGEM. USAMOS O NÓ EXISTENTE AGORA.]
-        // Antes: clonava e substituía o subNav, causando o flicker.
+        // [CORREÇÃO DE CRASH]: Removemos o perigoso removeEventListener e a clonagem.
+        // Contamos com o main.js para garantir que só seja chamado uma vez.
         
-        // CORREÇÃO: Removemos listeners antigos (se houver, por segurança)
-        subNav.removeEventListener('click', subNavHandler); // Remove o antigo handler
-
+        // Define o handler explicitamente
         const subNavHandler = (e) => {
             const button = e.target.closest('.sub-nav-btn');
             if (button) {
@@ -489,19 +494,19 @@ export function setupRiskCalculator() {
             }
         };
         
+        // Adicionamos o listener ao nó existente
         subNav.addEventListener('click', subNavHandler);
         // Ativa a primeira aba (Registrar)
         showSubTab('tab-content-register');
     }
     
-    // --- (CORREÇÃO CRÍTICA) Re-cria e re-anexa os inputs de arquivo ---
-    // A clonagem aqui é necessária para o browser aceitar o .click() e remover listeners de 'change'
+    // --- (CRÍTICO) Re-cria e re-anexa os inputs de arquivo ---
     const { zipImporter, csvImporter } = setupFileImporters(); 
 
 
     // --- Conexão de Botões e Inputs (Features) ---
     const form = document.getElementById('risk-calculator-form');
-    const summaryContainer = document.getElementById('summary-table-container');
+    let summaryContainer = document.getElementById('summary-table-container'); // Agora 'let' para reatribuição
     
     // Elementos que precisamos
     const importDataBtn = document.getElementById('import-data-btn');
@@ -612,9 +617,8 @@ export function setupRiskCalculator() {
     // Renderiza a tabela inicial
     renderSummaryTable(); 
     
-    // (v20.2 - CORREÇÃO CRÍTICA): Usa o nó existente (summaryContainer) e limpa listeners
+    // (v20.2 - CORREÇÃO CRÍTICA): Clonagem para limpeza de listeners
     if (summaryContainer) {
-        // 1. Clonar para remover listeners (mantemos por causa dos botões internos)
         const newSummaryContainer = summaryContainer.cloneNode(true);
         summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
         summaryContainer = newSummaryContainer; // Reatribui a referência local
@@ -667,24 +671,18 @@ export function setupRiskCalculator() {
         });
     }
 
+
     if (isTouchDevice) {
         setupMobileChecklist();
     }
 }
 
 
-// ... (restante do código das funções de Tooltip e Modal permanece o mesmo) ...
-
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
-
-// ... (createTooltip, hideTooltip, positionTooltip, handlePhotoPreviewClick, 
-// setupGlossaryInteractions, showGlossaryTooltip, toggleGlossaryTooltip, 
-// setupEquipmentInteractions, showEquipmentTooltip, toggleEquipmentTooltip, 
-// setupPurposeInteractions, showPurposeTooltip, togglePurposeTooltip - permanecem os mesmos) ...
 
 export function createTooltip() {
     let tooltip = document.getElementById('glossary-tooltip');
