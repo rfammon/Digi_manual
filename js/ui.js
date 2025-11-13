@@ -1,4 +1,4 @@
-// js/ui.js (v21.5 - OTIMIZAÇÃO DE IMAGEM)
+// js/ui.js (v21.7 - Legenda Externa e InfoBox)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -306,7 +306,7 @@ function highlightTableRow(id) {
 }
 
 /**
- * (v20.0) Inicializa o mapa Leaflet
+ * (v21.7) Inicializa o mapa Leaflet com Legenda/Filtro Externos.
  */
 function initMap() {
     const mapContainer = document.getElementById('map-container');
@@ -350,6 +350,19 @@ function initMap() {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     }).addTo(newMap);
 
+    // --- NOVA LÓGICA (v21.7): Grupo de Marcadores e InfoBox ---
+
+    // 1. Cria o grupo que conterá os marcadores (círculos)
+    const markerGroup = L.featureGroup().addTo(newMap);
+    state.setMapMarkerGroup(markerGroup); // Salva no estado global
+
+    // 2. [REMOVIDO] A legenda agora está no HTML estático.
+    
+    // 3. Adiciona listener para fechar o InfoBox ao clicar no mapa
+    newMap.on('click', hideMapInfoBox);
+    
+    // --- Fim da Nova Lógica ---
+
     renderTreesOnMap(treesToRender);
     
     if (state.zoomTargetCoords) {
@@ -361,17 +374,16 @@ function initMap() {
 }
 
 /**
- * (v20.0) Desenha as árvores no mapa
+ * (v21.7) Desenha as árvores no mapa (agora no markerGroup) e troca Popup por InfoBox.
  */
 function renderTreesOnMap(treesData) {
-    if (!state.mapInstance) return;
-
-    // Limpa marcadores antigos
-    state.mapInstance.eachLayer(function (layer) {
-        if (layer.options && layer.options.isTreeMarker) {
-            state.mapInstance.removeLayer(layer);
-        }
-    });
+    if (!state.mapMarkerGroup) {
+        console.error("mapMarkerGroup não está inicializado.");
+        return;
+    }
+    
+    // Limpa marcadores antigos do GRUPO
+    state.mapMarkerGroup.clearLayers();
 
     treesData.forEach(tree => {
         const coords = tree.coordsLatLon; 
@@ -391,40 +403,100 @@ function renderTreesOnMap(treesData) {
             fillOpacity: 0.6,
             radius: radius, 
             weight: 1,
-            isTreeMarker: true
-        }).addTo(state.mapInstance);
-
-        const popupContent = `
-            <strong>ID: ${tree.id}</strong><br>
-            Espécie: ${tree.especie}<br>
-            Risco: <span style="color:${color}; font-weight:bold;">${riskText}</span><br>
-            Local: ${tree.local}<br>
-            Coord. UTM: ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})
-        `;
+            isTreeMarker: true,
+            riskLevel: tree.risco // <-- IMPORTANTE: Seta o risco no layer para o filtro
+        });
         
-        circle.bindPopup(popupContent + (tree.hasPhoto ? "<p>Carregando foto...</p>" : ""));
+        // ADICIONA AO GRUPO, NÃO AO MAPA
+        circle.addTo(state.mapMarkerGroup);
 
-        if (tree.hasPhoto) {
-            circle.on('popupopen', (e) => {
-                getImageFromDB(tree.id, (imageBlob) => {
-                    if (imageBlob) {
-                        const imgUrl = URL.createObjectURL(imageBlob);
-                        const finalContent = popupContent + `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
-                        e.popup.setContent(finalContent);
-                        // Revoga o URL do blob quando o popup fechar
-                        state.mapInstance.once('popupclose', () => URL.revokeObjectURL(imgUrl));
-                    } else {
-                        e.popup.setContent(popupContent + '<p style="color:red;">Foto não encontrada.</p>');
-                    }
-                });
-            });
-        }
-        
-        circle.on('dblclick', () => {
-            features.handleMapMarkerClick(tree.id);
+        // [MUDANÇA v21.7]: Troca o Popup pelo InfoBox.
+        circle.on('click', (e) => {
+            // Impede que o clique no círculo feche o InfoBox (propagando para o mapa)
+            L.DomEvent.stopPropagation(e); 
+            showMapInfoBox(tree);
         });
     });
 }
+
+/**
+ * [NOVO v21.7] Lida com a mudança do filtro da legenda.
+ */
+function handleMapFilterChange(e) {
+    const selectedRisk = e.target.value;
+    features.filterMapMarkers(selectedRisk);
+    hideMapInfoBox(); // Esconde o infobox ao filtrar
+}
+
+/**
+ * [NOVO v21.7] Mostra o painel de informações do mapa (substitui o popup).
+ */
+function showMapInfoBox(tree) {
+    const infoBox = document.getElementById('map-info-box');
+    if (!infoBox) return;
+
+    let color, riskText;
+    if (tree.risco === 'Alto Risco') {
+        color = '#C62828'; riskText = '🔴 Alto Risco';
+    } else if (tree.risco === 'Médio Risco') {
+        color = '#E65100'; riskText = '🟠 Médio Risco';
+    } else {
+        color = '#2E7D32'; riskText = '🟢 Baixo Risco';
+    }
+
+    let infoHTML = `
+        <button id="close-info-box">&times;</button>
+        <strong>ID: ${tree.id}</strong>
+        <p><strong>Espécie:</strong> ${tree.especie}</p>
+        <p><strong>Risco:</strong> <span style="color:${color}; font-weight:bold;">${riskText}</span></p>
+        <p><strong>Local:</strong> ${tree.local}</p>
+        <p><strong>Coord. UTM:</strong> ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})</p>
+    `;
+    
+    // Se tiver foto, adiciona o container para ela
+    if (tree.hasPhoto) {
+        infoHTML += `<div id="map-info-photo" class="loading-photo">Carregando foto...</div>`;
+    }
+    
+    infoBox.innerHTML = infoHTML;
+    infoBox.classList.remove('hidden');
+
+    // Listener para o botão de fechar
+    document.getElementById('close-info-box').addEventListener('click', hideMapInfoBox);
+    
+    // Carrega a foto (se houver)
+    if (tree.hasPhoto) {
+        getImageFromDB(tree.id, (imageBlob) => {
+            const photoDiv = document.getElementById('map-info-photo');
+            if (photoDiv && imageBlob) {
+                const imgUrl = URL.createObjectURL(imageBlob);
+                photoDiv.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
+                photoDiv.classList.remove('loading-photo');
+            } else if (photoDiv) {
+                photoDiv.innerHTML = `<p style="color:red; font-size: 0.9em;">Foto não encontrada.</p>`;
+                photoDiv.classList.remove('loading-photo');
+            }
+        });
+    }
+}
+
+/**
+ * [NOVO v21.7] Esconde o painel de informações do mapa.
+ */
+function hideMapInfoBox() {
+    const infoBox = document.getElementById('map-info-box');
+    if (infoBox) {
+        // Limpa a foto (se houver) para revogar o ObjectURL
+        const img = infoBox.querySelector('img');
+        if (img && img.src.startsWith('blob:')) {
+            URL.revokeObjectURL(img.src);
+        }
+        
+        infoBox.classList.add('hidden');
+        infoBox.innerHTML = ''; // Limpa o conteúdo
+    }
+}
+
 
 // === Lógica de Inicialização de Inputs de Arquivo (CRÍTICO PARA IMPORTAÇÃO) ===
 
@@ -473,11 +545,6 @@ function setupFileImporters() {
 /**
  * [CRÍTICO PARA PERFORMANCE v21.5]
  * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
- * Retorna um novo Blob com a imagem otimizada.
- * @param {File|Blob} imageFile - O arquivo de imagem original.
- * @param {number} maxWidth - Largura máxima desejada para a imagem.
- * @param {number} quality - Qualidade JPEG (0 a 1).
- * @returns {Promise<Blob>} Um Promise que resolve para o Blob da imagem otimizada.
  */
 async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
     return new Promise((resolve, reject) => {
@@ -529,7 +596,7 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
 
 /**
  * (v20.3 - CORREÇÃO DE CRASH) Função principal que inicializa todos os listeners da Calculadora.
- * (v21.5 - OTIMIZAÇÃO DE IMAGEM)
+ * (v21.7 - ADICIONA LISTENER DA LEGENDA)
  */
 export function setupRiskCalculator() {
         
@@ -572,6 +639,9 @@ export function setupRiskCalculator() {
     const photoInput = document.getElementById('tree-photo-input');
     const removePhotoBtn = document.getElementById('remove-photo-btn');
     const resetBtn = document.getElementById('reset-risk-form-btn');
+    
+    // [NOVO v21.7] Pega a legenda externa
+    const mapLegend = document.getElementById('map-legend-filter');
 
     // (v19.8) Lógica dos Botões Unificados (AGORA CHAMAM O MODAL)
     if (importDataBtn) importDataBtn.addEventListener('click', showImportModal);
@@ -581,6 +651,9 @@ export function setupRiskCalculator() {
     if (zoomBtn) zoomBtn.addEventListener('click', features.handleZoomToExtent);
     if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
     if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
+    
+    // [NOVO v21.7] Anexa o listener ao filtro do mapa
+    if (mapLegend) mapLegend.addEventListener('change', handleMapFilterChange);
     
     // (v19.8) Confirmação de "Limpar Tudo" agora usa o modal
     if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
