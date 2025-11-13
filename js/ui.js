@@ -449,29 +449,6 @@ function setupFileImporters() {
         csvImporter = newCsv;
     }
     
-    // RE-ANEXA OS LISTENERS AOS NOVOS ELEMENTOS
-    if (zipImporter) {
-        zipImporter.addEventListener('change', (e) => {
-            e.replaceData = zipImporter.dataset.replaceData === 'true';
-            features.handleImportZip(e).then(() => {
-                renderSummaryTable(); 
-            });
-        });
-    }
-    
-    if (csvImporter) {
-        csvImporter.addEventListener('change', (e) => {
-            e.replaceData = csvImporter.dataset.replaceData === 'true';
-            features.handleFileImport(e).then(() => {
-                renderSummaryTable();
-            });
-        });
-    }
-    
-    return { zipImporter, csvImporter };
-}
-
-
 /**
  * (v19.8) Função principal que inicializa todos os listeners da Calculadora.
  * (v20.0) Esta função é chamada UMA VEZ pelo main.js
