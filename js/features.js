@@ -1,10 +1,9 @@
-// js/features.js (v21.6 - Adiciona Lógica de Filtro de Mapa)
+// js/features.js (v21.7 - Adiciona Lógica de Filtro de Mapa)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
-// (REMOVIDA A IMPORTAÇÃO DO UI.JS - Corrigida na v19.8)
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
@@ -373,19 +372,20 @@ export function convertToLatLon(tree) {
 
 export function handleZoomToExtent() {
     if (!state.mapInstance) {
-        // (v21.6) Se o grupo de marcadores existir, usa ele
-        if (state.mapMarkerGroup && state.mapInstance) {
-             const bounds = state.mapMarkerGroup.getBounds();
-             if (bounds.isValid()) {
-                state.mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
-             }
-        } else {
-            utils.showToast("O mapa não está inicializado.", "error");
-        }
+        utils.showToast("O mapa não está inicializado.", "error");
         return;
     }
+    
+    // [NOVO v21.7] Usa o featureGroup para o zoom, se disponível
+    if (state.mapMarkerGroup) {
+         const bounds = state.mapMarkerGroup.getBounds();
+         if (bounds.isValid()) {
+            state.mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+            return; // Impede a execução da lógica antiga
+         }
+    }
 
-    // Lógica antiga (mantida por segurança, mas a lógica acima é melhor)
+    // Lógica antiga (Fallback se o grupo não tiver bounds)
     let boundsArray = [];
     state.registeredTrees.forEach(tree => {
         const coords = convertToLatLon(tree); 
@@ -410,11 +410,14 @@ export function handleMapMarkerClick(id) {
 }
 
 /**
- * [NOVO v21.6] Filtra os marcadores no mapa.
+ * [NOVO v21.7] Filtra os marcadores no mapa.
  * Chamado pelo listener da legenda no ui.js.
  */
 export function filterMapMarkers(selectedRisk) {
-    if (!state.mapMarkerGroup) return;
+    if (!state.mapMarkerGroup) {
+        console.warn("Grupo de marcadores (mapMarkerGroup) não encontrado no estado.");
+        return;
+    }
 
     state.mapMarkerGroup.eachLayer(layer => {
         if (selectedRisk === 'Todos' || layer.options.riskLevel === selectedRisk) {
