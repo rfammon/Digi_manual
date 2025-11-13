@@ -1,9 +1,9 @@
-// js/ui.js (v21.1 - Novos Ícones e Correção de Classe do Modal)
+// js/ui.js (v21.3 - FINAL - Correção do Modal de Importação Vazio)
 
 // === 1. IMPORTAÇÕES ===
-import * as state from './state.js';
+import * as state from './state.js'; // Importação necessária para a correção
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js';
+import { showToast, debounce } from './utils.js'; 
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
@@ -11,12 +11,18 @@ const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-i
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
 
+/**
+ * Carrega o HTML de um tópico do manual na view principal.
+ * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
+ * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
+ */
 export function loadContent(detailView, content) {
     if (!detailView) return;    
     
     if (content) {
         detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
         
+        // Ativa os tooltips interativos para o conteúdo recém-carregado
         setupGlossaryInteractions(detailView);    
         setupEquipmentInteractions(detailView);
         setupPurposeInteractions(detailView);
@@ -28,10 +34,21 @@ export function loadContent(detailView, content) {
 
 // === 3. LÓGICA DA CALCULADORA DE RISCO (UI) ===
 
-let mobileChecklist = { /* ... */ };
+let mobileChecklist = {
+    currentIndex: 0,
+    totalQuestions: 0,
+    questions: null,
+    wrapper: null,
+    card: null,
+    navPrev: null,
+    navNext: null,
+    counter: null
+};
 
+/**
+ * (v16.0) Mostra a pergunta do carrossel mobile no índice especificado.
+ */
 export function showMobileQuestion(index) {
-    // ... (Código completo da v20.9) ...
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
     if (!questionRow) return;
@@ -67,8 +84,10 @@ export function showMobileQuestion(index) {
     mobileChecklist.currentIndex = index;
 }
 
+/**
+ * (v20.2) Inicializa o carrossel mobile (mantém a lógica de clonagem para re-setup de edição).
+ */
 export function setupMobileChecklist() {
-    // ... (Código completo da v20.9) ...
     mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
     if (!mobileChecklist.wrapper) return;
     
@@ -86,6 +105,7 @@ export function setupMobileChecklist() {
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
+    // --- Clonagem para limpeza de listeners em re-setup (modo edição) ---
     const newCard = mobileChecklist.card.cloneNode(true);
     mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
     mobileChecklist.card = newCard;
@@ -98,6 +118,7 @@ export function setupMobileChecklist() {
     mobileChecklist.navNext.parentNode.replaceChild(newNavNext, mobileChecklist.navNext);
     mobileChecklist.navNext = newNavNext;
     
+    // Adiciona o listener para o "toggle" (Sim/Não)
     mobileChecklist.card.addEventListener('change', (e) => {
         const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
         if (proxyCheckbox) {
@@ -107,6 +128,7 @@ export function setupMobileChecklist() {
         }
     });
 
+    // Adiciona listeners para os botões de navegação do carrossel
     mobileChecklist.navPrev.addEventListener('click', () => {
         if (mobileChecklist.currentIndex > 0) {
             showMobileQuestion(mobileChecklist.currentIndex - 1);
@@ -238,20 +260,22 @@ export function renderSummaryTable() {
  * (v17.6) Mostra a sub-aba correta (Registrar, Resumo, Mapa).
  */
 export function showSubTab(targetId) {
-    // ... (Código completo da v20.9) ...
     const subTabPanes = document.querySelectorAll('.sub-tab-content');
     subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
     
     const subNavButtons = document.querySelectorAll('.sub-nav-btn');
     subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
 
+    // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
     if (targetId === 'tab-content-mapa') {
+        // Delay para garantir que o container está visível
         setTimeout(() => { initMap(); }, 50); 
     }
     
+    // (v18.0) Lógica de Destaque da Linha
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
         highlightTableRow(state.highlightTargetId);
-        state.setHighlightTargetId(null); 
+        state.setHighlightTargetId(null); // Limpa o alvo
     }
 }
 
@@ -259,13 +283,15 @@ export function showSubTab(targetId) {
  * (v19.8) Destaque da linha
  */
 function highlightTableRow(id) {
-    // ... (Código completo da v20.9) ...
+    // (v19.8) Atraso para garantir que a aba trocou
     setTimeout(() => {
         const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
         if (row) {
+            // Remove destaques antigos
             const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
             oldHighlights.forEach(r => r.classList.remove('highlight'));
             
+            // Adiciona novo destaque e scroll
             row.classList.add('highlight');
             row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
@@ -282,10 +308,10 @@ function highlightTableRow(id) {
  * (v20.0) Inicializa o mapa Leaflet
  */
 function initMap() {
-    // ... (Código completo da v20.9) ...
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
     
+    // (v19.7) Verificação de bibliotecas (agora globais)
     if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
         mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Verifique a pasta /libs/.</p>';
         return;
@@ -307,7 +333,7 @@ function initMap() {
         return null;
     }).filter(tree => tree !== null); 
     
-    let mapCenter = [-15.7801, -47.9292]; 
+    let mapCenter = [-15.7801, -47.9292]; // Centro do Brasil
     let initialZoom = 4; 
 
     if (boundsArray.length > 0) {
@@ -337,9 +363,9 @@ function initMap() {
  * (v20.0) Desenha as árvores no mapa
  */
 function renderTreesOnMap(treesData) {
-    // ... (Código completo da v20.9) ...
     if (!state.mapInstance) return;
 
+    // Limpa marcadores antigos
     state.mapInstance.eachLayer(function (layer) {
         if (layer.options && layer.options.isTreeMarker) {
             state.mapInstance.removeLayer(layer);
@@ -384,6 +410,7 @@ function renderTreesOnMap(treesData) {
                         const imgUrl = URL.createObjectURL(imageBlob);
                         const finalContent = popupContent + `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
                         e.popup.setContent(finalContent);
+                        // Revoga o URL do blob quando o popup fechar
                         state.mapInstance.once('popupclose', () => URL.revokeObjectURL(imgUrl));
                     } else {
                         e.popup.setContent(popupContent + '<p style="color:red;">Foto não encontrada.</p>');
@@ -462,6 +489,7 @@ export function setupRiskCalculator() {
             }
         };
         
+        // Adicionamos o listener ao nó existente
         subNav.addEventListener('click', subNavHandler);
         // Ativa a primeira aba (Registrar)
         showSubTab('tab-content-register');
@@ -952,36 +980,42 @@ function showExportModal() {
 }
 
 /**
- * (v21.1 - CORREÇÃO DE CLASSE) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
+ * (v21.3 - CORREÇÃO DE BUG "SUBSTITUIR VAZIO") 
+ * Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
  */
 function showImportModal() {
     
+    // Define os botões
+    let buttons = [
+        {
+            text: 'Adicionar à Lista Atual',
+            class: 'secondary', // Amarelo (Destaque)
+            action: () => {
+                // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
+                // e o DOM se estabilize antes de abrir o segundo.
+                setTimeout(() => showImportTypeModal(false), 0);
+            }
+        }
+    ];
+    
+    // [CORREÇÃO BUG #2]: Só mostra "Substituir" se a lista NÃO estiver vazia.
+    if (state.registeredTrees.length > 0) {
+        buttons.push({
+            text: 'Substituir Lista Atual',
+            class: 'primary', // Verde (Padrão)
+            action: () => {
+                // Adiciona setTimeout(0)
+                setTimeout(() => showImportTypeModal(true), 0);
+            }
+        });
+    }
+    
+    buttons.push({ text: 'Cancelar', class: 'cancel' });
+
     showActionModal({
         title: '📤 Importar Dados',
         description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira? (Substituir apagará todos os dados atuais)',
-        buttons: [
-            {
-                text: 'Adicionar à Lista Atual',
-                class: 'secondary', // Amarelo (Destaque)
-                action: () => {
-                    // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
-                    // e o DOM se estabilize antes de abrir o segundo.
-                    setTimeout(() => showImportTypeModal(false), 0);
-                }
-            },
-            {
-                text: 'Substituir Lista Atual',
-                class: 'primary', // Verde (Padrão)
-                action: () => {
-                    // Adiciona setTimeout(0)
-                    setTimeout(() => showImportTypeModal(true), 0);
-                }
-            },
-            {
-                text: 'Cancelar',
-                class: 'cancel'
-            }
-        ]
+        buttons: buttons // Usa a lista dinâmica
     });
 }
 
