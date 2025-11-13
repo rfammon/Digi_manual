@@ -1,29 +1,22 @@
-// js/ui.js (v19.7 - CORRIGIDO - Erro de sintaxe 'import *s' e lógica de UI)
+// js/ui.js (v19.7 - CORRIGIDO - Lógica de atualização da UI)
 
 // === 1. IMPORTAÇÕES ===
 
-// (CORREÇÃO v19.5) Corrigido de 'import *s' para 'import * as'
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
-import * as features from './features.js'; // (v19.6) A importação está correta
+import * as features from './features.js'; 
 
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO PRINCIPAL ===
 
-/**
- * Carrega o HTML de um tópico do manual na view principal.
- * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
- * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
- */
 export function loadContent(detailView, content) {
     if (!detailView) return;    
     
     if (content) {
         detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
         
-        // Ativa os tooltips interativos para o conteúdo recém-carregado
         setupGlossaryInteractions(detailView);    
         setupEquipmentInteractions(detailView);
         setupPurposeInteractions(detailView);
@@ -46,9 +39,6 @@ let mobileChecklist = {
     counter: null
 };
 
-/**
- * (v16.0) Mostra a pergunta do carrossel mobile no índice especificado.
- */
 export function showMobileQuestion(index) {
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
@@ -73,14 +63,10 @@ export function showMobileQuestion(index) {
     mobileChecklist.currentIndex = index;
 }
 
-/**
- * (v16.0) Inicializa o carrossel mobile (lendo a tabela desktop).
- */
 export function setupMobileChecklist() {
     mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
     if (!mobileChecklist.wrapper) return;
     
-    // Encontra os elementos (pode ser a primeira vez ou um recarregamento)
     mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
     mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
     mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
@@ -92,28 +78,23 @@ export function setupMobileChecklist() {
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
-    // (Correção v16.1) Clona nós para limpar listeners antigos ao recarregar (ex: modo de edição)
     mobileChecklist.card.replaceWith(mobileChecklist.card.cloneNode(true));
     mobileChecklist.navPrev.replaceWith(mobileChecklist.navPrev.cloneNode(true));
     mobileChecklist.navNext.replaceWith(mobileChecklist.navNext.cloneNode(true));
     
-    // Re-seleciona os nós clonados
     mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
     mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
     mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
     
-    // Adiciona o listener para o "toggle" (Sim/Não)
     mobileChecklist.card.addEventListener('change', (e) => {
         const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
         if (proxyCheckbox) {
-            // Sincroniza o toggle mobile com o checkbox real (oculto) da tabela
             const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
             const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
             realCheckbox.checked = proxyCheckbox.checked;
         }
     });
 
-    // Adiciona listeners para os botões de navegação do carrossel
     mobileChecklist.navPrev.addEventListener('click', () => {
         if (mobileChecklist.currentIndex > 0) {
             showMobileQuestion(mobileChecklist.currentIndex - 1);
@@ -125,14 +106,9 @@ export function setupMobileChecklist() {
         }
     });
 
-    // Mostra a primeira pergunta
     showMobileQuestion(0);
 }
 
-/**
- * (v18.1) Renderiza a tabela de resumo de árvores.
- * Lê o estado global 'registeredTrees' e 'sortState'.
- */
 export function renderSummaryTable() {
     const container = document.getElementById('summary-table-container');
     const importExportControls = document.getElementById('import-export-controls');
@@ -140,7 +116,6 @@ export function renderSummaryTable() {
     
     if (!container) return;    
     
-    // Atualiza o badge
     if (summaryBadge) {
         if (state.registeredTrees.length > 0) {
             summaryBadge.textContent = `(${state.registeredTrees.length})`;
@@ -151,7 +126,6 @@ export function renderSummaryTable() {
         }
     }
     
-    // Oculta os botões de exportação se a tabela estiver vazia
     if (state.registeredTrees.length === 0) {
         container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
         if (importExportControls) {
@@ -162,14 +136,12 @@ export function renderSummaryTable() {
         return;
     }
     
-    // Mostra os botões de exportação
     if (importExportControls) {
         document.getElementById('export-data-btn')?.setAttribute('style', 'display:inline-flex');
         document.getElementById('send-email-btn')?.setAttribute('style', 'display:inline-flex');
         document.getElementById('clear-all-btn')?.setAttribute('style', 'display:inline-flex');
     }
 
-    // Helper para classes de ordenação
     const getThClass = (key) => {
         let classes = 'sortable';
         if (state.sortState.key === key) {
@@ -178,7 +150,6 @@ export function renderSummaryTable() {
         return classes;
     };
 
-    // Constrói o HTML da tabela
     let tableHTML = '<table class="summary-table"><thead><tr>';
     tableHTML += `<th class="${getThClass('id')}" data-sort-key="id">ID</th>`;
     tableHTML += `<th class="${getThClass('data')}" data-sort-key="data">Data</th>`;
@@ -208,7 +179,6 @@ export function renderSummaryTable() {
         return 0;
     });
 
-    // Cria as linhas da tabela
     sortedData.forEach(tree => {
         const [y, m, d] = (tree.data || '---').split('-');
         const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
@@ -241,9 +211,6 @@ export function renderSummaryTable() {
     container.innerHTML = tableHTML;
 }
 
-/**
- * (v17.6) Mostra a sub-aba correta (Registrar, Resumo, Mapa).
- */
 export function showSubTab(targetId) {
     const subTabPanes = document.querySelectorAll('.sub-tab-content');
     subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
@@ -251,50 +218,43 @@ export function showSubTab(targetId) {
     const subNavButtons = document.querySelectorAll('.sub-nav-btn');
     subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
 
-    // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
     if (targetId === 'tab-content-mapa') {
-        setTimeout(() => { initMap(); }, 50); // Delay para garantir que o container está visível
+        setTimeout(() => { initMap(); }, 50); 
     }
     
-    // (v18.0) Lógica de Destaque da Linha
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
-        // A função highlightTableRow está em features.js
         features.highlightTableRow(state.highlightTargetId);
-        state.setHighlightTargetId(null); // Limpa o alvo
+        state.setHighlightTargetId(null); 
     }
 }
 
-/**
- * (v17.4) Inicializa o mapa Leaflet e renderiza os pontos.
- */
 function initMap() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
     
+    // (v19.7) Verificação de bibliotecas (agora globais)
     if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
-        mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Adicione-as ao index.html.</p>';
+        mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Verifique a pasta /libs/.</p>';
         return;
     }
 
-    // Limpa instância antiga do mapa, se houver
     if (state.mapInstance) {
         state.mapInstance.remove();
         state.setMapInstance(null);
     }
     
-    // 1. Filtra e Converte árvores
     let boundsArray = [];
     let treesToRender = state.registeredTrees.map(tree => {
-        const coords = features.convertToLatLon(tree); // Usa a feature de conversão
+        const coords = features.convertToLatLon(tree); 
         if (coords) {
-            tree.coordsLatLon = coords; // Armazena Lat/Lon para uso
+            tree.coordsLatLon = coords; 
             boundsArray.push(coords);
             return tree;
         }
         return null;
     }).filter(tree => tree !== null); 
     
-    let mapCenter = [-15.7801, -47.9292]; // Padrão Brasil Central (Brasília)
+    let mapCenter = [-15.7801, -47.9292]; 
     let initialZoom = 4; 
 
     if (boundsArray.length > 0) {
@@ -302,35 +262,27 @@ function initMap() {
         initialZoom = 16;
     }
     
-    // 2. Inicializa o mapa e salva no estado
     const newMap = L.map('map-container').setView(mapCenter, initialZoom);
     state.setMapInstance(newMap);
 
-    // 3. Camada Base - Imagem de Satélite (ESRI)
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     }).addTo(newMap);
 
-    // 4. Renderiza os marcadores
     renderTreesOnMap(treesToRender);
     
-    // 5. Aplica o Zoom (Lupa ou Extent)
     if (state.zoomTargetCoords) {
-        newMap.setView(state.zoomTargetCoords, 18); // Zoom 18 para ponto único
-        state.setZoomTargetCoords(null); // Limpa o alvo
+        newMap.setView(state.zoomTargetCoords, 18); 
+        state.setZoomTargetCoords(null); 
     } else if (boundsArray.length > 0) {
-        features.handleZoomToExtent(); // Chama a função de zoom automático
+        features.handleZoomToExtent(); 
     }
 }
 
-/**
- * (v18.1) Desenha círculos (marcadores) no mapa.
- */
 function renderTreesOnMap(treesData) {
     if (!state.mapInstance) return;
 
-    // Limpa marcadores antigos
     state.mapInstance.eachLayer(function (layer) {
         if (layer.options && layer.options.isTreeMarker) {
             state.mapInstance.removeLayer(layer);
@@ -368,7 +320,6 @@ function renderTreesOnMap(treesData) {
         
         circle.bindPopup(popupContent + (tree.hasPhoto ? "<p>Carregando foto...</p>" : ""));
 
-        // Evento para carregar a foto (apenas se existir)
         if (tree.hasPhoto) {
             circle.on('popupopen', (e) => {
                 getImageFromDB(tree.id, (imageBlob) => {
@@ -376,7 +327,6 @@ function renderTreesOnMap(treesData) {
                         const imgUrl = URL.createObjectURL(imageBlob);
                         const finalContent = popupContent + `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
                         e.popup.setContent(finalContent);
-                        // Revoga o URL da memória quando o popup fechar
                         state.mapInstance.once('popupclose', () => URL.revokeObjectURL(imgUrl));
                     } else {
                         e.popup.setContent(popupContent + '<p style="color:red;">Foto não encontrada.</p>');
@@ -385,7 +335,6 @@ function renderTreesOnMap(treesData) {
             });
         }
         
-        // Evento de clique duplo no mapa
         circle.on('dblclick', () => {
             features.handleMapMarkerClick(tree.id);
         });
@@ -395,14 +344,15 @@ function renderTreesOnMap(treesData) {
 
 /**
  * (v19.7) Função principal que inicializa todos os listeners da Calculadora.
- * (Chamada pelo main.js quando a aba da calculadora é carregada).
+ * Esta é a função que conecta a Lógica (features) à UI (eventos).
  */
 export function setupRiskCalculator() {
         
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
-        // (Correção v19.4) Usa Event Delegation, mas limpa listeners antigos clonando
         const newNav = subNav.cloneNode(true);
         subNav.parentNode.replaceChild(newNav, subNav);
         
@@ -413,7 +363,6 @@ export function setupRiskCalculator() {
                 showSubTab(button.getAttribute('data-target'));
             }
         });
-        // Define a aba padrão
         showSubTab('tab-content-register');
     }
 
@@ -421,13 +370,10 @@ export function setupRiskCalculator() {
     const form = document.getElementById('risk-calculator-form');
     const summaryContainer = document.getElementById('summary-table-container');
     
-    // (v19.2) Botões Unificados
     const importDataBtn = document.getElementById('import-data-btn');
     const exportDataBtn = document.getElementById('export-data-btn');
     const zipImporter = document.getElementById('zip-importer');
     const csvImporter = document.getElementById('csv-importer');
-
-    // Botões Antigos
     const sendEmailBtn = document.getElementById('send-email-btn');
     const getGpsBtn = document.getElementById('get-gps-btn');    
     const clearAllBtn = document.getElementById('clear-all-btn');    
@@ -437,11 +383,10 @@ export function setupRiskCalculator() {
     const removePhotoBtn = document.getElementById('remove-photo-btn');
     const resetBtn = document.getElementById('reset-risk-form-btn');
 
-    // (v19.2) Lógica dos Botões Unificados de Import/Export
+    // (v19.7) Import/Export agora chamam a LÓGICA (features) e ATUALIZAM a UI (render)
     if (importDataBtn) importDataBtn.addEventListener('click', features.handleImportData);
     if (exportDataBtn) exportDataBtn.addEventListener('click', features.handleExportData);
     
-    // (v19.7) Atualiza a UI após a importação (espera a Promise)
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
         features.handleImportZip(e).then(() => {
             renderSummaryTable(); 
@@ -455,17 +400,12 @@ export function setupRiskCalculator() {
 
     // Listeners restantes
     if (zoomBtn) zoomBtn.addEventListener('click', features.handleZoomToExtent);
-    
-    // (ATUALIZAÇÃO v19.4) Aplicando o Debounce ao filtro
-    if (filterInput) {
-        filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
-    }
-    
+    if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
     if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
     
-    // (v19.7) Atualiza a UI após a ação
+    // (v19.7) Ações de CRUD agora atualizam a UI
     if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
-        if (features.handleClearAll()) {
+        if (features.handleClearAll()) { // Se a ação foi confirmada
             renderSummaryTable(); 
         }
     });
@@ -483,7 +423,7 @@ export function setupRiskCalculator() {
                 preview.src = URL.createObjectURL(file);
                 document.getElementById('photo-preview-container').prepend(preview);
                 document.getElementById('remove-photo-btn').style.display = 'block';
-                state.setCurrentTreePhoto(file); // Salva o blob no estado
+                state.setCurrentTreePhoto(file); 
             }
         });
     }
@@ -497,25 +437,20 @@ export function setupRiskCalculator() {
             document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
         }
 
-        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
             if(gpsContainer) gpsContainer.style.display = 'none';
         }
         
-        // (v19.7) Lógica de submissão do formulário movida para 'features.js'
+        // (v19.7) Adicionar Árvore
         form.addEventListener('submit', (event) => {
             const submissionSuccessful = features.handleAddTreeSubmit(event);
             
             if (submissionSuccessful) {
-                renderSummaryTable(); // Atualiza a UI
-                
-                // Recarrega o carrossel se estiver em dispositivo móvel
-                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                renderSummaryTable(); // ATUALIZA A UI
                 if (isTouchDevice) {
                     setupMobileChecklist(); 
                 }
-
                 const gpsStatus = document.getElementById('gps-status');
                 if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
             }
@@ -566,11 +501,8 @@ export function setupRiskCalculator() {
             }
             
             if (editButton) {    
-                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
-                
                 showSubTab('tab-content-register'); 
-                
                 if (needsCarouselUpdate && isTouchDevice) {
                     setupMobileChecklist(); // Recarrega o carrossel
                 }
@@ -579,7 +511,6 @@ export function setupRiskCalculator() {
 
             if (zoomButton) { 
                 features.handleZoomToPoint(parseInt(zoomButton.dataset.id, 10));
-                // A UI (aba) será atualizada pela própria feature
             }
             
             if (sortButton) { 
@@ -594,8 +525,6 @@ export function setupRiskCalculator() {
         });
     }
 
-    // Inicializa o carrossel mobile (se aplicável)
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     if (isTouchDevice) {
         setupMobileChecklist();
     }
@@ -604,13 +533,9 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
-const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
-/**
- * Cria (ou reutiliza) o elemento DOM do tooltip.
- */
 export function createTooltip() {
     let tooltip = document.getElementById('glossary-tooltip');
     if (!tooltip) {
@@ -618,7 +543,6 @@ export function createTooltip() {
         tooltip.id = 'glossary-tooltip';
         document.body.appendChild(tooltip);    
     }
-    // Garante que o evento de fechar só seja adicionado uma vez
     if (!tooltip.dataset.clickToCloseAdded) {
         tooltip.addEventListener(popupCloseEvent, (e) => { e.stopPropagation(); hideTooltip(); });
         tooltip.dataset.clickToCloseAdded = 'true';
@@ -627,9 +551,6 @@ export function createTooltip() {
     return tooltip;
 }
 
-/**
- * Esconde o tooltip ativo e limpa ObjectURLs (fotos).
- */
 export function hideTooltip() {
     if (state.currentTooltip) {
         const img = state.currentTooltip.querySelector('img');
@@ -643,16 +564,12 @@ export function hideTooltip() {
     }
 }
 
-/**
- * Posiciona o tooltip próximo ao elemento clicado.
- */
 function positionTooltip(termElement) {
     if (!state.currentTooltip) return;
 
     const rect = termElement.getBoundingClientRect();
     const scrollY = window.scrollY, scrollX = window.scrollX;
     
-    // requestAnimationFrame garante que o DOM foi pintado antes de medirmos
     requestAnimationFrame(() => {
         if (!state.currentTooltip) return;
         
@@ -660,17 +577,14 @@ function positionTooltip(termElement) {
         const tooltipHeight = state.currentTooltip.offsetHeight;
         
         let topPos;
-        // Tenta posicionar acima; se não houver espaço, posiciona abaixo
         if (rect.top > tooltipHeight + 10) { 
             topPos = rect.top + scrollY - tooltipHeight - 10; 
         } else { 
             topPos = rect.bottom + scrollY + 10; 
         }
         
-        // Centraliza horizontalmente
         let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
         
-        // Impede de vazar da tela
         if (leftPos < scrollX + 10) leftPos = scrollX + 10;
         if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) { 
             leftPos = window.innerWidth + scrollX - tooltipWidth - 10; 
@@ -681,9 +595,6 @@ function positionTooltip(termElement) {
     });
 }
 
-/**
- * (v18.1) Mostra o preview da foto (da tabela) no tooltip.
- */
 function handlePhotoPreviewClick(id, targetElement) {
     getImageFromDB(id, (imageBlob) => {
         if (!imageBlob) {
@@ -694,13 +605,12 @@ function handlePhotoPreviewClick(id, targetElement) {
         const imgUrl = URL.createObjectURL(imageBlob);
         const tooltip = createTooltip();
         
-        // Limita o tamanho no viewport
         tooltip.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" style="max-width: 80vw; max-height: 70vh;">`;
         
         positionTooltip(targetElement); 
         tooltip.style.opacity = '1';
         tooltip.style.visibility = 'visible';
-        tooltip.dataset.currentElement = `photo-${id}`; // ID único para toggle
+        tooltip.dataset.currentElement = `photo-${id}`; 
     });
 }
 

@@ -1,13 +1,15 @@
-// js/features.js (v19.7 - CORRIGIDO: Remoção da dependência circular)
+// js/features.js (v19.8 - Lógica separada da UI (sem confirm()))
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
-// (REMOVIDA A IMPORTAÇÃO DO UI.JS - ESSA É A CORREÇÃO)
+// (Importação do ui.js REMOVIDA para evitar dependência circular)
+
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
+    // ... (código do GPS permanece o mesmo - omitido para brevidade) ...
     const gpsStatus = document.getElementById('gps-status');
     const coordXField = document.getElementById('risk-coord-x');
     const coordYField = document.getElementById('risk-coord-y');
@@ -385,52 +387,43 @@ export function handleMapMarkerClick(id) {
     }
 }
 
-// === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.2) ===
+// === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
+// (REMOVIDO 'confirm()' - AGORA SÃO FUNÇÕES DIRETAS)
 
-export function handleExportData() {
-    const hasPhotos = state.registeredTrees.some(t => t.hasPhoto);
-    let choice = 'csv';
-    
-    if (hasPhotos && typeof JSZip !== 'undefined') {
-         choice = confirm(
-            "Escolha o formato de exportação:\n\n" +
-            "Clique 'OK' para 'Pacote .ZIP'\n" +
-            "(Backup completo com CSV + Fotos)\n\n" +
-            "Clique 'Cancelar' para 'Apenas .CSV'\n" +
-            "(Apenas metadados, sem fotos)"
-        ) ? 'zip' : 'csv';
-    } else if (hasPhotos && typeof JSZip === 'undefined') {
-        utils.showToast("Biblioteca JSZip não carregada. Exportando apenas .CSV.", 'error');
-        console.error("Tentativa de exportar ZIP falhou: JSZip não está definido.");
-    }
-
-    if (choice === 'zip') {
-        handleExportZip();
-    } else {
-        exportCSV();
-    }
+/**
+ * (v19.8) Ação de exportar apenas CSV
+ */
+export function exportActionCSV() {
+    exportCSV();
 }
 
-export function handleImportData() {
-    const choice = confirm(
-        "Escolha o formato de importação:\n\n" +
-        "Clique 'OK' para 'Pacote .ZIP'\n" +
-        "(Backup completo com CSV + Fotos)\n\n" +
-        "Clique 'Cancelar' para 'Apenas .CSV'\n" +
-        "(Apenas metadados, sem fotos)"
-    );
-    
-    if (choice) {
-        if (typeof JSZip === 'undefined') {
-             utils.showToast("Erro: Biblioteca JSZip não carregada. Não é possível importar .ZIP.", 'error');
-             console.error("Tentativa de importar ZIP falhou: JSZip não está definido.");
-             return;
-        }
-        document.getElementById('zip-importer').click();
-    } else {
-        document.getElementById('csv-importer').click();
-    }
+/**
+ * (v19.8) Ação de exportar pacote ZIP
+ */
+export function exportActionZip() {
+    handleExportZip();
 }
+
+/**
+ * (v19.8) Ação de importar apenas CSV
+ */
+export function importActionCSV() {
+    document.getElementById('csv-importer').click();
+}
+
+/**
+ * (v19.8) Ação de importar pacote ZIP
+ */
+export function importActionZip() {
+    if (typeof JSZip === 'undefined') {
+         utils.showToast("Erro: Biblioteca JSZip não carregada. Não é possível importar .ZIP.", 'error');
+         console.error("Tentativa de importar ZIP falhou: JSZip não está definido.");
+         return;
+    }
+    document.getElementById('zip-importer').click();
+}
+
+// --- Funções de Suporte (Privadas deste módulo) ---
 
 function getCSVData() {
     if (state.registeredTrees.length === 0) return null;
@@ -559,14 +552,11 @@ async function handleExportZip() {
     }
 }
 
-/**
- * (v19.7) handleImportZip agora é assíncrono e retorna Promise
- */
 export async function handleImportZip(event) {
     if (typeof JSZip === 'undefined') {
         utils.showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
         console.error("Falha na importação: JSZip não está definido.");
-        return; // Retorna (void)
+        return; 
     }
     
     const file = event.target.files[0];
@@ -675,14 +665,10 @@ export async function handleImportZip(event) {
     }
 }
 
-/**
- * (v19.7) handleFileImport (CSV) agora é assíncrono e retorna Promise
- */
 export async function handleFileImport(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Usa FileReader com Promise para um fluxo assíncrono limpo
     const content = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
