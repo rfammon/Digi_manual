@@ -1,4 +1,4 @@
-/* style.css (v21.3 - Correção de Layout do Mapa e Mobile InfoBox) */
+/* style.css (v21.7 - Legenda Externa e InfoBox) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -1136,26 +1136,31 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 
 /* -------------------------------------- */
-/* 17. [NOVO v21.6] LEGENDA E INFOBOX DO MAPA */
+/* 17. [NOVO v21.7] LEGENDA E INFOBOX DO MAPA */
 /* -------------------------------------- */
 
-/* A Legenda (Controle do Leaflet) */
-.info.legend {
-    background: var(--bg-surface);
+/* [REMOVIDO] .info.legend foi removido */
+
+/* [NOVO] Legenda Externa (HTML) */
+#map-legend-filter {
+    background: var(--gray-100);
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-md);
-    line-height: 1.5;
+    margin-bottom: var(--space-md);
 }
-.info.legend h4 {
+#map-legend-filter h4 {
     margin: 0 0 var(--space-sm) 0;
     color: var(--color-primary-dark);
     font-size: 1rem;
 }
+.legend-filter-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
 .legend-filter {
     display: flex;
     align-items: center;
-    margin-bottom: var(--space-xs);
 }
 .legend-filter label {
     display: flex;
@@ -1263,5 +1268,11 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
         height: 180px;
         max-width: 100%;
         object-fit: contain; /* Usa 'contain' para ver a foto inteira */
+    }
+
+    /* [v21.7] Ajusta o grid da legenda no mobile */
+    .legend-filter-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
     }
 }
