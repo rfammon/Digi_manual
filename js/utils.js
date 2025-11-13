@@ -1,5 +1,4 @@
-// js/utils.js (v20.0 - OTIMIZADO)
-// Contém helpers de performance (debounce), UI (toast) e GIS (conversão).
+// js/utils.js (v21.2 - CORREÇÃO DE BUG "hemisferio")
 
 // Importa os setters de estado necessários para o toast
 import { toastTimer, setToastTimer } from './state.js';
@@ -85,11 +84,13 @@ export function convertLatLonToUtm(lat, lon) {
     const zoneNum = Math.floor((lon + 180) / 6) + 1;
     
     // 3. Determina o hemisfério
-    const hemisphere = lat >= 0 ? 'north' : 'south';
-
+    const hemisphere = lat >= 0 ? 'north' : 'south'; // <-- Definido como 'hemisphere'
+    
     // 4. Define as projeções
     const wgs84 = "EPSG:4326"; // Projeção padrão (Lat/Lon)
-    const utmProj = `+proj=utm +zone=${zoneNum} +${hemisfério} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`;
+    
+    // [CORREÇÃO v21.2]: A variável usada abaixo agora é 'hemisphere' (inglês)
+    const utmProj = `+proj=utm +zone=${zoneNum} +${hemisphere} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`;
 
     // 5. Converte
     try {
