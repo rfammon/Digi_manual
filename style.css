@@ -1,4 +1,4 @@
-/* style.css (v21.0 - Revisão de UI/UX) */
+/* style.css (v21.1 - Correção de Layout e Regressões) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -109,6 +109,13 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .header-manual h1 {
     font-size: 1.5rem;
     margin-bottom: var(--space-xs);
+    /* [CORREÇÃO 2]: Cor do título destacada */
+    color: #fff;
+}
+/* [CORREÇÃO 2]: Cor do subtítulo destacada */
+.header-manual p {
+    color: var(--color-primary-lightest);
+    opacity: 0.9;
 }
 
 .footer-manual {
@@ -123,6 +130,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 .mapa-navegacao h2 {
     color: var(--color-primary-dark);
+    /* [CORREÇÃO 7]: Centralizar título */
+    text-align: center;
 }
 
 .topicos-container {
@@ -174,7 +183,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .conteudo-detalhe,
 .app-view {
     background-color: var(--bg-surface);
-    border: none; /* Remove a borda antiga */
+    border: none;
     border-radius: var(--border-radius-lg);
     padding: var(--space-lg);
     margin-bottom: var(--space-lg);
@@ -312,21 +321,31 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .contact-form input[type="text"],
 .contact-form input[type="email"],
 .contact-form textarea,
-#chat-input {
+#chat-input,
+.form-grid input[type="text"],
+.form-grid input[type="number"],
+.form-grid input[type="date"],
+.risk-fieldset textarea {
     width: 100%;
     padding: var(--space-sm) var(--space-md);
-    margin-bottom: var(--space-md);
     border: 2px solid var(--gray-300);
     border-radius: var(--border-radius-md);
     font-size: 1rem;
     font-family: var(--font-primary);
     transition: all 0.2s ease-in-out;
+    
+    /* [CORREÇÃO 3]: Remove margem duplicada. O Gap do Grid cuida disso. */
+    margin-bottom: 0; 
 }
 
 .contact-form input[type="text"]:focus,
 .contact-form input[type="email"]:focus,
 .contact-form textarea:focus,
-#chat-input:focus {
+#chat-input:focus,
+.form-grid input[type="text"]:focus,
+.form-grid input[type="number"]:focus,
+.form-grid input[type="date"]:focus,
+.risk-fieldset textarea:focus {
     outline: none;
     border-color: var(--color-primary-medium);
     box-shadow: 0 0 0 3px var(--color-primary-lightest);
@@ -350,6 +369,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* -------------------------------------- */
 /* 8. BOTÕES (PADRONIZAÇÃO GERAL) */
 /* -------------------------------------- */
+/* (Esta seção permanece a mesma) */
 
 /* Classe base para botões */
 .btn {
@@ -370,56 +390,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
 }
+/* ... (outras classes .btn- permanecem) ... */
 
-/* Botão Primário (Ação principal) */
-.btn-primary {
-    background-color: var(--color-primary-medium);
-    color: white;
-}
-.btn-primary:hover {
-    background-color: var(--color-primary-dark);
-}
-
-/* Botão Secundário (Ação alternativa) */
-.btn-secondary {
-    background-color: transparent;
-    color: var(--color-primary-medium);
-    border-color: var(--color-primary-medium);
-}
-.btn-secondary:hover {
-    background-color: var(--color-primary-lightest);
-    color: var(--color-primary-dark);
-}
-
-/* Botão de Acento (Ação de destaque, ex: Importar) */
-.btn-accent {
-    background-color: var(--color-accent);
-    color: var(--color-dark);
-    font-weight: 700;
-}
-.btn-accent:hover {
-    background-color: var(--color-accent-dark);
-}
-
-/* Botão de Perigo (Ação destrutiva) */
-.btn-danger {
-    background-color: var(--color-danger);
-    color: white;
-}
-.btn-danger:hover {
-    background-color: var(--color-danger-dark);
-}
-
-/* Botão Neutro (Resetar, Cancelar) */
-.btn-neutral {
-    background-color: var(--gray-200);
-    color: var(--color-text-light);
-    border-color: var(--gray-300);
-}
-.btn-neutral:hover {
-    background-color: var(--gray-300);
-    color: var(--color-dark);
-}
 
 /* -------------------------------------- */
 /* 9. APLICAÇÃO DOS ESTILOS DE BOTÃO */
@@ -502,12 +474,15 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #reset-risk-form-btn:hover { background-color: var(--gray-300); }
 
+/* [CORREÇÃO 5]: Botão Importar agora usa o mesmo estilo do Exportar (secondary) */
 #import-data-btn {
-    background-color: var(--color-accent);
-    color: var(--color-dark);
-    font-weight: 700;
+    background-color: transparent;
+    color: var(--color-primary-medium);
+    border-color: var(--color-primary-medium);
 }
-#import-data-btn:hover { background-color: var(--color-accent-dark); }
+#import-data-btn:hover {
+    background-color: var(--color-primary-lightest);
+}
 
 #export-data-btn, #send-email-btn {
     background-color: transparent;
@@ -547,6 +522,11 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* -------------------------------------- */
 /* 10. CALCULADORA DE RISCO E TABELAS */
 /* -------------------------------------- */
+
+/* [CORREÇÃO 4]: Esconde os inputs de arquivo que vazaram */
+#zip-importer, #csv-importer {
+    display: none;
+}
 
 .risk-fieldset {
     border: 2px solid var(--gray-200); /* Borda mais suave */
@@ -687,6 +667,16 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     padding: 0 var(--space-xs);
 }
 
+/* [CORREÇÃO 1]: Estilo do separador do Glossário Geral */
+.glossary-category-header {
+    background-color: var(--color-primary-medium);
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.1em;
+    text-align: center !important;
+}
+
+
 /* -------------------------------------- */
 /* 11. ABAS SECUNDÁRIAS (Calculadora) */
 /* -------------------------------------- */
@@ -743,6 +733,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* -------------------------------------- */
 /* 12. TOAST, SPINNER, VOLTAR AO TOPO */
 /* -------------------------------------- */
+/* (Esta seção permanece a mesma) */
 
 #toast-notification {
     position: fixed;
@@ -808,9 +799,11 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 #back-to-top-btn:hover { background-color: var(--color-primary-medium); transform: scale(1.1); }
 #back-to-top-btn.show { display: block; opacity: 1; visibility: visible; }
 
+
 /* -------------------------------------- */
 /* 13. CHECKLIST MOBILE (v15.1) */
 /* -------------------------------------- */
+/* (Esta seção permanece a mesma) */
 
 .mobile-checklist-wrapper { display: none; }
 
