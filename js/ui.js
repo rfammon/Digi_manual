@@ -1,4 +1,4 @@
-// js/ui.js (v21.7 - Legenda Externa e InfoBox)
+// js/ui.js (v21.8 - FINAL - Correção de Filtro de Mapa e Zoom de Imagem)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -7,7 +7,7 @@ import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
-// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
+// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag.
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
@@ -384,6 +384,9 @@ function renderTreesOnMap(treesData) {
     
     // Limpa marcadores antigos do GRUPO
     state.mapMarkerGroup.clearLayers();
+    
+    // Esconde o InfoBox (caso esteja aberto de um ponto antigo)
+    hideMapInfoBox();
 
     treesData.forEach(tree => {
         const coords = tree.coordsLatLon; 
@@ -420,16 +423,32 @@ function renderTreesOnMap(treesData) {
 }
 
 /**
- * [NOVO v21.7] Lida com a mudança do filtro da legenda.
+ * [BUG 2 CORRIGIDO v21.8] Lida com a mudança do filtro da legenda.
+ * A lógica agora usa opacidade em vez de remover/adicionar layers.
  */
 function handleMapFilterChange(e) {
     const selectedRisk = e.target.value;
-    features.filterMapMarkers(selectedRisk);
+    
+    if (!state.mapMarkerGroup) return;
+
+    state.mapMarkerGroup.eachLayer(layer => {
+        if (selectedRisk === 'Todos' || layer.options.riskLevel === selectedRisk) {
+            // Mostra o marcador
+            layer.setOpacity(1);
+            layer.setFillOpacity(0.6);
+        } else {
+            // Esconde o marcador
+            layer.setOpacity(0);
+            layer.setFillOpacity(0);
+        }
+    });
+    
     hideMapInfoBox(); // Esconde o infobox ao filtrar
 }
 
 /**
  * [NOVO v21.7] Mostra o painel de informações do mapa (substitui o popup).
+ * [ATUALIZADO v21.8] Adiciona botões de zoom.
  */
 function showMapInfoBox(tree) {
     const infoBox = document.getElementById('map-info-box');
@@ -456,6 +475,13 @@ function showMapInfoBox(tree) {
     // Se tiver foto, adiciona o container para ela
     if (tree.hasPhoto) {
         infoHTML += `<div id="map-info-photo" class="loading-photo">Carregando foto...</div>`;
+        // Adiciona botões de zoom (apenas em desktop, CSS cuida de esconder em mobile)
+        infoHTML += `
+            <div class="map-photo-zoom">
+                <button id="zoom-out-btn" title="Diminuir Zoom">-</button>
+                <button id="zoom-in-btn" title="Aumentar Zoom">+</button>
+            </div>
+        `;
     }
     
     infoBox.innerHTML = infoHTML;
@@ -470,8 +496,13 @@ function showMapInfoBox(tree) {
             const photoDiv = document.getElementById('map-info-photo');
             if (photoDiv && imageBlob) {
                 const imgUrl = URL.createObjectURL(imageBlob);
-                photoDiv.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
+                photoDiv.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img" id="infobox-img">`;
                 photoDiv.classList.remove('loading-photo');
+                
+                // Anexa listeners aos botões de zoom
+                document.getElementById('zoom-out-btn')?.addEventListener('click', () => zoomMapImage(-1));
+                document.getElementById('zoom-in-btn')?.addEventListener('click', () => zoomMapImage(1));
+
             } else if (photoDiv) {
                 photoDiv.innerHTML = `<p style="color:red; font-size: 0.9em;">Foto não encontrada.</p>`;
                 photoDiv.classList.remove('loading-photo');
@@ -479,6 +510,34 @@ function showMapInfoBox(tree) {
         });
     }
 }
+
+/**
+ * [NOVO v21.8] Controla o zoom da imagem no InfoBox
+ */
+function zoomMapImage(direction) {
+    const img = document.getElementById('infobox-img');
+    if (!img) return;
+
+    // Pega o max-width atual (ex: '250px' ou '100%')
+    let currentWidthStyle = img.style.maxWidth || '100%';
+    let currentWidth = parseInt(currentWidthStyle);
+
+    // Se for '100%', usa o tamanho base de 250px (definido pelo CSS)
+    if (currentWidthStyle === '100%') {
+        currentWidth = 250; 
+    }
+
+    // Calcula o novo zoom
+    const step = 50; // Aumenta/diminui 50px
+    let newWidth = currentWidth + (step * direction);
+
+    // Limites (mínimo de 100px, máximo de 600px)
+    if (newWidth < 100) newWidth = 100;
+    if (newWidth > 600) newWidth = 600;
+
+    img.style.maxWidth = `${newWidth}px`;
+}
+
 
 /**
  * [NOVO v21.7] Esconde o painel de informações do mapa.
