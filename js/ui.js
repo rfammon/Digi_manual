@@ -1,4 +1,4 @@
-// js/ui.js (v21.8 - FINAL - Correção de Filtro de Mapa e Zoom de Imagem)
+// js/ui.js (v21.9 - FINAL - Correção de Filtro, Escopo e Zoom)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -7,7 +7,7 @@ import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
-// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag.
+// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
@@ -423,8 +423,8 @@ function renderTreesOnMap(treesData) {
 }
 
 /**
- * [BUG 2 CORRIGIDO v21.8] Lida com a mudança do filtro da legenda.
- * A lógica agora usa opacidade em vez de remover/adicionar layers.
+ * [BUG 2 CORRIGIDO v21.9] Lida com a mudança do filtro da legenda.
+ * A lógica agora usa opacidade (setStyle) em vez de remover/adicionar layers.
  */
 function handleMapFilterChange(e) {
     const selectedRisk = e.target.value;
@@ -434,12 +434,10 @@ function handleMapFilterChange(e) {
     state.mapMarkerGroup.eachLayer(layer => {
         if (selectedRisk === 'Todos' || layer.options.riskLevel === selectedRisk) {
             // Mostra o marcador
-            layer.setOpacity(1);
-            layer.setFillOpacity(0.6);
+            layer.setStyle({ opacity: 1, fillOpacity: 0.6 });
         } else {
             // Esconde o marcador
-            layer.setOpacity(0);
-            layer.setFillOpacity(0);
+            layer.setStyle({ opacity: 0, fillOpacity: 0 });
         }
     });
     
@@ -448,7 +446,7 @@ function handleMapFilterChange(e) {
 
 /**
  * [NOVO v21.7] Mostra o painel de informações do mapa (substitui o popup).
- * [ATUALIZADO v21.8] Adiciona botões de zoom.
+ * [ATUALIZADO v21.9] Adiciona botões de zoom.
  */
 function showMapInfoBox(tree) {
     const infoBox = document.getElementById('map-info-box');
@@ -475,7 +473,7 @@ function showMapInfoBox(tree) {
     // Se tiver foto, adiciona o container para ela
     if (tree.hasPhoto) {
         infoHTML += `<div id="map-info-photo" class="loading-photo">Carregando foto...</div>`;
-        // Adiciona botões de zoom (apenas em desktop, CSS cuida de esconder em mobile)
+        // Adiciona botões de zoom (CSS cuida de esconder em mobile)
         infoHTML += `
             <div class="map-photo-zoom">
                 <button id="zoom-out-btn" title="Diminuir Zoom">-</button>
@@ -499,7 +497,7 @@ function showMapInfoBox(tree) {
                 photoDiv.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img" id="infobox-img">`;
                 photoDiv.classList.remove('loading-photo');
                 
-                // Anexa listeners aos botões de zoom
+                // [CORREÇÃO BUG 4 v21.9]: Anexa listeners DEPOIS que a imagem existe
                 document.getElementById('zoom-out-btn')?.addEventListener('click', () => zoomMapImage(-1));
                 document.getElementById('zoom-in-btn')?.addEventListener('click', () => zoomMapImage(1));
 
@@ -512,7 +510,7 @@ function showMapInfoBox(tree) {
 }
 
 /**
- * [NOVO v21.8] Controla o zoom da imagem no InfoBox
+ * [NOVO v21.9] Controla o zoom da imagem no InfoBox
  */
 function zoomMapImage(direction) {
     const img = document.getElementById('infobox-img');
@@ -520,11 +518,13 @@ function zoomMapImage(direction) {
 
     // Pega o max-width atual (ex: '250px' ou '100%')
     let currentWidthStyle = img.style.maxWidth || '100%';
-    let currentWidth = parseInt(currentWidthStyle);
+    let currentWidth;
 
     // Se for '100%', usa o tamanho base de 250px (definido pelo CSS)
     if (currentWidthStyle === '100%') {
         currentWidth = 250; 
+    } else {
+        currentWidth = parseInt(currentWidthStyle);
     }
 
     // Calcula o novo zoom
@@ -878,7 +878,7 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
-// [CORREÇÃO CRÍTICA v20.7]: As consts foram movidas para cá para garantir o escopo.
+// [BUG 1 e 4 CORRIGIDO v21.9]: As consts foram movidas para o topo desta seção.
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
