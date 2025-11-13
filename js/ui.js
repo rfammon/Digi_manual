@@ -1,4 +1,4 @@
-// js/ui.js (v19.7 - CORRIGIDO - Lógica de atualização da UI)
+// js/ui.js (v19.8 - CORRIGIDO: Erro de sintaxe 'import *s' + Lógica do Modal)
 
 // === 1. IMPORTAÇÕES ===
 
@@ -169,7 +169,6 @@ export function renderSummaryTable() {
     tableHTML += `<th class="col-delete">Excluir</th>`;
     tableHTML += '</tr></thead><tbody>';
     
-    // (v19.6) CORREÇÃO: Importa 'getSortValue' do features.js
     const sortedData = [...state.registeredTrees].sort((a, b) => {
         const valA = features.getSortValue(a, state.sortState.key);
         const valB = features.getSortValue(b, state.sortState.key);
@@ -223,16 +222,39 @@ export function showSubTab(targetId) {
     }
     
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
-        features.highlightTableRow(state.highlightTargetId);
+        // A função highlightTableRow está definida abaixo
+        highlightTableRow(state.highlightTargetId);
         state.setHighlightTargetId(null); 
     }
 }
+
+/**
+ * (v19.8) Destaque da linha (movido de features.js para ui.js)
+ */
+function highlightTableRow(id) {
+    const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
+    if (row) {
+        // Remove destaques antigos
+        const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
+        oldHighlights.forEach(r => r.classList.remove('highlight'));
+        
+        // Adiciona novo destaque e scroll
+        row.classList.add('highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        setTimeout(() => {
+            row.classList.remove('highlight');
+        }, 2500);
+    } else {
+        console.warn(`Linha da tabela [data-tree-id="${id}"] não encontrada.`);
+    }
+}
+
 
 function initMap() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
     
-    // (v19.7) Verificação de bibliotecas (agora globais)
     if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
         mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Verifique a pasta /libs/.</p>';
         return;
@@ -343,8 +365,7 @@ function renderTreesOnMap(treesData) {
 
 
 /**
- * (v19.7) Função principal que inicializa todos os listeners da Calculadora.
- * Esta é a função que conecta a Lógica (features) à UI (eventos).
+ * (v19.8) Função principal que inicializa todos os listeners da Calculadora.
  */
 export function setupRiskCalculator() {
         
@@ -370,10 +391,13 @@ export function setupRiskCalculator() {
     const form = document.getElementById('risk-calculator-form');
     const summaryContainer = document.getElementById('summary-table-container');
     
+    // (v19.8) Botões do Modal
     const importDataBtn = document.getElementById('import-data-btn');
     const exportDataBtn = document.getElementById('export-data-btn');
     const zipImporter = document.getElementById('zip-importer');
     const csvImporter = document.getElementById('csv-importer');
+
+    // Botões Antigos
     const sendEmailBtn = document.getElementById('send-email-btn');
     const getGpsBtn = document.getElementById('get-gps-btn');    
     const clearAllBtn = document.getElementById('clear-all-btn');    
@@ -383,10 +407,11 @@ export function setupRiskCalculator() {
     const removePhotoBtn = document.getElementById('remove-photo-btn');
     const resetBtn = document.getElementById('reset-risk-form-btn');
 
-    // (v19.7) Import/Export agora chamam a LÓGICA (features) e ATUALIZAM a UI (render)
-    if (importDataBtn) importDataBtn.addEventListener('click', features.handleImportData);
-    if (exportDataBtn) exportDataBtn.addEventListener('click', features.handleExportData);
+    // (v19.8) Lógica dos Botões Unificados (AGORA CHAMAM O MODAL)
+    if (importDataBtn) importDataBtn.addEventListener('click', showImportModal);
+    if (exportDataBtn) exportDataBtn.addEventListener('click', showExportModal);
     
+    // (v19.8) Listeners de importação (chamados pelo modal)
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
         features.handleImportZip(e).then(() => {
             renderSummaryTable(); 
@@ -403,11 +428,20 @@ export function setupRiskCalculator() {
     if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
     if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
     
-    // (v19.7) Ações de CRUD agora atualizam a UI
+    // (v19.8) Confirmação de "Limpar Tudo" agora usa o modal
     if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
-        if (features.handleClearAll()) { // Se a ação foi confirmada
-            renderSummaryTable(); 
-        }
+        showActionModal({
+            title: '🗑️ Limpar Tabela',
+            description: 'Tem certeza que deseja apagar TODOS os registros? Esta ação não pode ser desfeita e removerá todas as fotos.',
+            buttons: [
+                { text: 'Sim, Apagar Tudo', class: 'primary', action: () => {
+                    if (features.handleClearAll()) {
+                        renderSummaryTable(); 
+                    }
+                }},
+                { text: 'Cancelar', class: 'cancel' }
+            ]
+        });
     });
     
     if (getGpsBtn) getGpsBtn.addEventListener('click', features.handleGetGPS);
@@ -483,7 +517,6 @@ export function setupRiskCalculator() {
     
     // (v19.7) Event Delegation com atualização de UI centralizada
     if (summaryContainer) {
-        // Clona para limpar listeners antigos
         const newSummaryContainer = summaryContainer.cloneNode(true);
         summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
         
@@ -495,18 +528,31 @@ export function setupRiskCalculator() {
             const photoButton = e.target.closest('.photo-preview-btn'); 
     
             if (deleteButton) {
-                if (features.handleDeleteTree(parseInt(deleteButton.dataset.id, 10))) {
-                    renderSummaryTable(); // Atualiza a UI
-                }
+                // (v19.8) Confirmação de exclusão
+                showActionModal({
+                    title: 'Excluir Registro',
+                    description: `Tem certeza que deseja excluir a Árvore ID ${deleteButton.dataset.id}?`,
+                    buttons: [
+                        { text: 'Sim, Excluir', class: 'primary', action: () => {
+                            if (features.handleDeleteTree(parseInt(deleteButton.dataset.id, 10))) {
+                                renderSummaryTable(); 
+                            }
+                        }},
+                        { text: 'Cancelar', class: 'cancel' }
+                    ]
+                });
             }
             
             if (editButton) {    
+                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
+                
                 showSubTab('tab-content-register'); 
+                
                 if (needsCarouselUpdate && isTouchDevice) {
-                    setupMobileChecklist(); // Recarrega o carrossel
+                    setupMobileChecklist(); 
                 }
-                renderSummaryTable(); // Atualiza a UI
+                renderSummaryTable(); 
             }
 
             if (zoomButton) { 
@@ -515,7 +561,7 @@ export function setupRiskCalculator() {
             
             if (sortButton) { 
                 features.handleSort(sortButton.dataset.sortKey);
-                renderSummaryTable(); // Atualiza a UI
+                renderSummaryTable(); 
             }
 
             if (photoButton) { 
@@ -533,6 +579,7 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
@@ -613,8 +660,6 @@ function handlePhotoPreviewClick(id, targetElement) {
         tooltip.dataset.currentElement = `photo-${id}`; 
     });
 }
-
-// --- Funções de Setup de Tooltip (Chamadas por loadContent) ---
 
 function setupGlossaryInteractions(detailView) {
     const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
@@ -725,4 +770,138 @@ function togglePurposeTooltip(event) {
     } else { 
         showPurposeTooltip(event); 
     }
+}
+
+// === 5. (NOVO v19.8) LÓGICA DO MODAL CUSTOMIZADO ===
+
+/**
+ * Exibe um modal de ação customizado.
+ * @param {object} options
+ * @param {string} options.title - O título do modal.
+ * @param {string} options.description - O texto de descrição.
+ * @param {Array<object>} options.buttons - Array de botões.
+ * @param {string} options.buttons.text - Texto do botão.
+ * @param {string} options.buttons.class - Classe CSS (primary, secondary, cancel).
+ * @param {function} [options.buttons.action] - Função a ser chamada no clique.
+ */
+function showActionModal({ title, description, buttons }) {
+    const modal = document.getElementById('action-modal');
+    const titleEl = document.getElementById('modal-title');
+    const descEl = document.getElementById('modal-description');
+    const actionsEl = modal.querySelector('.modal-actions');
+
+    if (!modal || !titleEl || !descEl || !actionsEl) {
+        console.error("Elementos do modal não encontrados.");
+        return;
+    }
+
+    // Preenche o conteúdo
+    titleEl.textContent = title;
+    descEl.textContent = description;
+    
+    // Limpa botões antigos
+    actionsEl.innerHTML = '';
+
+    // Cria novos botões
+    buttons.forEach(btnConfig => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `modal-btn ${btnConfig.class || ''}`;
+        button.textContent = btnConfig.text;
+        
+        button.addEventListener('click', () => {
+            if (btnConfig.action) {
+                btnConfig.action(); // Executa a ação (ex: exportCSV)
+            }
+            hideActionModal(); // Fecha o modal
+        });
+        actionsEl.appendChild(button);
+    });
+
+    // Adiciona o listener para fechar ao clicar fora (no overlay)
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            hideActionModal();
+        }
+    });
+
+    // Exibe o modal
+    modal.classList.add('show');
+}
+
+/**
+ * Esconde o modal de ação.
+ */
+function hideActionModal() {
+    const modal = document.getElementById('action-modal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+/**
+ * (v19.8) Configura e exibe o modal de EXPORTAÇÃO.
+ */
+function showExportModal() {
+    const hasPhotos = state.registeredTrees.some(t => t.hasPhoto);
+    
+    // Prepara os botões
+    let buttons = [
+        {
+            text: 'Exportar Apenas .CSV (s/ fotos)',
+            class: 'secondary',
+            action: features.exportActionCSV
+        },
+        {
+            text: 'Cancelar',
+            class: 'cancel'
+        }
+    ];
+
+    // Adiciona o botão de ZIP apenas se houver fotos E a biblioteca JSZip estiver carregada
+    if (hasPhotos && typeof JSZip !== 'undefined') {
+        buttons.unshift({ // Adiciona no início
+            text: 'Exportar Pacote .ZIP (Completo)',
+            class: 'primary',
+            action: features.exportActionZip
+        });
+    }
+
+    showActionModal({
+        title: '📥 Exportar Dados',
+        description: 'Escolha o formato de exportação. O Pacote .ZIP inclui todos os dados e fotos (recomendado para backup).',
+        buttons: buttons
+    });
+}
+
+/**
+ * (v19.8) Configura e exibe o modal de IMPORTAÇÃO.
+ */
+function showImportModal() {
+    let buttons = [
+        {
+            text: 'Importar Apenas .CSV (s/ fotos)',
+            class: 'secondary',
+            action: features.importActionCSV
+        },
+        {
+            text: 'Cancelar',
+            class: 'cancel'
+        }
+    ];
+
+    // Adiciona o botão de ZIP apenas se a biblioteca JSZip estiver carregada
+    if (typeof JSZip !== 'undefined') {
+        buttons.unshift({ // Adiciona no início
+            text: 'Importar Pacote .ZIP (Completo)',
+            class: 'primary',
+            action: features.importActionZip
+        });
+    }
+
+    showActionModal({
+        title: '📤 Importar Dados',
+        description: 'Como você deseja importar os dados? A importação de um .ZIP permite restaurar dados e fotos.',
+        buttons: buttons
+    });
 }

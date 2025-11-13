@@ -1,15 +1,14 @@
-// js/features.js (v19.8 - Lógica separada da UI (sem confirm()))
+// js/features.js (v19.8 - CORRIGIDO: Remoção da dependência circular)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
-// (Importação do ui.js REMOVIDA para evitar dependência circular)
+// (REMOVIDA A IMPORTAÇÃO DO UI.JS - ESSA É A CORREÇÃO)
 
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
-    // ... (código do GPS permanece o mesmo - omitido para brevidade) ...
     const gpsStatus = document.getElementById('gps-status');
     const coordXField = document.getElementById('risk-coord-x');
     const coordYField = document.getElementById('risk-coord-y');
@@ -170,8 +169,7 @@ export function handleAddTreeSubmit(event) {
 
 
 export function handleDeleteTree(id) {
-    if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return false; 
-    
+    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
     const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
     
     if (treeToDelete && treeToDelete.hasPhoto) {
@@ -244,8 +242,7 @@ export function handleEditTree(id) {
 }
 
 export function handleClearAll() {
-    if (!confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) return false;
-    
+    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
     state.registeredTrees.forEach(tree => {
         if (tree.hasPhoto) {
             db.deleteImageFromDB(tree.id);
@@ -388,20 +385,103 @@ export function handleMapMarkerClick(id) {
 }
 
 // === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
-// (REMOVIDO 'confirm()' - AGORA SÃO FUNÇÕES DIRETAS)
 
 /**
  * (v19.8) Ação de exportar apenas CSV
  */
 export function exportActionCSV() {
-    exportCSV();
+    const csvContent = getCSVData();
+    if (!csvContent) { 
+        utils.showToast("Nenhuma árvore cadastrada para exportar.", 'error'); 
+        return; 
+    }
+    const d = String(new Date().getDate()).padStart(2, '0'), m = String(new Date().getMonth() + 1).padStart(2, '0'), y = new Date().getFullYear();
+    const filename = `risco_arboreo_${d}${m}${y}.csv`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 /**
  * (v19.8) Ação de exportar pacote ZIP
  */
-export function exportActionZip() {
-    handleExportZip();
+export async function exportActionZip() {
+    if (typeof JSZip === 'undefined') {
+        utils.showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
+        console.error("Falha na exportação: JSZip não está definido. Verifique se o arquivo 'libs/jszip.min.js' foi carregado corretamente no index.html.");
+        return;
+    }
+    if (state.registeredTrees.length === 0) {
+        utils.showToast("Nenhum dado para exportar.", 'error');
+        return;
+    }
+
+    const zipStatus = document.getElementById('zip-status');
+    const zipStatusText = document.getElementById('zip-status-text');
+    if (zipStatus) {
+        zipStatusText.textContent = 'Gerando pacote .zip...';
+        zipStatus.style.display = 'flex';
+    }
+
+    try {
+        const zip = new JSZip();
+        const csvContent = getCSVData();
+        if (csvContent) {
+            zip.file("manifesto_dados.csv", csvContent.replace(/^\uFEFF/, ''), {
+                encoding: "UTF-8"
+            });
+        }
+
+        zipStatusText.textContent = 'Coletando imagens do banco de dados...';
+        const images = await db.getAllImagesFromDB();
+        
+        if (images.length > 0) {
+            const imgFolder = zip.folder("images");
+            images.forEach(imgData => {
+                const treeExists = state.registeredTrees.some(t => t.id === imgData.id && t.hasPhoto);
+                if (treeExists && imgData.imageBlob) {
+                    const extension = (imgData.imageBlob.type.split('/')[1] || 'jpg').split('+')[0];
+                    const filename = `tree_id_${imgData.id}.${extension}`;
+                    imgFolder.file(filename, imgData.imageBlob, { binary: true });
+                }
+            });
+        }
+
+        zipStatusText.textContent = 'Compactando arquivos... (pode levar um momento)';
+        const zipBlob = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 }
+        });
+
+        const d = String(new Date().getDate()).padStart(2, '0'), m = String(new Date().getMonth() + 1).padStart(2, '0'), y = new Date().getFullYear();
+        const filename = `backup_completo_risco_${d}${m}${y}.zip`;
+
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(zipBlob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        utils.showToast('📦 Pacote .zip exportado com sucesso!', 'success');
+
+    } catch (error) {
+        console.error("Erro ao gerar o .zip:", error);
+        utils.showToast("Erro ao gerar o pacote .zip.", 'error');
+    } finally {
+        if (zipStatus) zipStatus.style.display = 'none';
+    }
 }
 
 /**
@@ -422,6 +502,7 @@ export function importActionZip() {
     }
     document.getElementById('zip-importer').click();
 }
+
 
 // --- Funções de Suporte (Privadas deste módulo) ---
 
@@ -458,26 +539,6 @@ function getCSVData() {
         csvContent += row.join(";") + "\n";
     });
     return csvContent;
-}
-
-function exportCSV() {
-    const csvContent = getCSVData();
-    if (!csvContent) { 
-        utils.showToast("Nenhuma árvore cadastrada para exportar.", 'error'); 
-        return; 
-    }
-    const d = String(new Date().getDate()).padStart(2, '0'), m = String(new Date().getMonth() + 1).padStart(2, '0'), y = new Date().getFullYear();
-    const filename = `risco_arboreo_${d}${m}${y}.csv`;
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 }
 
 async function handleExportZip() {
@@ -583,19 +644,24 @@ export async function handleImportZip(event) {
         if (lines.length <= 1) {
             throw new Error("O manifesto CSV está vazio.");
         }
-
-        const append = confirm("Deseja ADICIONAR os dados do .zip à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual.");
         
-        zipStatusText.textContent = 'Processando manifesto de dados...';
+        // (v19.8) Pergunta movida para o UI.JS
+        // const append = confirm("..."); 
         
-        let newTrees = append ? [...state.registeredTrees] : [];
+        let newTrees = state.registeredTrees; // Assume que vai adicionar
         let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) + 1 : 0;
-        let imageSavePromises = []; 
-
+        
+        // (v19.8) Lógica de substituição (passada pelo 'replaceData' no ui.js)
+        const append = !event.replaceData;
         if (!append) {
-            const transaction = state.db.transaction(["treeImages"], "readwrite");
-            transaction.objectStore("treeImages").clear();
+             newTrees = [];
+             maxId = 0;
+             const transaction = state.db.transaction(["treeImages"], "readwrite");
+             transaction.objectStore("treeImages").clear();
         }
+
+        zipStatusText.textContent = 'Processando manifesto de dados...';
+        let imageSavePromises = []; 
 
         for (let i = 1; i < lines.length; i++) {
             const row = lines[i].split(';');
@@ -682,8 +748,8 @@ export async function handleFileImport(event) {
             throw new Error("O ficheiro CSV está vazio ou é inválido.");
         }
         
-        const append = confirm("Deseja ADICIONAR os dados à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual pelos dados do ficheiro.");
-        
+        // (v19.8) Lógica de substituição (passada pelo 'replaceData' no ui.js)
+        const append = !event.replaceData;
         let newTrees = append ? [...state.registeredTrees] : [];
         let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) + 1 : 0;
         
@@ -855,10 +921,6 @@ export async function handleChatSend() {
     }
 }
 
-/**
- * (v19.6) CORREÇÃO: Adicionado 'export' para que o ui.js possa usá-lo.
- * Helper para ordenação (lido pelo ui.js)
- */
 export function getSortValue(tree, key) {
     const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
     if (numericKeys.includes(key)) {
