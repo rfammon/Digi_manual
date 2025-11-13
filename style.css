@@ -1327,18 +1327,18 @@ html {
 }
 
 /* -------------------------------------- */
-/* 20. IMPORT/EXPORT PACOTE (.ZIP) (v19.0) */
+/* 20. IMPORT/EXPORT PACOTE (.ZIP) (v20.1) */
 /* -------------------------------------- */
 
-/* (v20.1) BUGFIX: Classe para esconder inputs de arquivo
-    sem quebrar a funcionalidade .click() */
+/* BUGFIX: Classe para esconder inputs de arquivo
+   sem quebrar a funcionalidade .click() do JS */
 .visually-hidden-input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
+    position: absolute !important; /* Adicionado !important para forçar */
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
 }
