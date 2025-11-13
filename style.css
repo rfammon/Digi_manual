@@ -1096,7 +1096,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 
 /* -------------------------------------- */
-/* 17. [v21.8] LEGENDA E INFOBOX DO MAPA */
+/* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
 /* -------------------------------------- */
 
 /* [NOVO] Legenda Externa (HTML) */
@@ -1194,6 +1194,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #map-info-photo {
     margin-top: var(--space-sm);
+    position: relative; /* Para os botões de zoom */
 }
 #map-info-photo.loading-photo {
     font-style: italic;
@@ -1201,7 +1202,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #map-info-box .manual-img {
     width: 100%;
-    /* [CORREÇÃO v21.9] max-width para desktop, transition para zoom */
+    /* [CORREÇÃO v21.9] max-width para zoom, transition para suavidade */
     max-width: 100%; 
     height: auto;
     object-fit: cover;
@@ -1214,6 +1215,12 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     display: flex;
     gap: 5px;
     margin-top: 5px;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(255,255,255,0.8);
+    padding: 3px;
+    border-radius: 4px;
 }
 .map-photo-zoom button {
     background-color: var(--gray-200);
@@ -1221,8 +1228,9 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     border-radius: 4px;
     font-weight: bold;
     cursor: pointer;
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
+    line-height: 25px;
 }
 .map-photo-zoom button:hover {
     background-color: var(--gray-300);
@@ -1241,12 +1249,13 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
         z-index: 1001; 
     }
     
-    /* [CORREÇÃO v21.8] Imagem não cortada no mobile */
+    /* [CORREÇÃO v21.9] Imagem não cortada no mobile */
     #map-info-box .manual-img {
         height: auto; /* Altura automática */
         width: 100%; /* Largura total */
         max-width: 100%; 
         object-fit: contain; /* Garante que a imagem inteira apareça */
+        max-height: 40vh; /* Limita a altura no mobile */
     }
 
     /* [v21.7] Ajusta o grid da legenda no mobile */
