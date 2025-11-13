@@ -1,11 +1,10 @@
-// js/features.js (v20.0 - OTIMIZADO)
-// Contém o "motor" da aplicação (CRUD, GIS, Import/Export).
+// js/features.js (v20.3 - CORRIGIDO)
+// Este arquivo NÃO DEVE importar 'ui.js'
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
-// (REMOVIDA A IMPORTAÇÃO DO UI.JS - Corrigida na v19.8)
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
@@ -19,7 +18,6 @@ export async function handleGetGPS() {
         gpsStatus.className = 'error';
         return;
     }
-    // (v20.0) Verificação de contexto seguro (HTTPS ou localhost)
     if (!location.protocol.startsWith('https:') && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
         gpsStatus.textContent = "Erro: Acesso ao GPS requer HTTPS.";
         gpsStatus.className = 'error';
@@ -41,7 +39,6 @@ export async function handleGetGPS() {
             gpsStatus.textContent = `Capturando... (${i + 1}/5)`;
             const position = await getSinglePosition(options);
             
-            // (v20.0) Usa o novo utilitário otimizado (Proj4js)
             const utmCoords = utils.convertLatLonToUtm(position.coords.latitude, position.coords.longitude);
             if (!utmCoords) {
                 throw new Error("Falha ao converter coordenadas GPS.");
@@ -75,7 +72,6 @@ export async function handleGetGPS() {
                 default: gpsStatus.textContent = "Erro ao buscar GPS."; break;
             }
         } else {
-            // Erro vindo da conversão Proj4js
             gpsStatus.textContent = error.message;
             console.error("Erro no GPS Handle:", error.message);
         }
@@ -184,7 +180,6 @@ export function handleAddTreeSubmit(event) {
 
 
 export function handleDeleteTree(id) {
-    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
     const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
     
     if (treeToDelete && treeToDelete.hasPhoto) {
@@ -258,7 +253,6 @@ export function handleEditTree(id) {
 }
 
 export function handleClearAll() {
-    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
     state.registeredTrees.forEach(tree => {
         if (tree.hasPhoto) {
             db.deleteImageFromDB(tree.id);
@@ -813,6 +807,7 @@ export function sendEmailReport() {
     const encodedBody = encodeURIComponent(emailBody);
     const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
     
+    // [CORREÇÃO BUG 1]: Verifica o limite de caracteres para o mailto
     if (mailtoLink.length > 2000) { 
         utils.showToast("Muitos dados para e-mail. Use 'Exportar Dados'.", 'error'); 
         return; 

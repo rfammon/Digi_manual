@@ -1,4 +1,4 @@
-// js/ui.js (v20.9 - FINAL - Completo e Otimizado)
+// js/ui.js (v21.5 - OTIMIZAÇÃO DE IMAGEM)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -146,7 +146,7 @@ export function setupMobileChecklist() {
 
 /**
  * (v18.1) Renderiza a tabela de resumo de árvores.
- * Lê o estado global 'registeredTrees' e 'sortState'.
+ * (v21.1) Atualiza os ícones para versões monocromáticas.
  */
 export function renderSummaryTable() {
     const container = document.getElementById('summary-table-container');
@@ -231,6 +231,7 @@ export function renderSummaryTable() {
             ? `<button type="button" class="photo-preview-btn" data-id="${tree.id}">📷</button>` 
             : '—'; 
         
+        // [CORREÇÃO 6]: Ícones atualizados
         tableHTML += `
             <tr data-tree-id="${tree.id}">
                 <td>${tree.id}</td>
@@ -245,9 +246,9 @@ export function renderSummaryTable() {
                 <td>${tree.pontuacao}</td>
                 <td class="${tree.riscoClass}">${tree.risco}</td>
                 <td>${tree.observacoes}</td>
-                <td class="col-zoom"><button type="button" class="zoom-tree-btn" data-id="${tree.id}">🔎</button></td>
-                <td class="col-edit"><button type="button" class="edit-tree-btn" data-id="${tree.id}">✏️</button></td>
-                <td class="col-delete"><button type="button" class="delete-tree-btn" data-id="${tree.id}">🗑️</button></td>
+                <td class="col-zoom"><button type="button" class="zoom-tree-btn" data-id="${tree.id}">🔍</button></td>
+                <td class="col-edit"><button type="button" class="edit-tree-btn" data-id="${tree.id}">✎</button></td>
+                <td class="col-delete"><button type="button" class="delete-tree-btn" data-id="${tree.id}">✖</button></td>
             </tr>
         `;
     });
@@ -435,9 +436,6 @@ function setupFileImporters() {
     let csvImporter = document.getElementById('csv-importer');
 
     // Clonagem necessária para o browser aceitar o .click() e remover listeners de 'change'
-    // Isso é crucial para evitar que o evento seja disparado múltiplas vezes, 
-    // resultando em comportamento inesperado na importação.
-    
     if (zipImporter) {
         const newZip = zipImporter.cloneNode(true);
         zipImporter.parentNode.replaceChild(newZip, zipImporter);
@@ -472,10 +470,66 @@ function setupFileImporters() {
     return { zipImporter, csvImporter };
 }
 
+/**
+ * [CRÍTICO PARA PERFORMANCE v21.5]
+ * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
+ * Retorna um novo Blob com a imagem otimizada.
+ * @param {File|Blob} imageFile - O arquivo de imagem original.
+ * @param {number} maxWidth - Largura máxima desejada para a imagem.
+ * @param {number} quality - Qualidade JPEG (0 a 1).
+ * @returns {Promise<Blob>} Um Promise que resolve para o Blob da imagem otimizada.
+ */
+async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile); // Lê o arquivo como URL de dados
+
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result; // Define a fonte da imagem para o URL de dados
+
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                let width = img.width;
+                let height = img.height;
+
+                // Calcula novas dimensões se a largura exceder maxWidth
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Desenha a imagem redimensionada no canvas
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Converte o canvas para um Blob JPEG com a qualidade especificada
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', quality);
+            };
+
+            img.onerror = (error) => {
+                console.error("Erro ao carregar imagem no canvas", error);
+                reject(error); // Lida com erros de carregamento da imagem
+            };
+        };
+
+        reader.onerror = (error) => {
+            console.error("Erro ao ler arquivo de imagem", error);
+            reject(error); // Lida com erros de leitura do arquivo
+        };
+    });
+}
+
 
 /**
  * (v20.3 - CORREÇÃO DE CRASH) Função principal que inicializa todos os listeners da Calculadora.
- * Removido o perigoso removeEventListener.
+ * (v21.5 - OTIMIZAÇÃO DE IMAGEM)
  */
 export function setupRiskCalculator() {
         
@@ -484,9 +538,7 @@ export function setupRiskCalculator() {
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
-        // [CORREÇÃO DE CRASH]: Removemos o perigoso removeEventListener e a clonagem.
-        
-        // Define o handler explicitamente
+        // [CORREÇÃO DE CRASH]: Define o handler e anexa ao nó existente.
         const subNavHandler = (e) => {
             const button = e.target.closest('.sub-nav-btn');
             if (button) {
@@ -548,19 +600,32 @@ export function setupRiskCalculator() {
     
     if (getGpsBtn) getGpsBtn.addEventListener('click', features.handleGetGPS);
     
-    // Listeners de Foto
+    // Listeners de Foto (v21.5 - OTIMIZAÇÃO DE IMAGEM)
     if (photoInput) {
-        photoInput.addEventListener('change', (event) => {
+        photoInput.addEventListener('change', async (event) => { // <-- Tornou-se async
             const file = event.target.files[0];
             if (file) {
                 features.clearPhotoPreview(); 
-                const preview = document.createElement('img');
-                preview.id = 'photo-preview';
-                preview.src = URL.createObjectURL(file);
                 
-                document.getElementById('photo-preview-container').prepend(preview);
-                document.getElementById('remove-photo-btn').style.display = 'block';
-                state.setCurrentTreePhoto(file); 
+                // --- NOVA LÓGICA DE OTIMIZAÇÃO ---
+                try {
+                    showToast("Otimizando foto...", "success");
+                    const optimizedBlob = await optimizeImage(file, 800, 0.7); // 800px, 70%
+                    state.setCurrentTreePhoto(optimizedBlob); // Armazena o Blob OTIMIZADO
+                    
+                    // Cria a pré-visualização a partir do Blob otimizado
+                    const preview = document.createElement('img');
+                    preview.id = 'photo-preview';
+                    preview.src = URL.createObjectURL(optimizedBlob);
+                    document.getElementById('photo-preview-container').prepend(preview);
+                    document.getElementById('remove-photo-btn').style.display = 'block';
+
+                } catch (error) {
+                    console.error("Erro ao otimizar imagem:", error);
+                    showToast("Erro ao processar a foto. Tente outra imagem.", "error");
+                    state.setCurrentTreePhoto(null);
+                    features.clearPhotoPreview();
+                }
             }
         });
     }
@@ -768,7 +833,7 @@ function handlePhotoPreviewClick(id, targetElement) {
 
 function setupGlossaryInteractions(detailView) {
     const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
-    // Define o handler de fechar com debounce para evitar flicker em desktop
+    // [CORREÇÃO v20.9] Define o handler de fechar com debounce para evitar flicker em desktop
     const debouncedHide = debounce(hideTooltip, 200);
 
     glossaryTermsElements.forEach(termElement => {
@@ -808,7 +873,8 @@ function toggleGlossaryTooltip(event) {
 
 function setupEquipmentInteractions(detailView) {
     const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+    // [CORREÇÃO v20.9] Define o debounce para o mouseleave
+    const debouncedHide = debounce(hideTooltip, 200);
     
     equipmentTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
@@ -825,7 +891,7 @@ function showEquipmentTooltip(event) {
     const data = equipmentData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
-    // CORREÇÃO: imgTag agora está definida no topo
+    // [CORREÇÃO v20.7]: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -848,7 +914,8 @@ function toggleEquipmentTooltip(event) {
 
 function setupPurposeInteractions(detailView) {
     const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+    // [CORREÇÃO v20.9] Define o debounce para o mouseleave
+    const debouncedHide = debounce(hideTooltip, 200);
 
     purposeTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
@@ -865,7 +932,7 @@ function showPurposeTooltip(event) {
     const data = podaPurposeData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
-    // CORREÇÃO: imgTag agora está definida no topo
+    // [CORREÇÃO v20.7]: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -920,7 +987,7 @@ function showActionModal({ title, description, buttons }) {
             if (btnConfig.action) {
                 btnConfig.action(); // Executa a ação (ex: exportCSV)
             }
-            hideActionModal(); // Feche o modal
+            hideActionModal(); // Fecha o modal
         });
         actionsEl.appendChild(button);
     });
@@ -957,7 +1024,7 @@ function showExportModal() {
     let buttons = [
         {
             text: 'Exportar Apenas .CSV (s/ fotos)',
-            class: 'secondary',
+            class: 'secondary', // Amarelo
             action: features.exportActionCSV
         },
         {
@@ -969,7 +1036,7 @@ function showExportModal() {
     if (typeof JSZip !== 'undefined') {
         buttons.unshift({ // Adiciona no início
             text: 'Exportar Pacote .ZIP (Completo)',
-            class: 'primary',
+            class: 'primary', // Verde
             action: features.exportActionZip
         });
     } else {
@@ -984,36 +1051,42 @@ function showExportModal() {
 }
 
 /**
- * (v20.4/v20.6 - REVERSÃO) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
+ * (v21.3 - CORREÇÃO DE BUG "SUBSTITUIR VAZIO") 
+ * Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
  */
 function showImportModal() {
     
+    // Define os botões
+    let buttons = [
+        {
+            text: 'Adicionar à Lista Atual',
+            class: 'secondary', // Amarelo (Destaque)
+            action: () => {
+                // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
+                // e o DOM se estabilize antes de abrir o segundo.
+                setTimeout(() => showImportTypeModal(false), 0);
+            }
+        }
+    ];
+    
+    // [CORREÇÃO BUG #2]: Só mostra "Substituir" se a lista NÃO estiver vazia.
+    if (state.registeredTrees.length > 0) {
+        buttons.push({
+            text: 'Substituir Lista Atual',
+            class: 'primary', // Verde (Padrão)
+            action: () => {
+                // Adiciona setTimeout(0)
+                setTimeout(() => showImportTypeModal(true), 0);
+            }
+        });
+    }
+    
+    buttons.push({ text: 'Cancelar', class: 'cancel' });
+
     showActionModal({
         title: '📤 Importar Dados',
         description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira? (Substituir apagará todos os dados atuais)',
-        buttons: [
-            {
-                text: 'Adicionar à Lista Atual',
-                class: 'primary',
-                action: () => {
-                    // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
-                    // e o DOM se estabilize antes de abrir o segundo.
-                    setTimeout(() => showImportTypeModal(false), 0);
-                }
-            },
-            {
-                text: 'Substituir Lista Atual',
-                class: 'secondary',
-                action: () => {
-                    // Adiciona setTimeout(0)
-                    setTimeout(() => showImportTypeModal(true), 0);
-                }
-            },
-            {
-                text: 'Cancelar',
-                class: 'cancel'
-            }
-        ]
+        buttons: buttons // Usa a lista dinâmica
     });
 }
 
