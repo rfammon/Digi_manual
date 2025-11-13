@@ -1,22 +1,29 @@
-// js/ui.js (v19.8 - CORRIGIDO: Erro de sintaxe 'import *s' + Lógica do Modal)
+// js/ui.js (v19.9 - CORRIGIDO - Erro de sintaxe 'import *s' + Lógica do Modal)
 
 // === 1. IMPORTAÇÕES ===
 
+// (CORREÇÃO v19.5) Corrigido de 'import *s' para 'import * as'
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
-import * as features from './features.js'; 
+import * as features from './features.js'; // (v19.6) A importação está correta
 
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO PRINCIPAL ===
 
+/**
+ * Carrega o HTML de um tópico do manual na view principal.
+ * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
+ * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
+ */
 export function loadContent(detailView, content) {
     if (!detailView) return;    
     
     if (content) {
         detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
         
+        // Ativa os tooltips interativos para o conteúdo recém-carregado
         setupGlossaryInteractions(detailView);    
         setupEquipmentInteractions(detailView);
         setupPurposeInteractions(detailView);
@@ -39,6 +46,9 @@ let mobileChecklist = {
     counter: null
 };
 
+/**
+ * (v16.0) Mostra a pergunta do carrossel mobile no índice especificado.
+ */
 export function showMobileQuestion(index) {
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
@@ -63,10 +73,14 @@ export function showMobileQuestion(index) {
     mobileChecklist.currentIndex = index;
 }
 
+/**
+ * (v16.0) Inicializa o carrossel mobile (lendo a tabela desktop).
+ */
 export function setupMobileChecklist() {
     mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
     if (!mobileChecklist.wrapper) return;
     
+    // Encontra os elementos (pode ser a primeira vez ou um recarregamento)
     mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
     mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
     mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
@@ -78,23 +92,28 @@ export function setupMobileChecklist() {
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
+    // (Correção v16.1) Clona nós para limpar listeners antigos ao recarregar (ex: modo de edição)
     mobileChecklist.card.replaceWith(mobileChecklist.card.cloneNode(true));
     mobileChecklist.navPrev.replaceWith(mobileChecklist.navPrev.cloneNode(true));
     mobileChecklist.navNext.replaceWith(mobileChecklist.navNext.cloneNode(true));
     
+    // Re-seleciona os nós clonados
     mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
     mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
     mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
     
+    // Adiciona o listener para o "toggle" (Sim/Não)
     mobileChecklist.card.addEventListener('change', (e) => {
         const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
         if (proxyCheckbox) {
+            // Sincroniza o toggle mobile com o checkbox real (oculto) da tabela
             const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
             const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
             realCheckbox.checked = proxyCheckbox.checked;
         }
     });
 
+    // Adiciona listeners para os botões de navegação do carrossel
     mobileChecklist.navPrev.addEventListener('click', () => {
         if (mobileChecklist.currentIndex > 0) {
             showMobileQuestion(mobileChecklist.currentIndex - 1);
@@ -106,9 +125,14 @@ export function setupMobileChecklist() {
         }
     });
 
+    // Mostra a primeira pergunta
     showMobileQuestion(0);
 }
 
+/**
+ * (v18.1) Renderiza a tabela de resumo de árvores.
+ * Lê o estado global 'registeredTrees' e 'sortState'.
+ */
 export function renderSummaryTable() {
     const container = document.getElementById('summary-table-container');
     const importExportControls = document.getElementById('import-export-controls');
@@ -116,6 +140,7 @@ export function renderSummaryTable() {
     
     if (!container) return;    
     
+    // Atualiza o badge
     if (summaryBadge) {
         if (state.registeredTrees.length > 0) {
             summaryBadge.textContent = `(${state.registeredTrees.length})`;
@@ -126,6 +151,7 @@ export function renderSummaryTable() {
         }
     }
     
+    // Oculta os botões de exportação se a tabela estiver vazia
     if (state.registeredTrees.length === 0) {
         container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
         if (importExportControls) {
@@ -136,12 +162,14 @@ export function renderSummaryTable() {
         return;
     }
     
+    // Mostra os botões de exportação
     if (importExportControls) {
         document.getElementById('export-data-btn')?.setAttribute('style', 'display:inline-flex');
         document.getElementById('send-email-btn')?.setAttribute('style', 'display:inline-flex');
         document.getElementById('clear-all-btn')?.setAttribute('style', 'display:inline-flex');
     }
 
+    // Helper para classes de ordenação
     const getThClass = (key) => {
         let classes = 'sortable';
         if (state.sortState.key === key) {
@@ -150,6 +178,7 @@ export function renderSummaryTable() {
         return classes;
     };
 
+    // Constrói o HTML da tabela
     let tableHTML = '<table class="summary-table"><thead><tr>';
     tableHTML += `<th class="${getThClass('id')}" data-sort-key="id">ID</th>`;
     tableHTML += `<th class="${getThClass('data')}" data-sort-key="data">Data</th>`;
@@ -169,6 +198,7 @@ export function renderSummaryTable() {
     tableHTML += `<th class="col-delete">Excluir</th>`;
     tableHTML += '</tr></thead><tbody>';
     
+    // (v19.6) CORREÇÃO: Importa 'getSortValue' do features.js
     const sortedData = [...state.registeredTrees].sort((a, b) => {
         const valA = features.getSortValue(a, state.sortState.key);
         const valB = features.getSortValue(b, state.sortState.key);
@@ -178,6 +208,7 @@ export function renderSummaryTable() {
         return 0;
     });
 
+    // Cria as linhas da tabela
     sortedData.forEach(tree => {
         const [y, m, d] = (tree.data || '---').split('-');
         const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
@@ -210,6 +241,9 @@ export function renderSummaryTable() {
     container.innerHTML = tableHTML;
 }
 
+/**
+ * (v17.6) Mostra a sub-aba correta (Registrar, Resumo, Mapa).
+ */
 export function showSubTab(targetId) {
     const subTabPanes = document.querySelectorAll('.sub-tab-content');
     subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
@@ -217,14 +251,16 @@ export function showSubTab(targetId) {
     const subNavButtons = document.querySelectorAll('.sub-nav-btn');
     subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
 
+    // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
     if (targetId === 'tab-content-mapa') {
-        setTimeout(() => { initMap(); }, 50); 
+        setTimeout(() => { initMap(); }, 50); // Delay para garantir que o container está visível
     }
     
+    // (v18.0) Lógica de Destaque da Linha
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
         // A função highlightTableRow está definida abaixo
         highlightTableRow(state.highlightTargetId);
-        state.setHighlightTargetId(null); 
+        state.setHighlightTargetId(null); // Limpa o alvo
     }
 }
 
@@ -232,22 +268,25 @@ export function showSubTab(targetId) {
  * (v19.8) Destaque da linha (movido de features.js para ui.js)
  */
 function highlightTableRow(id) {
-    const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
-    if (row) {
-        // Remove destaques antigos
-        const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
-        oldHighlights.forEach(r => r.classList.remove('highlight'));
-        
-        // Adiciona novo destaque e scroll
-        row.classList.add('highlight');
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        setTimeout(() => {
-            row.classList.remove('highlight');
-        }, 2500);
-    } else {
-        console.warn(`Linha da tabela [data-tree-id="${id}"] não encontrada.`);
-    }
+    // (v19.8) Atraso para garantir que a aba trocou
+    setTimeout(() => {
+        const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
+        if (row) {
+            // Remove destaques antigos
+            const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
+            oldHighlights.forEach(r => r.classList.remove('highlight'));
+            
+            // Adiciona novo destaque e scroll
+            row.classList.add('highlight');
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            setTimeout(() => {
+                row.classList.remove('highlight');
+            }, 2500);
+        } else {
+            console.warn(`Linha da tabela [data-tree-id="${id}"] não encontrada.`);
+        }
+    }, 100);
 }
 
 
@@ -255,6 +294,7 @@ function initMap() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
     
+    // (v19.7) Verificação de bibliotecas (agora globais)
     if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
         mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Verifique a pasta /libs/.</p>';
         return;
@@ -411,13 +451,17 @@ export function setupRiskCalculator() {
     if (importDataBtn) importDataBtn.addEventListener('click', showImportModal);
     if (exportDataBtn) exportDataBtn.addEventListener('click', showExportModal);
     
-    // (v19.8) Listeners de importação (chamados pelo modal)
+    // (v19.7) Listeners de importação (chamados pelo modal)
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
+        // (v19.8) Adiciona 'replaceData'
+        e.replaceData = zipImporter.dataset.replaceData === 'true';
         features.handleImportZip(e).then(() => {
             renderSummaryTable(); 
         });
     });
     if (csvImporter) csvImporter.addEventListener('change', (e) => {
+        // (v19.8) Adiciona 'replaceData'
+        e.replaceData = csvImporter.dataset.replaceData === 'true';
         features.handleFileImport(e).then(() => {
             renderSummaryTable();
         });
@@ -517,6 +561,7 @@ export function setupRiskCalculator() {
     
     // (v19.7) Event Delegation com atualização de UI centralizada
     if (summaryContainer) {
+        // Clona para limpar listeners antigos
         const newSummaryContainer = summaryContainer.cloneNode(true);
         summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
         
@@ -544,7 +589,6 @@ export function setupRiskCalculator() {
             }
             
             if (editButton) {    
-                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
                 
                 showSubTab('tab-content-register'); 
@@ -579,7 +623,6 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
-const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
@@ -660,6 +703,8 @@ function handlePhotoPreviewClick(id, targetElement) {
         tooltip.dataset.currentElement = `photo-${id}`; 
     });
 }
+
+// --- Funções de Setup de Tooltip (Chamadas por loadContent) ---
 
 function setupGlossaryInteractions(detailView) {
     const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
@@ -776,13 +821,6 @@ function togglePurposeTooltip(event) {
 
 /**
  * Exibe um modal de ação customizado.
- * @param {object} options
- * @param {string} options.title - O título do modal.
- * @param {string} options.description - O texto de descrição.
- * @param {Array<object>} options.buttons - Array de botões.
- * @param {string} options.buttons.text - Texto do botão.
- * @param {string} options.buttons.class - Classe CSS (primary, secondary, cancel).
- * @param {function} [options.buttons.action] - Função a ser chamada no clique.
  */
 function showActionModal({ title, description, buttons }) {
     const modal = document.getElementById('action-modal');
@@ -819,11 +857,15 @@ function showActionModal({ title, description, buttons }) {
     });
 
     // Adiciona o listener para fechar ao clicar fora (no overlay)
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
+    // (Usa 'self' para evitar clonar o listener)
+    const self = modal;
+    const closeOverlay = (e) => {
+        if (e.target === self) {
             hideActionModal();
+            self.removeEventListener('click', closeOverlay); // Limpa o listener
         }
-    });
+    };
+    modal.addEventListener('click', closeOverlay);
 
     // Exibe o modal
     modal.classList.add('show');
@@ -840,12 +882,10 @@ function hideActionModal() {
 }
 
 /**
- * (v19.8) Configura e exibe o modal de EXPORTAÇÃO.
+ * (v19.9 - CORRIGIDO) Configura e exibe o modal de EXPORTAÇÃO.
  */
 function showExportModal() {
-    const hasPhotos = state.registeredTrees.some(t => t.hasPhoto);
     
-    // Prepara os botões
     let buttons = [
         {
             text: 'Exportar Apenas .CSV (s/ fotos)',
@@ -858,8 +898,9 @@ function showExportModal() {
         }
     ];
 
-    // Adiciona o botão de ZIP apenas se houver fotos E a biblioteca JSZip estiver carregada
-    if (hasPhotos && typeof JSZip !== 'undefined') {
+    // (v19.9) CORREÇÃO: Remove a checagem 'hasPhotos'.
+    // O botão ZIP aparece se a biblioteca JSZip estiver carregada.
+    if (typeof JSZip !== 'undefined') {
         buttons.unshift({ // Adiciona no início
             text: 'Exportar Pacote .ZIP (Completo)',
             class: 'primary',
@@ -878,11 +919,17 @@ function showExportModal() {
  * (v19.8) Configura e exibe o modal de IMPORTAÇÃO.
  */
 function showImportModal() {
+    // (v19.8) Cria os botões com base na disponibilidade do JSZip
     let buttons = [
         {
             text: 'Importar Apenas .CSV (s/ fotos)',
             class: 'secondary',
-            action: features.importActionCSV
+            action: () => {
+                // (v19.8) Passa o 'replaceData' via dataset
+                const csvInput = document.getElementById('csv-importer');
+                csvInput.dataset.replaceData = 'false'; // Define como 'append'
+                csvInput.click();
+            }
         },
         {
             text: 'Cancelar',
@@ -890,18 +937,80 @@ function showImportModal() {
         }
     ];
 
-    // Adiciona o botão de ZIP apenas se a biblioteca JSZip estiver carregada
     if (typeof JSZip !== 'undefined') {
-        buttons.unshift({ // Adiciona no início
+        buttons.unshift({
             text: 'Importar Pacote .ZIP (Completo)',
             class: 'primary',
-            action: features.importActionZip
+            action: () => {
+                const zipInput = document.getElementById('zip-importer');
+                zipInput.dataset.replaceData = 'false';
+                zipInput.click();
+            }
+        });
+    }
+
+    // (v19.8) Mostra o modal de 3 opções
+    showActionModal({
+        title: '📤 Importar Dados',
+        description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira?',
+        buttons: [
+            {
+                text: 'Adicionar à Lista Atual',
+                class: 'primary',
+                action: () => {
+                    // (v19.8) Mostra o segundo modal (escolha de arquivo)
+                    showImportTypeModal(false); // false = não substituir
+                }
+            },
+            {
+                text: 'Substituir Lista Atual',
+                class: 'secondary',
+                action: () => {
+                    showImportTypeModal(true); // true = substituir
+                }
+            },
+            {
+                text: 'Cancelar',
+                class: 'cancel'
+            }
+        ]
+    });
+}
+
+/**
+ * (v19.8) Mostra o SEGUNDO modal de importação (escolha de tipo de arquivo)
+ */
+function showImportTypeModal(replaceData) {
+    const csvInput = document.getElementById('csv-importer');
+    const zipInput = document.getElementById('zip-importer');
+
+    // Define o modo (append ou replace) no dataset dos inputs
+    csvInput.dataset.replaceData = replaceData;
+    zipInput.dataset.replaceData = replaceData;
+    
+    let buttons = [
+        {
+            text: 'Importar .CSV (s/ fotos)',
+            class: 'secondary',
+            action: () => csvInput.click()
+        },
+        {
+            text: 'Cancelar',
+            class: 'cancel'
+        }
+    ];
+
+    if (typeof JSZip !== 'undefined') {
+        buttons.unshift({
+            text: 'Importar .ZIP (Completo)',
+            class: 'primary',
+            action: () => zipInput.click()
         });
     }
 
     showActionModal({
-        title: '📤 Importar Dados',
-        description: 'Como você deseja importar os dados? A importação de um .ZIP permite restaurar dados e fotos.',
+        title: '📤 Selecione o Tipo de Arquivo',
+        description: `Você escolheu ${replaceData ? 'SUBSTITUIR' : 'ADICIONAR'}. Selecione o arquivo para carregar.`,
         buttons: buttons
     });
 }
