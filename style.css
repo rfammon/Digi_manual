@@ -549,7 +549,7 @@ main {
     justify-content: center;
     gap: 8px;
 }
-#add-tree-btn { /* (v19.8) Removido #export-csv-btn daqui */
+#add-tree-btn {
     background-color: #00796b;
     color: white;
 }
@@ -1185,15 +1185,6 @@ html {
     background-color: #ffa000;
 }
 
-/* Botão de Exportar ZIP (Verde Principal) */
-#export-zip-btn { /* (v19.8) Este ID não é mais usado, mas mantemos o estilo */
-    background-color: #00796b;
-    color: white;
-}
-#export-zip-btn:hover {
-    background-color: #00695c;
-}
-
 /* Feedback de processamento (Spinner) */
 #zip-status {
     display: none; /* Oculto por padrão */
@@ -1212,7 +1203,7 @@ html {
 }
 
 /* -------------------------------------- */
-/* 21. MODAL DE IMPORT/EXPORT (v19.9 - CORRIGIDO) */
+/* 21. MODAL DE IMPORT/EXPORT (v19.9 - CORREÇÃO VISUAL) */
 /* -------------------------------------- */
 
 /* O Fundo (Overlay) */
@@ -1227,10 +1218,12 @@ html {
     display: flex;
     justify-content: center;
     
-    /* (v19.9) Correção: Remove 'align-items' e usa 'padding-top' para
-       um posicionamento mais confiável em viewports mobile (evita o teclado) */
-    padding: 15vh 1rem 1rem 1rem; /* 15% do topo */
-    overflow-y: auto; /* Permite rolar se o modal for muito alto */
+    /* (v19.9) CORREÇÃO: Usa align-items para centrar verticalmente */
+    align-items: center; 
+    
+    /* (v19.9) Adiciona padding para o overlay não deixar o modal colar nas bordas */
+    padding: 1rem; 
+    overflow-y: auto; /* Permite que o overlay role se o conteúdo do modal for muito grande */
     
     /* Estado inicial (oculto) */
     opacity: 0;
@@ -1244,15 +1237,18 @@ html {
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.4);
     padding: 1.5rem 2rem;
-    width: 100%; /* (v19.9) Alterado de 90% para 100% (limitado pelo max-width) */
+    width: 100%; 
     max-width: 450px;
     z-index: 2000;
     
-    /* (v19.9) Remove a animação 'transform' que causava o pulo */
-    opacity: 0; /* Inicia transparente para o fade-in */
-    transition: opacity 0.2s ease-out;
-    height: -moz-fit-content; /* (v19.9) Garante que a caixa se ajuste ao conteúdo */
-    height: fit-content;
+    /* Animação de entrada */
+    opacity: 0;
+    transform: scale(0.95); /* Animação de "pop" */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+
+    /* (v19.9) Garante que o modal não seja maior que a tela */
+    max-height: 90vh; 
+    overflow-y: auto; /* Permite que o *próprio modal* role se o conteúdo for muito alto */
 }
 
 /* Mostra o modal */
@@ -1262,6 +1258,7 @@ html {
 }
 .modal-overlay.show .modal-dialog {
     opacity: 1;
+    transform: scale(1); /* Animação de "pop" */
 }
 
 .modal-dialog h3 {
@@ -1323,7 +1320,7 @@ html {
 .modal-btn.cancel {
     background-color: #ddd;
     color: #333;
-    margin-top: 10px; /* Separa dos outros */
+    margin-top: 10px; 
 }
 .modal-btn.cancel:hover {
     background-color: #ccc;
