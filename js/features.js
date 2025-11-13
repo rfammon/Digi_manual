@@ -1,14 +1,12 @@
-// js/features.js (v19.7 - NOVO: handleAddTreeSubmit)
+// js/features.js (v19.7 - CORRIGIDO: Remoção da dependência circular)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
-import { renderSummaryTable, setupMobileChecklist } from './ui.js';
-
+// (REMOVIDA A IMPORTAÇÃO DO UI.JS - ESSA É A CORREÇÃO)
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
-
 export async function handleGetGPS() {
     const gpsStatus = document.getElementById('gps-status');
     const coordXField = document.getElementById('risk-coord-x');
@@ -95,6 +93,80 @@ export function clearPhotoPreview() {
     }
 }
 
+/**
+ * (v19.7) Processa a submissão do formulário. Retorna true/false.
+ */
+export function handleAddTreeSubmit(event) {
+    event.preventDefault(); 
+    const form = event.target;
+    let totalScore = 0;
+    
+    // 1. Validação e Pontuação
+    const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
+    checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
+    
+    const allCheckboxes = form.querySelectorAll('.risk-checkbox');
+    const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
+    
+    let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
+    if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
+    else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
+    
+    // 2. Criação do Objeto
+    const newTreeId = state.registeredTrees.length > 0 ? Math.max(...state.registeredTrees.map(t => t.id)) + 1 : 1;
+    
+    const especie = document.getElementById('risk-especie').value.trim();
+    if (!especie) {
+        utils.showToast("Erro: O campo Espécie é obrigatório.", 'error');
+        document.getElementById('risk-especie').focus();
+        return false; // Falha
+    }
+
+    const newTree = {
+        id: newTreeId,
+        data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
+        especie: especie,
+        local: document.getElementById('risk-local').value || 'N/A',
+        coordX: document.getElementById('risk-coord-x').value || 'N/A',
+        coordY: document.getElementById('risk-coord-y').value || 'N/A',
+        utmZoneNum: state.lastUtmZone.num || 0,
+        utmZoneLetter: state.lastUtmZone.letter || 'Z',
+        dap: document.getElementById('risk-dap').value || 'N/A',    
+        avaliador: document.getElementById('risk-avaliador').value || 'N/A',
+        observacoes: document.getElementById('risk-obs').value || 'N/A',    
+        pontuacao: totalScore,
+        risco: classificationText,
+        riscoClass: classificationClass,
+        riskFactors: checkedRiskFactors,
+        hasPhoto: (state.currentTreePhoto !== null) 
+    };
+    
+    // 3. Salvamento de Dados
+    if (newTree.hasPhoto) {
+        db.saveImageToDB(newTree.id, state.currentTreePhoto);
+    }
+
+    state.registeredTrees.push(newTree);
+    state.saveDataToStorage();
+    
+    utils.showToast(`✔️ Árvore "${newTree.especie}" (ID ${newTree.id}) adicionada!`, 'success');
+
+    // 4. Limpeza da UI (DOM)
+    state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
+    form.reset();
+    clearPhotoPreview(); 
+    
+    try {
+        document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+        document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
+    } catch(e) { /* ignora erro */ }
+
+    document.getElementById('risk-especie').focus();
+    
+    return true; // Sucesso
+}
+
+
 export function handleDeleteTree(id) {
     if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return false; 
     
@@ -159,91 +231,14 @@ export function handleEditTree(id) {
 
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     
-    // Remove o item do array (será re-adicionado ao submeter)
+    // Remove o item do array
     const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
     state.setRegisteredTrees(newTrees);
     state.saveDataToStorage();
 
     document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
     
-    return isTouchDevice; // Indica se o carrossel precisa ser atualizado
-}
-
-/**
- * (v19.7) Processa a submissão do formulário de adição/edição de árvores.
- * Toda a lógica de criação e salvamento de dados foi centralizada aqui.
- * @param {Event} event - O evento de submissão do formulário.
- */
-export function handleAddTreeSubmit(event) {
-    event.preventDefault(); // Impede o envio tradicional
-    
-    const form = event.target;
-    let totalScore = 0;
-    
-    // 1. Validação e Pontuação
-    const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
-    checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
-    
-    const allCheckboxes = form.querySelectorAll('.risk-checkbox');
-    const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
-    
-    let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
-    if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
-    else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
-    
-    // 2. Criação do Objeto (Garante ID único e campos)
-    const newTreeId = state.registeredTrees.length > 0 ? Math.max(...state.registeredTrees.map(t => t.id)) + 1 : 1;
-    
-    // Verifica se a espécie está preenchida
-    const especie = document.getElementById('risk-especie').value.trim();
-    if (!especie) {
-        utils.showToast("Erro: O campo Espécie é obrigatório.", 'error');
-        document.getElementById('risk-especie').focus();
-        return false; // Falha na submissão
-    }
-
-    const newTree = {
-        id: newTreeId,
-        data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
-        especie: especie,
-        local: document.getElementById('risk-local').value || 'N/A',
-        coordX: document.getElementById('risk-coord-x').value || 'N/A',
-        coordY: document.getElementById('risk-coord-y').value || 'N/A',
-        utmZoneNum: state.lastUtmZone.num || 0,
-        utmZoneLetter: state.lastUtmZone.letter || 'Z',
-        dap: document.getElementById('risk-dap').value || 'N/A',    
-        avaliador: document.getElementById('risk-avaliador').value || 'N/A',
-        observacoes: document.getElementById('risk-obs').value || 'N/A',    
-        pontuacao: totalScore,
-        risco: classificationText,
-        riscoClass: classificationClass,
-        riskFactors: checkedRiskFactors,
-        hasPhoto: (state.currentTreePhoto !== null) 
-    };
-    
-    // 3. Salvamento de Dados e Estado
-    if (newTree.hasPhoto) {
-        db.saveImageToDB(newTree.id, state.currentTreePhoto);
-    }
-
-    state.registeredTrees.push(newTree);
-    state.saveDataToStorage();
-    
-    utils.showToast(`✔️ Árvore "${newTree.especie}" (ID ${newTree.id}) adicionada!`, 'success');
-
-    // 4. Limpeza da UI (valores no DOM)
-    state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
-    form.reset();
-    clearPhotoPreview(); 
-    
-    try {
-        document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-        document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
-    } catch(e) { /* ignora erro */ }
-
-    document.getElementById('risk-especie').focus();
-    
-    return true; // Sucesso
+    return isTouchDevice; // Retorna se o carrossel precisa ser atualizado
 }
 
 export function handleClearAll() {
@@ -499,7 +494,7 @@ async function handleExportZip() {
         return;
     }
     if (state.registeredTrees.length === 0) {
-        utils.showToast("Nenhuma árvore cadastrada para exportar.", 'error');
+        utils.showToast("Nenhum dado para exportar.", 'error');
         return;
     }
 
@@ -564,11 +559,14 @@ async function handleExportZip() {
     }
 }
 
-async function handleImportZip(event) {
+/**
+ * (v19.7) handleImportZip agora é assíncrono e retorna Promise
+ */
+export async function handleImportZip(event) {
     if (typeof JSZip === 'undefined') {
         utils.showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
         console.error("Falha na importação: JSZip não está definido.");
-        return;
+        return; // Retorna (void)
     }
     
     const file = event.target.files[0];
@@ -666,7 +664,7 @@ async function handleImportZip(event) {
         state.setRegisteredTrees(newTrees);
         state.saveDataToStorage();
         
-        utils.showToast(`📤 Importação do .zip concluída! ${newTrees.length} registros carregados.`, 'success');
+        utils.showToast(`📤 Importação do .zip concluída! ${newTrees.length} registos carregados.`, 'success');
 
     } catch (error) {
         console.error("Erro ao importar o .zip:", error);
@@ -677,16 +675,25 @@ async function handleImportZip(event) {
     }
 }
 
-export function handleFileImport(event) {
+/**
+ * (v19.7) handleFileImport (CSV) agora é assíncrono e retorna Promise
+ */
+export async function handleFileImport(event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const content = e.target.result;
+    
+    // Usa FileReader com Promise para um fluxo assíncrono limpo
+    const content = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(new Error("Erro ao ler o ficheiro."));
+        reader.readAsText(file);
+    });
+
+    try {
         const lines = content.split('\n').filter(line => line.trim() !== '');
         if (lines.length <= 1) { 
-            utils.showToast("Erro: O ficheiro CSV está vazio ou é inválido.", 'error'); 
-            return; 
+            throw new Error("O ficheiro CSV está vazio ou é inválido.");
         }
         
         const append = confirm("Deseja ADICIONAR os dados à lista atual? \n\nClique em 'Cancelar' para SUBSTITUIR a lista atual pelos dados do ficheiro.");
@@ -698,75 +705,75 @@ export function handleFileImport(event) {
             const transaction = state.db.transaction(["treeImages"], "readwrite");
             transaction.objectStore("treeImages").clear();
         }
-        
-        try {
-            for (let i = 1; i < lines.length; i++) {
-                const row = lines[i].split(';');
-                
-                const isV18Format = row.length >= 15; 
-                const isV17Format = row.length >= 14 && row.length < 15; 
-                const isV16Format = row.length >= 12 && row.length < 14; 
 
-                if (!isV16Format && !isV17Format && !isV18Format) { 
-                    console.warn("Linha CSV mal formatada, ignorada:", lines[i]); 
-                    continue; 
-                }
+        for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].split(';');
+            
+            const isV18Format = row.length >= 15; 
+            const isV17Format = row.length >= 14 && row.length < 15; 
+            const isV16Format = row.length >= 12 && row.length < 14; 
 
-                let pontuacaoIdx, riscoIdx, obsIdx, factorsIdx, dapIdx, localIdx, avaliadorIdx;
-                let utmNum = 0, utmLetter = 'Z', hasPhoto = false;
-
-                if (isV18Format) {
-                    utmNum = parseInt(row[5], 10) || 0;
-                    utmLetter = row[6] || 'Z';
-                    dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
-                    riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
-                    hasPhoto = (row[14] && row[14].trim().toLowerCase() === 'sim');
-                } else if (isV17Format) {
-                    utmNum = parseInt(row[5], 10) || 0;
-                    utmLetter = row[6] || 'Z';
-                    dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
-                    riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
-                } else {
-                    dapIdx = 5; localIdx = 6; avaliadorIdx = 7; pontuacaoIdx = 8;
-                    riscoIdx = 9; obsIdx = 10; factorsIdx = 11;
-                }
-
-                const pontuacao = parseInt(row[pontuacaoIdx], 10) || 0;
-                let riscoClass = 'risk-col-low';
-                if (pontuacao >= 20) riscoClass = 'risk-col-high';
-                else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
-
-                const treeData = {
-                    id: ++maxId, 
-                    data: row[1] || 'N/A',
-                    especie: row[2] || 'N/A',
-                    coordX: row[3] || 'N/A',
-                    coordY: row[4] || 'N/A',
-                    utmZoneNum: utmNum,
-                    utmZoneLetter: utmLetter,
-                    dap: row[7] || 'N/A',
-                    local: row[8] || 'N/A',
-                    avaliador: row[9] || 'N/A',
-                    pontuacao: pontuacao,
-                    risco: row[11] || 'N/A',
-                    observacoes: row[12] || 'N/A',
-                    riskFactors: (row[13] || '').split(',').map(item => parseInt(item, 10)),
-                    riscoClass: riscoClass,
-                    hasPhoto: hasPhoto 
-                };
-                newTrees.push(treeData);
+            if (!isV16Format && !isV17Format && !isV18Format) { 
+                console.warn("Linha CSV mal formatada, ignorada:", lines[i]); 
+                continue; 
             }
-            state.setRegisteredTrees(newTrees);
-            state.saveDataToStorage();
-            utils.showToast(`📤 Importação de CSV concluída! ${newTrees.length} registos carregados.`, 'success'); 
-        } catch (error) {
-            console.error("Erro ao processar o ficheiro CSV:", error);
-            utils.showToast("Erro ao processar o ficheiro.", 'error'); 
-        } finally { event.target.value = null; }
-    };
-    reader.onerror = () => { utils.showToast("Erro ao ler o ficheiro.", 'error'); event.target.value = null; };
-    reader.readAsText(file);
+
+            let pontuacaoIdx, riscoIdx, obsIdx, factorsIdx, dapIdx, localIdx, avaliadorIdx;
+            let utmNum = 0, utmLetter = 'Z', hasPhoto = false;
+
+            if (isV18Format) {
+                utmNum = parseInt(row[5], 10) || 0;
+                utmLetter = row[6] || 'Z';
+                dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
+                riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
+                hasPhoto = (row[14] && row[14].trim().toLowerCase() === 'sim');
+            } else if (isV17Format) {
+                utmNum = parseInt(row[5], 10) || 0;
+                utmLetter = row[6] || 'Z';
+                dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
+                riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
+            } else {
+                dapIdx = 5; localIdx = 6; avaliadorIdx = 7; pontuacaoIdx = 8;
+                riscoIdx = 9; obsIdx = 10; factorsIdx = 11;
+            }
+
+            const pontuacao = parseInt(row[pontuacaoIdx], 10) || 0;
+            let riscoClass = 'risk-col-low';
+            if (pontuacao >= 20) riscoClass = 'risk-col-high';
+            else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
+
+            const treeData = {
+                id: ++maxId, 
+                data: row[1] || 'N/A',
+                especie: row[2] || 'N/A',
+                coordX: row[3] || 'N/A',
+                coordY: row[4] || 'N/A',
+                utmZoneNum: utmNum,
+                utmZoneLetter: utmLetter,
+                dap: row[dapIdx] || 'N/A',
+                local: row[localIdx] || 'N/A',
+                avaliador: row[avaliadorIdx] || 'N/A',
+                pontuacao: pontuacao,
+                risco: row[riscoIdx] || 'N/A',
+                observacoes: row[obsIdx] || 'N/A',
+                riskFactors: (row[factorsIdx] || '').split(',').map(item => parseInt(item, 10)),
+                riscoClass: riscoClass,
+                hasPhoto: hasPhoto 
+            };
+            newTrees.push(treeData);
+        }
+        state.setRegisteredTrees(newTrees);
+        state.saveDataToStorage();
+        utils.showToast(`📤 Importação de CSV concluída! ${newTrees.length} registos carregados.`, 'success'); 
+    
+    } catch (error) {
+        console.error("Erro ao processar o ficheiro CSV:", error);
+        utils.showToast(error.message || "Erro ao processar o ficheiro.", 'error'); 
+    } finally {
+        event.target.value = null; 
+    }
 }
+
 
 // === 6. LÓGICA DE FEATURES COMPLEMENTARES (CHAT, CONTATO, EMAIL) ===
 
@@ -862,6 +869,10 @@ export async function handleChatSend() {
     }
 }
 
+/**
+ * (v19.6) CORREÇÃO: Adicionado 'export' para que o ui.js possa usá-lo.
+ * Helper para ordenação (lido pelo ui.js)
+ */
 export function getSortValue(tree, key) {
     const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
     if (numericKeys.includes(key)) {

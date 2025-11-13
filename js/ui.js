@@ -1,4 +1,4 @@
-// js/ui.js (v19.6 - CORRIGIDO - Erro de sintaxe 'import *s' e lógica de UI)
+// js/ui.js (v19.7 - CORRIGIDO - Erro de sintaxe 'import *s' e lógica de UI)
 
 // === 1. IMPORTAÇÕES ===
 
@@ -7,7 +7,7 @@ import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
-import * as features from './features.js';
+import * as features from './features.js'; // (v19.6) A importação está correta
 
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO PRINCIPAL ===
@@ -198,7 +198,7 @@ export function renderSummaryTable() {
     tableHTML += `<th class="col-delete">Excluir</th>`;
     tableHTML += '</tr></thead><tbody>';
     
-    // Ordena os dados ANTES de renderizar, lendo o 'sortState'
+    // (v19.6) CORREÇÃO: Importa 'getSortValue' do features.js
     const sortedData = [...state.registeredTrees].sort((a, b) => {
         const valA = features.getSortValue(a, state.sortState.key);
         const valB = features.getSortValue(b, state.sortState.key);
@@ -394,7 +394,7 @@ function renderTreesOnMap(treesData) {
 
 
 /**
- * (v19.4) Função principal que inicializa todos os listeners da Calculadora.
+ * (v19.7) Função principal que inicializa todos os listeners da Calculadora.
  * (Chamada pelo main.js quando a aba da calculadora é carregada).
  */
 export function setupRiskCalculator() {
@@ -441,15 +441,16 @@ export function setupRiskCalculator() {
     if (importDataBtn) importDataBtn.addEventListener('click', features.handleImportData);
     if (exportDataBtn) exportDataBtn.addEventListener('click', features.handleExportData);
     
-    // (v19.6) Atualiza a UI após a importação
+    // (v19.7) Atualiza a UI após a importação (espera a Promise)
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
         features.handleImportZip(e).then(() => {
-            renderSummaryTable(); // Atualiza a UI após a importação
+            renderSummaryTable(); 
         });
     });
     if (csvImporter) csvImporter.addEventListener('change', (e) => {
-        features.handleFileImport(e);
-        renderSummaryTable(); // Atualiza a UI após a importação
+        features.handleFileImport(e).then(() => {
+            renderSummaryTable();
+        });
     }); 
 
     // Listeners restantes
@@ -462,10 +463,10 @@ export function setupRiskCalculator() {
     
     if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
     
-    // (v19.6) Atualiza a UI após a ação
+    // (v19.7) Atualiza a UI após a ação
     if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
         if (features.handleClearAll()) {
-            renderSummaryTable(); // Atualiza a UI
+            renderSummaryTable(); 
         }
     });
     
@@ -502,18 +503,17 @@ export function setupRiskCalculator() {
             if(gpsContainer) gpsContainer.style.display = 'none';
         }
         
-        // Adicionar Árvore
-        // (REFACTOR v19.7) Chama a lógica de submissão do features.js e atualiza a UI
+        // (v19.7) Lógica de submissão do formulário movida para 'features.js'
         form.addEventListener('submit', (event) => {
             const submissionSuccessful = features.handleAddTreeSubmit(event);
             
             if (submissionSuccessful) {
                 renderSummaryTable(); // Atualiza a UI
                 
-                // Lógica de UI dependente
+                // Recarrega o carrossel se estiver em dispositivo móvel
                 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 if (isTouchDevice) {
-                    setupMobileChecklist(); // Recarrega o carrossel
+                    setupMobileChecklist(); 
                 }
 
                 const gpsStatus = document.getElementById('gps-status');
@@ -546,7 +546,7 @@ export function setupRiskCalculator() {
     // Renderiza a tabela inicial
     renderSummaryTable(); 
     
-    // (v19.6) Event Delegation com atualização de UI
+    // (v19.7) Event Delegation com atualização de UI centralizada
     if (summaryContainer) {
         // Clona para limpar listeners antigos
         const newSummaryContainer = summaryContainer.cloneNode(true);
@@ -566,8 +566,11 @@ export function setupRiskCalculator() {
             }
             
             if (editButton) {    
+                const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
+                
                 showSubTab('tab-content-register'); 
+                
                 if (needsCarouselUpdate && isTouchDevice) {
                     setupMobileChecklist(); // Recarrega o carrossel
                 }
