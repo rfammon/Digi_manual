@@ -1,4 +1,4 @@
-/* style.css (v21.9 - Correção de Layout do InfoBox e Zoom de Imagem) */
+/* style.css (v21.10 - Correção de Layout do InfoBox e Zoom de Imagem) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -1099,7 +1099,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
 /* -------------------------------------- */
 
-/* [NOVO] Legenda Externa (HTML) */
+/* Legenda Externa (HTML) */
 #map-legend-filter {
     background: var(--gray-100);
     padding: var(--space-sm) var(--space-md);
@@ -1202,8 +1202,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #map-info-box .manual-img {
     width: 100%;
-    /* [CORREÇÃO v21.9] max-width para zoom, transition para suavidade */
-    max-width: 100%; 
+    /* [CORREÇÃO v21.9] O max-width será controlado pelo JS. */
     height: auto;
     object-fit: cover;
     margin-top: var(--space-sm);
