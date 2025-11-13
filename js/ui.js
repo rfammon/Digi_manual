@@ -1,12 +1,13 @@
-// js/ui.js (v21.3 - FINAL - Correção do Modal de Importação Vazio)
+// js/ui.js (v21.5 - OTIMIZAÇÃO DE IMAGEM)
 
 // === 1. IMPORTAÇÕES ===
-import * as state from './state.js'; // Importação necessária para a correção
+import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js'; 
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
+// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
@@ -469,9 +470,66 @@ function setupFileImporters() {
     return { zipImporter, csvImporter };
 }
 
+/**
+ * [CRÍTICO PARA PERFORMANCE]
+ * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
+ * Retorna um novo Blob com a imagem otimizada.
+ * @param {File|Blob} imageFile - O arquivo de imagem original.
+ * @param {number} maxWidth - Largura máxima desejada para a imagem.
+ * @param {number} quality - Qualidade JPEG (0 a 1).
+ * @returns {Promise<Blob>} Um Promise que resolve para o Blob da imagem otimizada.
+ */
+async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(imageFile); // Lê o arquivo como URL de dados
+
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result; // Define a fonte da imagem para o URL de dados
+
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                let width = img.width;
+                let height = img.height;
+
+                // Calcula novas dimensões se a largura exceder maxWidth
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Desenha a imagem redimensionada no canvas
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Converte o canvas para um Blob JPEG com a qualidade especificada
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/jpeg', quality);
+            };
+
+            img.onerror = (error) => {
+                console.error("Erro ao carregar imagem no canvas", error);
+                reject(error); // Lida com erros de carregamento da imagem
+            };
+        };
+
+        reader.onerror = (error) => {
+            console.error("Erro ao ler arquivo de imagem", error);
+            reject(error); // Lida com erros de leitura do arquivo
+        };
+    });
+}
+
 
 /**
  * (v20.3 - CORREÇÃO DE CRASH) Função principal que inicializa todos os listeners da Calculadora.
+ * (v21.5 - OTIMIZAÇÃO DE IMAGEM)
  */
 export function setupRiskCalculator() {
         
@@ -542,19 +600,32 @@ export function setupRiskCalculator() {
     
     if (getGpsBtn) getGpsBtn.addEventListener('click', features.handleGetGPS);
     
-    // Listeners de Foto
+    // Listeners de Foto (v21.5 - OTIMIZAÇÃO DE IMAGEM)
     if (photoInput) {
-        photoInput.addEventListener('change', (event) => {
+        photoInput.addEventListener('change', async (event) => { // <-- Tornou-se async
             const file = event.target.files[0];
             if (file) {
                 features.clearPhotoPreview(); 
-                const preview = document.createElement('img');
-                preview.id = 'photo-preview';
-                preview.src = URL.createObjectURL(file);
                 
-                document.getElementById('photo-preview-container').prepend(preview);
-                document.getElementById('remove-photo-btn').style.display = 'block';
-                state.setCurrentTreePhoto(file); 
+                // --- NOVA LÓGICA DE OTIMIZAÇÃO ---
+                try {
+                    showToast("Otimizando foto...", "success");
+                    const optimizedBlob = await optimizeImage(file, 800, 0.7); // 800px, 70%
+                    state.setCurrentTreePhoto(optimizedBlob); // Armazena o Blob OTIMIZADO
+                    
+                    // Cria a pré-visualização a partir do Blob otimizado
+                    const preview = document.createElement('img');
+                    preview.id = 'photo-preview';
+                    preview.src = URL.createObjectURL(optimizedBlob);
+                    document.getElementById('photo-preview-container').prepend(preview);
+                    document.getElementById('remove-photo-btn').style.display = 'block';
+
+                } catch (error) {
+                    console.error("Erro ao otimizar imagem:", error);
+                    showToast("Erro ao processar a foto. Tente outra imagem.", "error");
+                    state.setCurrentTreePhoto(null);
+                    features.clearPhotoPreview();
+                }
             }
         });
     }
