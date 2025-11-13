@@ -1,4 +1,4 @@
-/* style.css (Completo v19.8 - Inclui Modal) */
+/* style.css (Completo v19.9 - Correção do Modal) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -549,11 +549,11 @@ main {
     justify-content: center;
     gap: 8px;
 }
-#add-tree-btn, #export-csv-btn {
+#add-tree-btn { /* (v19.8) Removido #export-csv-btn daqui */
     background-color: #00796b;
     color: white;
 }
-#add-tree-btn:hover, #export-csv-btn:hover { background-color: #00695c; }
+#add-tree-btn:hover { background-color: #00695c; }
 
 #reset-risk-form-btn, #send-email-btn {
     background-color: #ddd;
@@ -1186,7 +1186,7 @@ html {
 }
 
 /* Botão de Exportar ZIP (Verde Principal) */
-#export-zip-btn {
+#export-zip-btn { /* (v19.8) Este ID não é mais usado, mas mantemos o estilo */
     background-color: #00796b;
     color: white;
 }
@@ -1201,11 +1201,10 @@ html {
     gap: 10px;
     font-weight: bold;
     color: #004d40;
-    margin-top: 10px; /* (v19.8) Espaçamento */
+    margin-top: 10px; 
 }
 #zip-status .spinner {
-    /* (v19.0) Reutilizando o spinner do GPS, mas com cor verde */
-    display: inline-block; /* (v19.8) Garante que o spinner do zip apareça */
+    display: inline-block; 
     width: 16px;
     height: 16px;
     border: 2px solid rgba(0, 77, 64, 0.3);
@@ -1213,7 +1212,7 @@ html {
 }
 
 /* -------------------------------------- */
-/* 21. MODAL DE IMPORT/EXPORT (v19.8) */
+/* 21. MODAL DE IMPORT/EXPORT (v19.9 - CORRIGIDO) */
 /* -------------------------------------- */
 
 /* O Fundo (Overlay) */
@@ -1226,8 +1225,12 @@ html {
     background-color: rgba(0, 0, 0, 0.6);
     z-index: 1999;
     display: flex;
-    align-items: center;
     justify-content: center;
+    
+    /* (v19.9) Correção: Remove 'align-items' e usa 'padding-top' para
+       um posicionamento mais confiável em viewports mobile (evita o teclado) */
+    padding: 15vh 1rem 1rem 1rem; /* 15% do topo */
+    overflow-y: auto; /* Permite rolar se o modal for muito alto */
     
     /* Estado inicial (oculto) */
     opacity: 0;
@@ -1241,13 +1244,15 @@ html {
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.4);
     padding: 1.5rem 2rem;
-    width: 90%;
+    width: 100%; /* (v19.9) Alterado de 90% para 100% (limitado pelo max-width) */
     max-width: 450px;
     z-index: 2000;
     
-    /* Animação de entrada */
-    transform: translateY(-20px);
-    transition: transform 0.2s ease-out;
+    /* (v19.9) Remove a animação 'transform' que causava o pulo */
+    opacity: 0; /* Inicia transparente para o fade-in */
+    transition: opacity 0.2s ease-out;
+    height: -moz-fit-content; /* (v19.9) Garante que a caixa se ajuste ao conteúdo */
+    height: fit-content;
 }
 
 /* Mostra o modal */
@@ -1256,7 +1261,7 @@ html {
     visibility: visible;
 }
 .modal-overlay.show .modal-dialog {
-    transform: translateY(0);
+    opacity: 1;
 }
 
 .modal-dialog h3 {
@@ -1285,7 +1290,7 @@ html {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 1rem; /* Tamanho reduzido para o modal */
+    font-size: 1rem; 
     font-weight: bold;
     transition: background-color 0.3s;
     
