@@ -1,4 +1,4 @@
-/* style.css (v21.2 - Adiciona Legenda e InfoBox do Mapa) */
+/* style.css (v21.3 - Correção de Layout do Mapa e Mobile InfoBox) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -1165,6 +1165,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 .legend-filter input[type="radio"] {
     margin-right: var(--space-sm);
+    accent-color: var(--color-primary-medium);
 }
 .legend-dot {
     width: 12px;
@@ -1189,12 +1190,23 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     opacity: 1;
     visibility: visible;
     transform: scale(1);
+    
+    /* Começa escondido */
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.95);
 }
 #map-info-box.hidden {
     opacity: 0;
     visibility: hidden;
     transform: scale(0.95);
 }
+#map-info-box:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
 #map-info-box strong {
     font-size: 1.1rem;
     color: var(--color-primary-dark);
@@ -1244,5 +1256,12 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
         border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
         /* Garante que não cubra a legenda do leaflet */
         z-index: 1001; 
+    }
+    
+    /* [CORREÇÃO v21.3] Limita a altura da imagem no mobile */
+    #map-info-box .manual-img {
+        height: 180px;
+        max-width: 100%;
+        object-fit: contain; /* Usa 'contain' para ver a foto inteira */
     }
 }
