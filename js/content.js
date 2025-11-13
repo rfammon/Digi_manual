@@ -1,5 +1,6 @@
-// js/content.js (v20.0 - OTIMIZADO)
-// O HTML da Calculadora foi REMOVIDO e movido para o index.html.
+// js/content.js (v22.2 - Imagem do Autor Adicionada)
+// (Anteriormente 'data-content.js')
+// A entrada 'calculadora-risco' foi REMOVIDA e movida para o index.html.
 
 // Helper local, usado apenas neste arquivo
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -122,7 +123,7 @@ export const podaPurposeData = {
     }
 };
 
-// === 4. CONTEÚDO HTML DO MANUAL (v19.3) ===
+// === 4. CONTEÚDO HTML DO MANUAL ===
 export const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -229,7 +230,7 @@ export const manualContent = {
                 <li>Cortes rentes. ${imgTag('corte-rente-lesao.jpg', 'Lesão por corte rente')}</li>
             </ul>
             ${imgTag('poda-drastica-vs-correta.jpg', 'Comparação visual: Poda Drástica vs Correta')}
-            <h3>Supressão (Corte de ÁrvORE)</h3>
+            <h3>Supressão (Corte de Árvore)</h3>
             <p>Corte direcional deixando a <strong>"dobradiça" de 10%</strong> do diâmetro.</p>
             <h4>Segurança Crítica: Rota de Fuga</h4>
             ${imgTag('rota-fuga-45graus.jpg', 'Diagrama das rotas de fuga')}
@@ -341,12 +342,16 @@ export const manualContent = {
             </table>
         `
     },
+    
+    // [NOVA VERSÃO v22.2 - Com Imagem]
     'sobre-autor': {
         titulo: '👨‍💻 Sobre o Autor',
         html: `
             <div id="sobre-o-autor">    
+                <img src="img/autor.jpg" alt="Foto de Rafael de Andrade Ammon" class="manual-img" style="max-width: 250px; border-radius: 50%; margin: 0 auto 1.5rem auto; display: block;">
+                
                 <div class="autor-container">
-                    <div class="autor-texto">
+                    <div class="autor-texto" style="text-align: center;">
                         <p>
                             <strong>Rafael de Andrade Ammon</strong> é Engenheiro Florestal (UFRRJ),
                             com MBA em Gestão de Projetos (USP/ESALQ) em curso. A sua carreira
