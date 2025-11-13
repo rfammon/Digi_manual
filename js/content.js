@@ -1,4 +1,5 @@
-// js/content.js (v19.4 - O "Manual" - Dados e Conteúdo HTML)
+// js/content.js (v20.0 - OTIMIZADO)
+// O HTML da Calculadora foi REMOVIDO e movido para o index.html.
 
 // Helper local, usado apenas neste arquivo
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -228,7 +229,7 @@ export const manualContent = {
                 <li>Cortes rentes. ${imgTag('corte-rente-lesao.jpg', 'Lesão por corte rente')}</li>
             </ul>
             ${imgTag('poda-drastica-vs-correta.jpg', 'Comparação visual: Poda Drástica vs Correta')}
-            <h3>Supressão (Corte de Árvore)</h3>
+            <h3>Supressão (Corte de ÁrvORE)</h3>
             <p>Corte direcional deixando a <strong>"dobradiça" de 10%</strong> do diâmetro.</p>
             <h4>Segurança Crítica: Rota de Fuga</h4>
             ${imgTag('rota-fuga-45graus.jpg', 'Diagrama das rotas de fuga')}
@@ -372,175 +373,10 @@ export const manualContent = {
                 </div>
             </div>
         `
-    },
-
-    // (CORRIGIDO v19.3) HTML da Calculadora: HTML estático completo (sem auto-referência)
-    'calculadora-risco': {
-        titulo: '📊 Calculadora de Risco Arbóreo',
-        html: `
-            <p>Use o mapa para visualização geoespacial do risco, a aba "Registrar" para coleta e "Resumo" para gerenciar os dados.</p>
-            
-            <nav class="sub-nav">
-                <button type="button" class="sub-nav-btn" data-target="tab-content-register">
-                    Registrar Árvore
-                </button>
-                <button type="button" class="sub-nav-btn" data-target="tab-content-summary">
-                    Resumo da Vistoria <span id="summary-badge" class="badge"></span>
-                </button>
-                <button type="button" class="sub-nav-btn" data-target="tab-content-mapa">
-                    Mapa GIS 🗺️
-                </button>
-            </nav>
-
-            <div id="tab-content-register" class="sub-tab-content">
-                <form id="risk-calculator-form">
-                    <fieldset class="risk-fieldset">
-                        <legend>1. Identificação da Árvore</legend>
-                        <div class="form-grid">
-                            <div>
-                                <label for="risk-data">Data da Coleta:</label>
-                                <input type="date" id="risk-data" name="risk-data" value="${new Date().toISOString().split('T')[0]}">
-                            </div>
-                            <div>
-                                <label for="risk-especie">Espécie (Nome/Tag):</label>
-                                <input type="text" id="risk-especie" name="risk-especie" required>
-                            </div>
-                            <div>
-                                <label for="risk-local">Local (Endereço/Setor):</label>
-                                <input type="text" id="risk-local" name="risk-local">
-                            </div>
-                            <div>
-                                <label for="risk-coord-x">Coord. X (UTM ou Lon):</label>
-                                <input type="text" id="risk-coord-x" name="risk-coord-x">
-                            </div>
-                            <div>
-                                <label for="risk-coord-y">Coord. Y (UTM ou Lat):</label>
-                                <input type="text" id="risk-coord-y" name="risk-coord-y">
-                            </div>
-                            <div class="gps-button-container">
-                                <button type="button" id="get-gps-btn">🛰️ Capturar GPS</button>
-                                <span id="gps-status"></span>
-                            </div>
-                            <div>
-                                <label for="risk-dap">DAP (cm):</label>
-                                <input type="number" id="risk-dap" name="risk-dap" min="0" step="any">
-                            </div>
-                            <div>
-                                <label for="risk-avaliador">Avaliador:</label>
-                                <input type="text" id="risk-avaliador" name="risk-avaliador">
-                            </div>
-                        </div>
-                        <div>
-                            <label for="risk-obs">Observações (Opcional):</label>
-                            <textarea id="risk-obs" name="risk-obs" rows="3" placeholder="Ex: Cavidade no tronco, presença de pragas, galho sobre telhado..."></textarea>
-                        </div>
-
-                        <div class="photo-upload-container">
-                            <label for="tree-photo-input" class="photo-btn">📷 Adicionar Foto</label>
-                            <input type="file" id="tree-photo-input" accept="image/*" capture="environment" style="display: none;">
-                            
-                            <div id="photo-preview-container">
-                                <button type="button" id="remove-photo-btn" style="display:none;">&times;</button>
-                            </div>
-                        </div>
-                        
-                    </fieldset>
-                    
-                    <fieldset class="risk-fieldset">
-                        <legend>2. Lista de Verificação de Risco</legend>
-                        <table class="risk-table">
-                            <thead>
-                                <tr><th>Nº</th><th>Pergunta</th><th>Peso</th><th>Sim</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>1</td><td>Há galhos mortos com diâmetro superior a 5 cm?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
-                                <tr><td>2</td><td>Existem rachaduras ou fendas no tronco ou galhos principais?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                                <tr><td>3</td><td>Há sinais de apodrecimento (madeira esponjosa, fungos, cavidades)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                                <tr><td>4</td><td>A árvore possui uniões em “V” com casca inclusa?</td><td>4</td><td><input type="checkbox" class="risk-checkbox" data-weight="4"></td></tr>
-                                <tr><td>5</td><td>Há galhos cruzados ou friccionando entre si?</td><td>2</td><td><input type="checkbox" class="risk-checkbox" data-weight="2"></td></tr>
-                                <tr><td>6</td><td>A árvore apresenta copa assimétrica (>30% de desequilíbrio)?</td><td>2</td><td><input type="checkbox" class="risk-checkbox" data-weight="2"></td></tr>
-                                <tr><td>7</td><td>Há sinais de inclinação anormal ou recente?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                                <tr><td>8</td><td>A árvore está próxima a vias públicas ou áreas de circulação?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                                <tr><td>9</td><td>Há risco de queda sobre edificações, veículos ou pessoas?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                                <tr><td>10</td><td>A árvore interfere em redes elétricas ou estruturas urbanas?</td><td>4</td><td><input type="checkbox" class="risk-checkbox" data-weight="4"></td></tr>
-                                <tr><td>11</td><td>A espécie é conhecida por apresentar alta taxa de falhas?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
-                                <tr><td>12</td><td>A árvore já sofreu podas drásticas ou brotação epicórmica intensa?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
-                                <tr><td>13</td><td>Há calçadas rachadas ou tubulações expostas próximas à base?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
-                                <tr><td>14</td><td>Há perda visível de raízes de sustentação (>40%)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                                <tr><td>15</td><td>Há sinais de compactação ou asfixia radicular?</td><td>3</td><td><input type="checkbox" class="risk-checkbox" data-weight="3"></td></tr>
-                                <tr><td>16</td><td>Há apodrecimento em raízes primárias (>3 cm)?</td><td>5</td><td><input type="checkbox" class="risk-checkbox" data-weight="5"></td></tr>
-                            </tbody>
-                        </table>
-                        <div class="mobile-checklist-wrapper">
-                            <div class="mobile-checklist-card"></div>
-                            <div class="mobile-checklist-nav">
-                                <button type="button" id="checklist-prev">❮ Anterior</button>
-                                <span class="checklist-counter">1 / 16</span>
-                                <button type="button" id="checklist-next">Próxima ❯</button>
-                            </div>
-                        </div>
-                    </fieldset>
-                    
-                    <div class="risk-buttons-area">
-                        <button type="submit" id="add-tree-btn">➕ Adicionar Árvore</button>
-                        <button type="button" id="reset-risk-form-btn">Limpar Campos</button>
-                    </div>
-                </form>
-            </div>
-            
-            <div id="tab-content-summary" class="sub-tab-content">
-                <fieldset class="risk-fieldset">
-                    <legend>3. Árvores Cadastradas</legend>
-                    
-                    <div class="table-filter-container">
-                        <input type="text" id="table-filter-input" placeholder="🔎 Filtrar por ID, espécie, local, risco...">
-                    </div>
-                    
-                    <div id="summary-table-container">
-                        <p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>
-                    </div>
-                    
-                    <div id="import-export-controls" class="risk-buttons-area">
-                        
-                        <input type="file" id="zip-importer" accept=".zip,application/zip,application/x-zip-compressed" style="display: none;">
-                        <input type="file" id="csv-importer" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain" style="display: none;">
-                        
-                        <button type="button" id="import-data-btn" class="export-btn zip-import-label">📤 Importar Dados</button>
-                        <button type="button" id="export-data-btn" class="export-btn">📥 Exportar Dados</button>
-                        
-                        <button type="button" id="send-email-btn" class="export-btn">📧 Enviar por Email</button>
-                        <button type="button" id="clear-all-btn" class="export-btn">🗑️ Limpar Tabela</button>
-                    </div>
-                    
-                    <div id="zip-status" style="display: none;">
-                        <span class="spinner" style="display: inline-block;"></span>
-                        <span id="zip-status-text" style="margin-left: 10px; font-weight: bold; color: #004d40;">Processando pacote...</span>
-                    </div>
-
-                </fieldset>
-            </div>
-            
-            <div id="tab-content-mapa" class="sub-tab-content mapa-tab">
-                <fieldset class="risk-fieldset">
-                    <legend>Mapa de Localização e Risco</legend>
-                    <div id="map-container"></div>
-                    
-                    <div class="form-grid" style="margin-top: 15px; gap: 10px;">
-                        <div>
-                            <label for="default-utm-zone">Zona UTM Padrão (Ex: 23K):</label>
-                            <input type="text" id="default-utm-zone" placeholder="Ex: 23K" style="height: 38px;">
-                            <small style="color: #555; font-size: 0.8em;">(Necessário para dados antigos ou importados)</small>
-                        </div>
-                        <button type="button" id="zoom-to-extent-btn" class="export-btn">📍 Aproximar dos Pontos</button>
-                    </div>
-
-                    <p style="margin-top: 15px; font-size: 0.9em; color: #555;">
-                        Simbologia: <span style="color: #C62828; font-weight: bold;">🔴 Alto Risco</span> | 
-                        <span style="color: #E65100; font-weight: bold;">🟠 Médio Risco</span> | 
-                        <span style="color: #2E7D32; font-weight: bold;">🟢 Baixo Risco</span>
-                    </p>
-                </fieldset>
-            </div>
-        `
     }
+    
+    // NOTA DE ARQUITETURA:
+    // A ENTRADA 'calculadora-risco' FOI REMOVIDA.
+    // O HTML estático agora vive no index.html.
+    // A lógica de navegação está no js/main.js.
 };

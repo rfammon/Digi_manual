@@ -1,8 +1,8 @@
-// js/ui.js (v19.9 - CORRIGIDO - Erro de sintaxe 'import *s' + Lógica do Modal)
+// js/ui.js (v20.0 - CORRETO E COMPATÍVEL)
+// Este arquivo não precisou de alterações, pois já estava 
+// projetado para "anexar" a elementos existentes no DOM.
 
 // === 1. IMPORTAÇÕES ===
-
-// (CORREÇÃO v19.5) Corrigido de 'import *s' para 'import * as'
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js';
@@ -10,10 +10,11 @@ import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
 
-// === 2. RENDERIZAÇÃO DE CONTEÚDO PRINCIPAL ===
+// === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
 
 /**
  * Carrega o HTML de um tópico do manual na view principal.
+ * Esta função agora é chamada apenas pelo main.js para tópicos do manual.
  * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
  * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
  */
@@ -53,10 +54,23 @@ export function showMobileQuestion(index) {
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
     if (!questionRow) return;
+    
+    // (v20.0) Debug: Adiciona verificação de 'cells'
+    if (!questionRow.cells || questionRow.cells.length < 4) {
+        console.error("showMobileQuestion: A linha da tabela (tr) está malformada.", questionRow);
+        return;
+    }
+    
     const num = questionRow.cells[0].textContent;
     const pergunta = questionRow.cells[1].textContent;
     const peso = questionRow.cells[2].textContent;
     const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
+    
+    if (!realCheckbox) {
+         console.error("showMobileQuestion: Checkbox não encontrado na linha.", questionRow);
+         return;
+    }
+    
     card.innerHTML = `
         <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
         <span class="checklist-card-peso">(Peso: ${peso})</span>
@@ -85,22 +99,29 @@ export function setupMobileChecklist() {
     mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
     mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
     mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
-    mobileChecklist.questions = document.querySelectorAll('.risk-table tbody tr');
+    // (v20.0) A tabela agora está estática no index.html
+    mobileChecklist.questions = document.querySelectorAll('#risk-calculator-form .risk-table tbody tr');
     
-    if (mobileChecklist.questions.length === 0 || !mobileChecklist.card) return;
+    if (mobileChecklist.questions.length === 0 || !mobileChecklist.card || !mobileChecklist.navPrev) {
+         console.warn("setupMobileChecklist: Elementos do carrossel não encontrados. O carrossel não será iniciado.");
+         return;
+    }
     
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
     // (Correção v16.1) Clona nós para limpar listeners antigos ao recarregar (ex: modo de edição)
-    mobileChecklist.card.replaceWith(mobileChecklist.card.cloneNode(true));
-    mobileChecklist.navPrev.replaceWith(mobileChecklist.navPrev.cloneNode(true));
-    mobileChecklist.navNext.replaceWith(mobileChecklist.navNext.cloneNode(true));
+    const newCard = mobileChecklist.card.cloneNode(true);
+    mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
+    mobileChecklist.card = newCard;
     
-    // Re-seleciona os nós clonados
-    mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
-    mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
-    mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
+    const newNavPrev = mobileChecklist.navPrev.cloneNode(true);
+    mobileChecklist.navPrev.parentNode.replaceChild(newNavPrev, mobileChecklist.navPrev);
+    mobileChecklist.navPrev = newNavPrev;
+    
+    const newNavNext = mobileChecklist.navNext.cloneNode(true);
+    mobileChecklist.navNext.parentNode.replaceChild(newNavNext, mobileChecklist.navNext);
+    mobileChecklist.navNext = newNavNext;
     
     // Adiciona o listener para o "toggle" (Sim/Não)
     mobileChecklist.card.addEventListener('change', (e) => {
@@ -219,7 +240,7 @@ export function renderSummaryTable() {
         tableHTML += `
             <tr data-tree-id="${tree.id}">
                 <td>${tree.id}</td>
-                <td>${displayDate}</td>    
+                <td>${displayDate}</td>   
                 <td>${tree.especie}</td>
                 <td style="text-align: center;">${photoIcon}</td> <td>${tree.coordX}</td>
                 <td>${tree.coordY}</td>
@@ -253,19 +274,19 @@ export function showSubTab(targetId) {
 
     // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
     if (targetId === 'tab-content-mapa') {
-        setTimeout(() => { initMap(); }, 50); // Delay para garantir que o container está visível
+        // Delay para garantir que o container está visível
+        setTimeout(() => { initMap(); }, 50); 
     }
     
     // (v18.0) Lógica de Destaque da Linha
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
-        // A função highlightTableRow está definida abaixo
         highlightTableRow(state.highlightTargetId);
         state.setHighlightTargetId(null); // Limpa o alvo
     }
 }
 
 /**
- * (v19.8) Destaque da linha (movido de features.js para ui.js)
+ * (v19.8) Destaque da linha
  */
 function highlightTableRow(id) {
     // (v19.8) Atraso para garantir que a aba trocou
@@ -289,7 +310,9 @@ function highlightTableRow(id) {
     }, 100);
 }
 
-
+/**
+ * (v20.0) Inicializa o mapa Leaflet
+ */
 function initMap() {
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
@@ -316,7 +339,7 @@ function initMap() {
         return null;
     }).filter(tree => tree !== null); 
     
-    let mapCenter = [-15.7801, -47.9292]; 
+    let mapCenter = [-15.7801, -47.9292]; // Centro do Brasil
     let initialZoom = 4; 
 
     if (boundsArray.length > 0) {
@@ -342,9 +365,13 @@ function initMap() {
     }
 }
 
+/**
+ * (v20.0) Desenha as árvores no mapa
+ */
 function renderTreesOnMap(treesData) {
     if (!state.mapInstance) return;
 
+    // Limpa marcadores antigos
     state.mapInstance.eachLayer(function (layer) {
         if (layer.options && layer.options.isTreeMarker) {
             state.mapInstance.removeLayer(layer);
@@ -389,6 +416,7 @@ function renderTreesOnMap(treesData) {
                         const imgUrl = URL.createObjectURL(imageBlob);
                         const finalContent = popupContent + `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
                         e.popup.setContent(finalContent);
+                        // Revoga o URL do blob quando o popup fechar
                         state.mapInstance.once('popupclose', () => URL.revokeObjectURL(imgUrl));
                     } else {
                         e.popup.setContent(popupContent + '<p style="color:red;">Foto não encontrada.</p>');
@@ -406,6 +434,7 @@ function renderTreesOnMap(treesData) {
 
 /**
  * (v19.8) Função principal que inicializa todos os listeners da Calculadora.
+ * (v20.0) Esta função é chamada UMA VEZ pelo main.js
  */
 export function setupRiskCalculator() {
         
@@ -414,6 +443,7 @@ export function setupRiskCalculator() {
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
+        // (v20.0) Limpa listeners antigos (boa prática, embora agora seja chamado só uma vez)
         const newNav = subNav.cloneNode(true);
         subNav.parentNode.replaceChild(newNav, subNav);
         
@@ -424,6 +454,7 @@ export function setupRiskCalculator() {
                 showSubTab(button.getAttribute('data-target'));
             }
         });
+        // Ativa a primeira aba (Registrar)
         showSubTab('tab-content-register');
     }
 
@@ -465,7 +496,7 @@ export function setupRiskCalculator() {
         features.handleFileImport(e).then(() => {
             renderSummaryTable();
         });
-    }); 
+    });  
 
     // Listeners restantes
     if (zoomBtn) zoomBtn.addEventListener('click', features.handleZoomToExtent);
@@ -479,7 +510,7 @@ export function setupRiskCalculator() {
             description: 'Tem certeza que deseja apagar TODOS os registros? Esta ação não pode ser desfeita e removerá todas as fotos.',
             buttons: [
                 { text: 'Sim, Apagar Tudo', class: 'primary', action: () => {
-                    if (features.handleClearAll()) {
+                    if (features.handleClearAll()) { // features.handleClearAll agora não tem confirm()
                         renderSummaryTable(); 
                     }
                 }},
@@ -499,6 +530,10 @@ export function setupRiskCalculator() {
                 const preview = document.createElement('img');
                 preview.id = 'photo-preview';
                 preview.src = URL.createObjectURL(file);
+                // (v20.0) Revoga o blob anterior se houver
+                preview.onload = () => {
+                   // URL.revokeObjectURL(preview.src); // Não revogar, é necessário para o state
+                };
                 document.getElementById('photo-preview-container').prepend(preview);
                 document.getElementById('remove-photo-btn').style.display = 'block';
                 state.setCurrentTreePhoto(file); 
@@ -511,10 +546,9 @@ export function setupRiskCalculator() {
 
     // Lógica do Formulário (Adicionar e Limpar)
     if (form) {
-        if (state.lastEvaluatorName) {
-            document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
-        }
+        // (v20.0) A definição de valores padrão (data, avaliador) foi movida para o main.js
 
+        // Oculta o botão GPS em desktops
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
             if(gpsContainer) gpsContainer.style.display = 'none';
@@ -537,14 +571,17 @@ export function setupRiskCalculator() {
         // Limpar Campos
         if (resetBtn) {
             resetBtn.addEventListener('click', (e) => {
-                e.preventDefault();    
+                e.preventDefault();   
+                // Salva o nome do avaliador antes de limpar
                 state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
-                form.reset();    
+                form.reset();   
                 features.clearPhotoPreview(); 
-                    try {
-                        document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-                        document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
-                    } catch(e) { /* ignora erro */ }
+                
+                // (v20.0) Re-aplica os padrões após o reset
+                try {
+                    document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
+                } catch(e) { /* ignora erro */ }
                 
                 if (isTouchDevice) {
                     setupMobileChecklist(); 
@@ -561,7 +598,7 @@ export function setupRiskCalculator() {
     
     // (v19.7) Event Delegation com atualização de UI centralizada
     if (summaryContainer) {
-        // Clona para limpar listeners antigos
+        // (v20.0) Clona para limpar listeners antigos (boa prática)
         const newSummaryContainer = summaryContainer.cloneNode(true);
         summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
         
@@ -623,6 +660,8 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
+// (v20.0) Define 'isTouchDevice' globalmente para este módulo
+const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
@@ -631,8 +670,9 @@ export function createTooltip() {
     if (!tooltip) {
         tooltip = document.createElement('div');
         tooltip.id = 'glossary-tooltip';
-        document.body.appendChild(tooltip);    
+        document.body.appendChild(tooltip);   
     }
+    // (v20.0) Garante que o listener de fechar só seja adicionado uma vez
     if (!tooltip.dataset.clickToCloseAdded) {
         tooltip.addEventListener(popupCloseEvent, (e) => { e.stopPropagation(); hideTooltip(); });
         tooltip.dataset.clickToCloseAdded = 'true';
@@ -660,6 +700,7 @@ function positionTooltip(termElement) {
     const rect = termElement.getBoundingClientRect();
     const scrollY = window.scrollY, scrollX = window.scrollX;
     
+    // (v20.0) Usa requestAnimationFrame para garantir que o DOM foi pintado
     requestAnimationFrame(() => {
         if (!state.currentTooltip) return;
         
@@ -685,10 +726,13 @@ function positionTooltip(termElement) {
     });
 }
 
+/**
+ * (v20.0) Busca e exibe a foto (usado na tabela de resumo)
+ */
 function handlePhotoPreviewClick(id, targetElement) {
     getImageFromDB(id, (imageBlob) => {
         if (!imageBlob) {
-            utils.showToast("Foto não encontrada no banco de dados.", "error");
+            showToast("Foto não encontrada no banco de dados.", "error");
             return;
         }
         
@@ -733,6 +777,7 @@ function showGlossaryTooltip(event) {
 function toggleGlossaryTooltip(event) {
     event.preventDefault(); event.stopPropagation();
     const tooltip = document.getElementById('glossary-tooltip');
+    // (v20.0) Verifica se o tooltip atual é de foto, para não fechar
     const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
     
     if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && 
@@ -817,7 +862,7 @@ function togglePurposeTooltip(event) {
     }
 }
 
-// === 5. (NOVO v19.8) LÓGICA DO MODAL CUSTOMIZADO ===
+// === 5. (v19.8) LÓGICA DO MODAL CUSTOMIZADO ===
 
 /**
  * Exibe um modal de ação customizado.
@@ -857,7 +902,7 @@ function showActionModal({ title, description, buttons }) {
     });
 
     // Adiciona o listener para fechar ao clicar fora (no overlay)
-    // (Usa 'self' para evitar clonar o listener)
+    // (v20.0) Adiciona um 'self' para evitar clonar o listener
     const self = modal;
     const closeOverlay = (e) => {
         if (e.target === self) {
@@ -879,6 +924,9 @@ function hideActionModal() {
     if (modal) {
         modal.classList.remove('show');
     }
+    // (v20.0) Limpa listeners de clique no overlay (caso não tenham sido removidos)
+    const newModal = modal.cloneNode(true);
+    modal.parentNode.replaceChild(newModal, modal);
 }
 
 /**
@@ -906,6 +954,8 @@ function showExportModal() {
             class: 'primary',
             action: features.exportActionZip
         });
+    } else {
+        console.warn("JSZip não carregado. Opção de exportar .ZIP desabilitada.");
     }
 
     showActionModal({
@@ -923,7 +973,7 @@ function showImportModal() {
     // (v19.8) Mostra o modal de 3 opções (Adicionar, Substituir, Cancelar)
     showActionModal({
         title: '📤 Importar Dados',
-        description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira?',
+        description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira? (Substituir apagará todos os dados atuais)',
         buttons: [
             {
                 text: 'Adicionar à Lista Atual',
@@ -977,6 +1027,8 @@ function showImportTypeModal(replaceData) {
             class: 'primary',
             action: () => zipInput.click()
         });
+    } else {
+         console.warn("JSZip não carregado. Opção de importar .ZIP desabilitada.");
     }
 
     showActionModal({

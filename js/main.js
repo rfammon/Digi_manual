@@ -1,117 +1,182 @@
-// js/main.js (v19.4 - O "Motor" da Aplicação)
+// js/main.js (v20.0 - NOVO ARQUIVO "MAESTRO")
+// Ponto de entrada principal da aplicação.
 
-// === 1. IMPORTAÇÃO DOS MÓDULOS (As "Peças") ===
+// === 1. IMPORTAÇÕES DOS MÓDULOS ===
+import * as state from './state.js';
+import * as ui from './ui.js';
+import * as features from './features.js';
+import * as db from './database.js';
+// Importa 'manualContent' do content.js (que agora só tem o manual)
+import { manualContent } from './content.js'; 
+import { showToast } from './utils.js';
 
-// Importa o conteúdo (o "Manual")
-import { manualContent } from './content.js';
+// === 2. SELETORES GLOBAIS ===
 
-// Importa as funções de UI (o "Painel")
-import {
-    loadContent,
-    setupRiskCalculator,
-    hideTooltip
-} from './ui.js';
+const manualView = document.getElementById('manual-view');
+const calculatorView = document.getElementById('calculadora-view');
+const detailView = document.getElementById('detalhe-view');
+const topNavContainer = document.querySelector('.topicos-container');
 
-// Importa o gerenciamento de estado (a "Memória")
-import { loadDataFromStorage, saveActiveTab, getActiveTab } from './state.js';
+// === 3. LÓGICA DE NAVEGAÇÃO PRINCIPAL ===
 
-// Importa o banco de dados (o "Armazenamento")
-import { initImageDB } from './database.js';
+/**
+ * Controla a navegação principal (tópicos vs. calculadora).
+ * Esta é a nova lógica de arquitetura que separa as "views".
+ */
+function handleMainNavigation(event) {
+    const targetButton = event.target.closest('.topico-btn');
+    if (!targetButton) return;
 
-// Importa as lógicas de "features" (GPS, Chat, Contato, etc.)
-import { 
-    handleContactForm, 
-    handleChatSend 
-} from './features.js';
+    // Remove 'active' de todos os botões
+    topNavContainer.querySelectorAll('.topico-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    // Adiciona 'active' ao botão clicado
+    targetButton.classList.add('active');
 
+    const targetId = targetButton.dataset.target;
+    
+    // Salva a aba ativa no localStorage
+    state.saveActiveTab(targetId);
 
-// === 2. LÓGICA DE INICIALIZAÇÃO (A "Partida") ===
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    const detailView = document.getElementById('detalhe-view');
-    const activeTopicButtons = document.querySelectorAll('.topico-btn');
-
-    /**
-     * Manipulador de clique para os botões de tópico (O "Orquestrador")
-     */
-    function handleTopicClick(button) {
-        hideTooltip(); // Esconde tooltips abertos ao trocar de aba
+    if (targetId === 'calculadora-risco') {
+        // MOSTRA A VIEW DA CALCULADORA
+        manualView.style.display = 'none';
+        calculatorView.style.display = 'block';
         
-        const target = button.getAttribute('data-target');
-        saveActiveTab(target); // Salva a aba ativa no state (localStorage)
-        
-        // Atualiza a classe 'active' nos botões
-        activeTopicButtons.forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        
-        // Carrega o conteúdo principal na UI
-        const content = manualContent[target];
-        loadContent(detailView, content);
-        
-        // Se a aba for a calculadora, inicializa seus módulos específicos
-        if (target === 'calculadora-risco') {
-            setupRiskCalculator();
-        }
-    }
-
-    // --- 1. Inicialização da Navegação (Carregamento da Página) ---
-    initImageDB(); // Prepara o banco de dados de fotos
-    loadDataFromStorage(); // Carrega 'registeredTrees' do localStorage
-
-    if (activeTopicButtons.length > 0) {
-        // Conecta cada botão de tópico ao orquestrador
-        activeTopicButtons.forEach(button => {
-            button.addEventListener('click', () => handleTopicClick(button));
-        });
-
-        // Tenta carregar a última aba salva
-        const lastActiveTab = getActiveTab();
-        let loadedFromStorage = false;
-
-        if (lastActiveTab && manualContent[lastActiveTab]) {
-            const activeButton = document.querySelector(`.topico-btn[data-target="${lastActiveTab}"]`);
-            if (activeButton) {
-                handleTopicClick(activeButton); // Aciona o clique na aba salva
-                loadedFromStorage = true;
-            }
+        // Se a aba do mapa estava ativa, ela precisa ser 
+        // re-renderizada para garantir que o Leaflet funcione.
+        const activeSubTab = document.querySelector('.sub-nav-btn.active')?.dataset.target;
+        if (activeSubTab === 'tab-content-mapa') {
+             // A função showSubTab (dentro do ui.js) já contém a lógica de reinicializar o mapa.
+             ui.showSubTab('tab-content-mapa');
         }
 
-        // Se não houver aba salva, carrega a primeira
-        if (!loadedFromStorage) {
-            handleTopicClick(activeTopicButtons[0]);
-        }
     } else {
-        console.error('Site Builder Error: Nenhum botão .topico-btn foi encontrado no HTML.');
+        // MOSTRA A VIEW DO MANUAL
+        manualView.style.display = 'block';
+        calculatorView.style.display = 'none';
+        
+        // Carrega o conteúdo do manual (ex: 'conceitos-basicos')
+        const content = manualContent[targetId];
+        ui.loadContent(detailView, content);
     }
-
-    // --- 2. Inicialização do Botão "Voltar ao Topo" ---
-    const backToTopButton = document.getElementById('back-to-top-btn');
-    const headerElement = document.getElementById('page-top');    
-    if (backToTopButton && headerElement) {
-        const observerCallback = (entries) => {
-            const [entry] = entries;    
-            if (!entry.isIntersecting) { backToTopButton.classList.add('show'); }
-            else { backToTopButton.classList.remove('show'); }
-        };
-        const headerObserver = new IntersectionObserver(observerCallback, { root: null, threshold: 0 });
-        headerObserver.observe(headerElement);
+    
+    // Rola a tela para o topo da seção
+    const topElement = document.getElementById('page-top');
+    if (topElement) {
+        topElement.scrollIntoView({ behavior: 'smooth' });
     }
+}
 
-    // --- 3. Inicialização do Formulário de Contato ---
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-        contactForm.addEventListener('submit', handleContactForm);
-    }
+// === 4. LÓGICA DE INICIALIZAÇÃO AUXILIAR ===
 
-    // --- 4. Inicialização do Chat (Esqueleto) ---
-    const chatInput = document.getElementById('chat-input');
+/**
+ * Configura o botão "Voltar ao Topo".
+ */
+function setupBackToTop() {
+    const backToTopBtn = document.getElementById('back-to-top-btn');
+    if (!backToTopBtn) return;
+
+    // Otimização de performance (passive: true)
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+            backToTopBtn.classList.add('show');
+        } else {
+            backToTopBtn.classList.remove('show');
+        }
+    }, { passive: true }); 
+}
+
+/**
+ * Configura os listeners dos formulários de Chat e Contato.
+ */
+function setupForms() {
     const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const contactForm = document.getElementById('contact-form');
+
     if (chatSendBtn) {
-        chatSendBtn.addEventListener('click', handleChatSend);
-        chatInput.addEventListener('keyup', (event) => {
-            if (event.key === 'Enter') { handleChatSend(); }
+        chatSendBtn.addEventListener('click', features.handleChatSend);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Impede a submissão do formulário (caso exista)
+                features.handleChatSend();
+            }
         });
     }
 
-}); // Fim do DOMContentLoaded
+    if (contactForm) {
+        contactForm.addEventListener('submit', features.handleContactForm);
+    }
+}
+
+/**
+ * (CORREÇÃO DE BUG) Define os valores padrão do formulário 
+ * que não são cobertos pelo 'form.reset()'.
+ */
+function initFormDefaults() {
+     try {
+        // Define a data atual
+        const dateInput = document.getElementById('risk-data');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+        
+        // Define o último avaliador (se existir)
+        const avaliadorInput = document.getElementById('risk-avaliador');
+        if (avaliadorInput && state.lastEvaluatorName) {
+            avaliadorInput.value = state.lastEvaluatorName;
+        }
+    } catch(e) { 
+        console.warn("Erro ao definir padrões do formulário.", e);
+    }
+}
+
+/**
+ * Função principal de inicialização da aplicação.
+ */
+function initApp() {
+    // O DOM já está carregado (type="module")
+    try {
+        // 1. Carrega dados salvos (LocalStorage)
+        state.loadDataFromStorage();
+
+        // 2. Inicializa o banco de dados de imagens (IndexedDB)
+        db.initImageDB();
+
+        // 3. Configura a navegação principal (Tópicos vs. Calculadora)
+        topNavContainer.addEventListener('click', handleMainNavigation);
+
+        // 4. Inicializa a Calculadora UMA VEZ.
+        // (Ela anexa listeners ao HTML estático do index.html)
+        ui.setupRiskCalculator();
+        
+        // 5. Define os padrões do formulário (Data, Avaliador)
+        initFormDefaults();
+
+        // 6. Configura listeners dos formulários (Chat, Contato)
+        setupForms();
+
+        // 7. Configura o botão "Voltar ao Topo"
+        setupBackToTop();
+
+        // 8. Carrega o conteúdo inicial ou a última aba vista
+        const lastTab = state.getActiveTab() || 'conceitos-basicos';
+        const initialButton = topNavContainer.querySelector(`[data-target="${lastTab}"]`) || topNavContainer.querySelector('.topico-btn');
+        
+        if (initialButton) {
+            initialButton.click(); // Simula o clique para carregar a view correta
+        } else {
+            // Fallback de segurança
+            ui.loadContent(detailView, manualContent['conceitos-basicos']);
+        }
+        
+    } catch (error) {
+        console.error("Falha crítica ao inicializar a aplicação:", error);
+        showToast("Erro grave ao carregar. Tente recarregar a página.", "error");
+    }
+}
+
+// === 5. EXECUÇÃO ===
+initApp();
