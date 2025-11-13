@@ -1,4 +1,4 @@
-/* style.css (Completo v16.1 - Inclui Spinner GPS) */
+/* style.css (Completo v19.8 - Inclui Modal) */
 
 /* -------------------------------------- */
 /* 1. RESET, BASE E LAYOUT PRINCIPAL */
@@ -863,7 +863,7 @@ html {
     /* 3. Estilo do Cartão (Cor de fundo solicitada) */
     .mobile-checklist-card {
         /* Cor verde clara do tema (seção do chat) */
-        background-color: #e8f5e9; 
+        background-color: #e8f5e9;  
         border: 1px solid #00796b;
         border-radius: 8px;
         padding: 1.5rem;
@@ -1011,7 +1011,7 @@ html {
 }
 
 /* -------------------------------------- */
-/* 17. ESTILOS DO MAPA WEBGIS (v17.6) */
+/* 17. ESTILOS DO MAPA WEBGIS (v18.2) */
 /* -------------------------------------- */
 #map-container {
     height: 60vh; /* Altura decente para o mapa */
@@ -1020,13 +1020,13 @@ html {
     margin-top: 15px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     /* Garante que o Leaflet não "vaze" */
-    overflow: hidden; 
+    overflow: hidden;  
 }
 
 /* (v17.5) Ajuste no botão de zoom para alinhar no grid */
 #zoom-to-extent-btn {
-    flex-grow: 0; 
-    min-width: 200px; 
+    flex-grow: 0;  
+    min-width: 200px;  
     background-color: #004d40;
     align-self: end; /* Alinha ao final do grid */
     height: 38px; /* Altura padrão do input */
@@ -1058,116 +1058,9 @@ html {
     transition: background-color 0.2s;
     color: #004d40; /* Verde escuro */
 }
-.zoom-tree-btn:hover { 
-    color: #00695c; 
+.zoom-tree-btn:hover {  
+    color: #00695c;  
     background-color: #e8f5e9; /* Verde claro */
-}
-
-/* -------------------------------------- */
-/* 18. INPUT DE FOTO (v18.0) */
-/* -------------------------------------- */
-
-.photo-upload-container {
-    margin-top: 15px;
-}
-
-.photo-btn {
-    display: inline-block;
-    padding: 10px 15px;
-    background-color: #004d40; /* Verde escuro do tema */
-    color: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.95rem;
-    transition: background-color 0.2s;
-}
-.photo-btn:hover {
-    background-color: #00695c;
-}
-
-#photo-preview-container {
-    margin-top: 15px;
-    position: relative;
-    max-width: 300px; /* Limita o tamanho do preview */
-}
-
-#photo-preview {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    border: 2px solid #ddd;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-#remove-photo-btn {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background-color: #C62828; /* Vermelho */
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
-    line-height: 30px;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    display: none; /* Começa oculto */
-}
-
-/* -------------------------------------- */
-/* 17. ESTILOS DO MAPA WEBGIS (v18.2) */
-/* -------------------------------------- */
-#map-container {
-    height: 60vh;
-    width: 100%;
-    border-radius: 8px;
-    margin-top: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    overflow: hidden; 
-}
-
-#zoom-to-extent-btn {
-    flex-grow: 0; 
-    min-width: 200px; 
-    background-color: #004d40;
-    align-self: end;
-    height: 38px;
-    padding: 8px 12px;
-    font-size: 1rem;
-}
-#zoom-to-extent-btn:hover {
-    background-color: #00695c;
-}
-
-/* Coluna de Zoom (Lupa) na Tabela de Resumo */
-.summary-table th.col-zoom,
-.summary-table td.col-zoom {
-    text-align: center;
-    width: 30px;
-    white-space: nowrap;
-}
-
-.zoom-tree-btn {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 5px;
-    line-height: 1;
-    width: 100%;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-    color: #004d40;
-}
-.zoom-tree-btn:hover { 
-    color: #00695c; 
-    background-color: #e8f5e9;
 }
 
 /* -------------------------------------- */
@@ -1212,7 +1105,7 @@ html {
 .photo-btn {
     display: inline-block;
     padding: 10px 15px;
-    background-color: #004d40; 
+    background-color: #004d40;  
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
@@ -1261,34 +1154,20 @@ html {
 /* 19. ESTILO DA FOTO NO POP-UP (v18.2) */
 /* -------------------------------------- */
 
-/* * Define o estilo para a imagem (classe .manual-img) 
- * APENAS quando ela está dentro de um pop-up do Leaflet.
- */
 .leaflet-popup-content .manual-img {
-    width: 100%; /* Ocupa a largura do pop-up */
-    
-    /* Define um tamanho máximo e altura fixa para criar o quadrado */
-    max-width: 220px; 
-    height: 220px; 
-    
-    /* * A 'mágica' do CSS: Preenche o quadrado (220x220)
-     * sem distorcer a imagem (corta o excesso). 
-     */
-    object-fit: cover; 
-    
+    width: 100%; 
+    max-width: 220px;  
+    height: 220px;  
+    object-fit: cover;  
     border-radius: 6px;
     margin-top: 10px;
-    display: block; /* Garante que fique centralizado e sem espaço extra */
+    display: block; 
 }
 
-/* * (v18.2) Ajuste Fino para Mobile: 
- * Em telas menores, o pop-up é mais estreito, 
- * então reduzimos o quadrado.
- */
 @media (max-width: 768px) {
     .leaflet-popup-content .manual-img {
-         max-width: 180px; 
-         height: 180px; 
+         max-width: 180px;  
+         height: 180px;  
     }
 }
 
@@ -1322,11 +1201,125 @@ html {
     gap: 10px;
     font-weight: bold;
     color: #004d40;
+    margin-top: 10px; /* (v19.8) Espaçamento */
 }
 #zip-status .spinner {
     /* (v19.0) Reutilizando o spinner do GPS, mas com cor verde */
+    display: inline-block; /* (v19.8) Garante que o spinner do zip apareça */
     width: 16px;
     height: 16px;
     border: 2px solid rgba(0, 77, 64, 0.3);
     border-top-color: #004d40;
+}
+
+/* -------------------------------------- */
+/* 21. MODAL DE IMPORT/EXPORT (v19.8) */
+/* -------------------------------------- */
+
+/* O Fundo (Overlay) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Estado inicial (oculto) */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+
+/* O Modal (Caixa) */
+.modal-dialog {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    padding: 1.5rem 2rem;
+    width: 90%;
+    max-width: 450px;
+    z-index: 2000;
+    
+    /* Animação de entrada */
+    transform: translateY(-20px);
+    transition: transform 0.2s ease-out;
+}
+
+/* Mostra o modal */
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-overlay.show .modal-dialog {
+    transform: translateY(0);
+}
+
+.modal-dialog h3 {
+    color: #004d40;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.modal-dialog p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+/* Área dos Botões */
+.modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-btn {
+    /* Reutiliza o estilo dos botões da calculadora */
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem; /* Tamanho reduzido para o modal */
+    font-weight: bold;
+    transition: background-color 0.3s;
+    
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+/* Botão Primário (ZIP) */
+.modal-btn.primary {
+    background-color: #00796b;
+    color: white;
+}
+.modal-btn.primary:hover {
+    background-color: #00695c;
+}
+
+/* Botão Secundário (CSV) */
+.modal-btn.secondary {
+    background-color: #ffb300;
+    color: #333;
+}
+.modal-btn.secondary:hover {
+    background-color: #ffa000;
+}
+
+/* Botão Cancelar (Cinza) */
+.modal-btn.cancel {
+    background-color: #ddd;
+    color: #333;
+    margin-top: 10px; /* Separa dos outros */
+}
+.modal-btn.cancel:hover {
+    background-color: #ccc;
 }
