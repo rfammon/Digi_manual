@@ -7,7 +7,7 @@ import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
-import * as features from './features.js'; // (v19.6) A importação está correta
+import * as features from './features.js'; 
 
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO PRINCIPAL ===
@@ -453,14 +453,14 @@ export function setupRiskCalculator() {
     
     // (v19.7) Listeners de importação (chamados pelo modal)
     if (zipImporter) zipImporter.addEventListener('change', (e) => {
-        // (v19.8) Adiciona 'replaceData'
+        // (v19.8) Passa o 'replaceData' via dataset
         e.replaceData = zipImporter.dataset.replaceData === 'true';
         features.handleImportZip(e).then(() => {
             renderSummaryTable(); 
         });
     });
     if (csvImporter) csvImporter.addEventListener('change', (e) => {
-        // (v19.8) Adiciona 'replaceData'
+        // (v19.8) Passa o 'replaceData' via dataset
         e.replaceData = csvImporter.dataset.replaceData === 'true';
         features.handleFileImport(e).then(() => {
             renderSummaryTable();
@@ -899,7 +899,7 @@ function showExportModal() {
     ];
 
     // (v19.9) CORREÇÃO: Remove a checagem 'hasPhotos'.
-    // O botão ZIP aparece se a biblioteca JSZip estiver carregada.
+    // O botão ZIP aparece se a biblioteca JSZip foi carregada.
     if (typeof JSZip !== 'undefined') {
         buttons.unshift({ // Adiciona no início
             text: 'Exportar Pacote .ZIP (Completo)',
@@ -919,37 +919,8 @@ function showExportModal() {
  * (v19.8) Configura e exibe o modal de IMPORTAÇÃO.
  */
 function showImportModal() {
-    // (v19.8) Cria os botões com base na disponibilidade do JSZip
-    let buttons = [
-        {
-            text: 'Importar Apenas .CSV (s/ fotos)',
-            class: 'secondary',
-            action: () => {
-                // (v19.8) Passa o 'replaceData' via dataset
-                const csvInput = document.getElementById('csv-importer');
-                csvInput.dataset.replaceData = 'false'; // Define como 'append'
-                csvInput.click();
-            }
-        },
-        {
-            text: 'Cancelar',
-            class: 'cancel'
-        }
-    ];
-
-    if (typeof JSZip !== 'undefined') {
-        buttons.unshift({
-            text: 'Importar Pacote .ZIP (Completo)',
-            class: 'primary',
-            action: () => {
-                const zipInput = document.getElementById('zip-importer');
-                zipInput.dataset.replaceData = 'false';
-                zipInput.click();
-            }
-        });
-    }
-
-    // (v19.8) Mostra o modal de 3 opções
+    
+    // (v19.8) Mostra o modal de 3 opções (Adicionar, Substituir, Cancelar)
     showActionModal({
         title: '📤 Importar Dados',
         description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira?',
@@ -964,7 +935,7 @@ function showImportModal() {
             },
             {
                 text: 'Substituir Lista Atual',
-                class: 'secondary',
+                class: 'secondary', // (v19.9) Corrigido de 'secondary'
                 action: () => {
                     showImportTypeModal(true); // true = substituir
                 }
