@@ -1136,7 +1136,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 
 /* -------------------------------------- */
-/* 17. [NOVO] LEGENDA E INFOBOX DO MAPA */
+/* 17. [NOVO v21.6] LEGENDA E INFOBOX DO MAPA */
 /* -------------------------------------- */
 
 /* A Legenda (Controle do Leaflet) */
@@ -1145,6 +1145,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-md);
+    line-height: 1.5;
 }
 .info.legend h4 {
     margin: 0 0 var(--space-sm) 0;
@@ -1184,15 +1185,18 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     box-shadow: var(--shadow-lg);
     z-index: 800; /* Abaixo dos controles do Leaflet */
     padding: var(--space-md);
-    transition: opacity 0.2s, visibility 0.2s;
+    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
 }
 #map-info-box.hidden {
     opacity: 0;
     visibility: hidden;
+    transform: scale(0.95);
 }
-#map-info-box h3 {
+#map-info-box strong {
     font-size: 1.1rem;
-    margin-bottom: var(--space-sm);
     color: var(--color-primary-dark);
 }
 #map-info-box p {
@@ -1238,5 +1242,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
         right: 0;
         width: 100%;
         border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+        /* Garante que não cubra a legenda do leaflet */
+        z-index: 1001; 
     }
 }
