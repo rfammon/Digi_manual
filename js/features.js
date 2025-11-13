@@ -1,4 +1,4 @@
-// js/features.js (v21.7 - Adiciona Lógica de Filtro de Mapa)
+// js/features.js (v21.8 - Lógica de Filtro Removida)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -409,30 +409,8 @@ export function handleMapMarkerClick(id) {
     }
 }
 
-/**
- * [NOVO v21.7] Filtra os marcadores no mapa.
- * Chamado pelo listener da legenda no ui.js.
- */
-export function filterMapMarkers(selectedRisk) {
-    if (!state.mapMarkerGroup) {
-        console.warn("Grupo de marcadores (mapMarkerGroup) não encontrado no estado.");
-        return;
-    }
-
-    state.mapMarkerGroup.eachLayer(layer => {
-        if (selectedRisk === 'Todos' || layer.options.riskLevel === selectedRisk) {
-            // Mostra o marcador (adiciona de volta ao grupo se não estiver)
-            if (!state.mapMarkerGroup.hasLayer(layer)) {
-                state.mapMarkerGroup.addLayer(layer);
-            }
-        } else {
-            // Esconde o marcador (remove do grupo)
-            if (state.mapMarkerGroup.hasLayer(layer)) {
-                state.mapMarkerGroup.removeLayer(layer);
-            }
-        }
-    });
-}
+// [REMOVIDO v21.8]: A função 'filterMapMarkers' foi removida daqui.
+// A lógica de filtro (opacidade) agora vive inteiramente no 'ui.js'.
 
 
 // === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
