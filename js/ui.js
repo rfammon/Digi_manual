@@ -471,7 +471,7 @@ function setupFileImporters() {
 }
 
 /**
- * [CRÍTICO PARA PERFORMANCE]
+ * [CRÍTICO PARA PERFORMANCE v21.5]
  * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
  * Retorna um novo Blob com a imagem otimizada.
  * @param {File|Blob} imageFile - O arquivo de imagem original.
