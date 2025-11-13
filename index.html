@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manual de Poda e Corte Interativo - Guia Rápido</title>
     
-    <link rel="stylesheet" href="style.css?v=20.0"> 
+    <link rel="stylesheet" href="style.css?v=21.1"> 
     
     <link rel="stylesheet" href="libs/leaflet.css" />
 </head>
@@ -168,8 +168,8 @@
                         
                         <div id="import-export-controls" class="risk-buttons-area">
                             
-                            <input type="file" id="zip-importer" class="visually-hidden-input" accept=".zip,application/zip,application/x-zip-compressed">
-                            <input type="file" id="csv-importer" class="visually-hidden-input" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain">
+                            <input type="file" id="zip-importer" accept=".zip,application/zip,application/x-zip-compressed" style="display: none;">
+                            <input type="file" id="csv-importer" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain" style="display: none;">
                             
                             <button type="button" id="import-data-btn" class="export-btn zip-import-label">📤 Importar Dados</button>
                             <button type="button" id="export-data-btn" class="export-btn">📥 Exportar Dados</button>
@@ -189,6 +189,9 @@
                 <div id="tab-content-mapa" class="sub-tab-content mapa-tab">
                     <fieldset class="risk-fieldset">
                         <legend>Mapa de Localização e Risco</legend>
+                        
+                        <div id="map-info-box" class="hidden"></div>
+                        
                         <div id="map-container"></div>
                         
                         <div class="form-grid" style="margin-top: 15px; gap: 10px;">
@@ -201,9 +204,7 @@
                         </div>
 
                         <p style="margin-top: 15px; font-size: 0.9em; color: #555;">
-                            Simbologia: <span style="color: #C62828; font-weight: bold;">🔴 Alto Risco</span> | 
-                            <span style="color: #E65100; font-weight: bold;">🟠 Médio Risco</span> | 
-                            <span style="color: #2E7D32; font-weight: bold;">🟢 Baixo Risco</span>
+                            Use a legenda no canto do mapa para filtrar os pontos por risco.
                         </p>
                     </fieldset>
                 </div>
@@ -271,7 +272,7 @@
         </div>
     </div>
     
-    <script type="module" src="js/main.js?v=20.0"></script>
+    <script type="module" src="js/main.js?v=21.1"></script>
 
 </body>
 </html>
