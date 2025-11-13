@@ -1,4 +1,4 @@
-// js/ui.js (v20.9 - FINAL - Completo e Otimizado)
+// js/ui.js (v21.0 - Completo, com Classes de Botão Corrigidas)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -768,7 +768,7 @@ function handlePhotoPreviewClick(id, targetElement) {
 
 function setupGlossaryInteractions(detailView) {
     const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
-    // Define o handler de fechar com debounce para evitar flicker em desktop
+    // [CORREÇÃO v20.9] Define o handler de fechar com debounce para evitar flicker em desktop
     const debouncedHide = debounce(hideTooltip, 200);
 
     glossaryTermsElements.forEach(termElement => {
@@ -808,7 +808,8 @@ function toggleGlossaryTooltip(event) {
 
 function setupEquipmentInteractions(detailView) {
     const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+    // [CORREÇÃO v20.9] Define o debounce para o mouseleave
+    const debouncedHide = debounce(hideTooltip, 200);
     
     equipmentTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
@@ -825,7 +826,7 @@ function showEquipmentTooltip(event) {
     const data = equipmentData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
-    // CORREÇÃO: imgTag agora está definida no topo
+    // [CORREÇÃO v20.7]: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -848,7 +849,8 @@ function toggleEquipmentTooltip(event) {
 
 function setupPurposeInteractions(detailView) {
     const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+    // [CORREÇÃO v20.9] Define o debounce para o mouseleave
+    const debouncedHide = debounce(hideTooltip, 200);
 
     purposeTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
@@ -865,7 +867,7 @@ function showPurposeTooltip(event) {
     const data = podaPurposeData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
-    // CORREÇÃO: imgTag agora está definida no topo
+    // [CORREÇÃO v20.7]: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -920,7 +922,7 @@ function showActionModal({ title, description, buttons }) {
             if (btnConfig.action) {
                 btnConfig.action(); // Executa a ação (ex: exportCSV)
             }
-            hideActionModal(); // Feche o modal
+            hideActionModal(); // Fecha o modal
         });
         actionsEl.appendChild(button);
     });
@@ -984,7 +986,7 @@ function showExportModal() {
 }
 
 /**
- * (v20.4/v20.6 - REVERSÃO) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
+ * (v21.0 - CORREÇÃO DE CLASSE) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
  */
 function showImportModal() {
     
@@ -994,7 +996,7 @@ function showImportModal() {
         buttons: [
             {
                 text: 'Adicionar à Lista Atual',
-                class: 'primary',
+                class: 'secondary', // Amarelo (Destaque)
                 action: () => {
                     // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
                     // e o DOM se estabilize antes de abrir o segundo.
@@ -1003,7 +1005,7 @@ function showImportModal() {
             },
             {
                 text: 'Substituir Lista Atual',
-                class: 'secondary',
+                class: 'primary', // Verde (Padrão)
                 action: () => {
                     // Adiciona setTimeout(0)
                     setTimeout(() => showImportTypeModal(true), 0);
