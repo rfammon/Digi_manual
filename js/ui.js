@@ -1,14 +1,13 @@
-// js/ui.js (v20.8 - FINAL - Correção de Referência da imgTag)
+// js/ui.js (v20.9 - FINAL - Completo e Otimizado)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js';
+import { showToast, debounce } from './utils.js'; 
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
-// [CORREÇÃO CRÍTICA]: Definição da função auxiliar imgTag, que estava faltando.
-// Ela é necessária para construir os tooltips com imagens corretamente.
+// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
@@ -47,8 +46,9 @@ let mobileChecklist = {
     counter: null
 };
 
-// ... (showMobileQuestion e setupMobileChecklist - Código não alterado) ...
-
+/**
+ * (v16.0) Mostra a pergunta do carrossel mobile no índice especificado.
+ */
 export function showMobileQuestion(index) {
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
@@ -768,10 +768,13 @@ function handlePhotoPreviewClick(id, targetElement) {
 
 function setupGlossaryInteractions(detailView) {
     const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
+    // Define o handler de fechar com debounce para evitar flicker em desktop
+    const debouncedHide = debounce(hideTooltip, 200);
+
     glossaryTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
             termElement.addEventListener('mouseenter', showGlossaryTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('mouseleave', debouncedHide); // <--- APLICAÇÃO DO DEBOUNCE
         }
         termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);    
     });
@@ -805,10 +808,12 @@ function toggleGlossaryTooltip(event) {
 
 function setupEquipmentInteractions(detailView) {
     const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
+    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+    
     equipmentTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
             termElement.addEventListener('mouseenter', showEquipmentTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('mouseleave', debouncedHide); // <--- APLICAÇÃO DO DEBOUNCE
         }
         termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
     });
@@ -820,7 +825,7 @@ function showEquipmentTooltip(event) {
     const data = equipmentData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
-    // [CORREÇÃO: imgTag agora está definida no topo]
+    // CORREÇÃO: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -843,10 +848,12 @@ function toggleEquipmentTooltip(event) {
 
 function setupPurposeInteractions(detailView) {
     const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
+    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+
     purposeTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
             termElement.addEventListener('mouseenter', showPurposeTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('mouseleave', debouncedHide); // <--- APLICAÇÃO DO DEBOUNCE
         }
         termElement.addEventListener(termClickEvent, togglePurposeTooltip);
     });
@@ -858,7 +865,7 @@ function showPurposeTooltip(event) {
     const data = podaPurposeData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
-    // [CORREÇÃO: imgTag agora está definida no topo]
+    // CORREÇÃO: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -913,7 +920,7 @@ function showActionModal({ title, description, buttons }) {
             if (btnConfig.action) {
                 btnConfig.action(); // Executa a ação (ex: exportCSV)
             }
-            hideActionModal(); // Fecha o modal
+            hideActionModal(); // Feche o modal
         });
         actionsEl.appendChild(button);
     });
