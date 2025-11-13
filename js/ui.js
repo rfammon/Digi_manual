@@ -1,4 +1,4 @@
-// js/ui.js (v20.3 - FINAL - Sem Conteúdo Truncado)
+// js/ui.js (v20.4 - FINAL)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -506,7 +506,7 @@ export function setupRiskCalculator() {
 
     // --- Conexão de Botões e Inputs (Features) ---
     const form = document.getElementById('risk-calculator-form');
-    let summaryContainer = document.getElementById('summary-table-container'); // Agora 'let' para reatribuição
+    let summaryContainer = document.getElementById('summary-table-container'); 
     
     // Elementos que precisamos
     const importDataBtn = document.getElementById('import-data-btn');
@@ -974,6 +974,7 @@ function showExportModal() {
 
 /**
  * (v19.8) Configura e exibe o modal de IMPORTAÇÃO.
+ * (v20.4) OTIMIZADO: Adicionado setTimeout para evitar flicker e conflito de DOM.
  */
 function showImportModal() {
     
@@ -985,14 +986,17 @@ function showImportModal() {
                 text: 'Adicionar à Lista Atual',
                 class: 'primary',
                 action: () => {
-                    showImportTypeModal(false); // false = não substituir
+                    // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
+                    // e o DOM se estabilize antes de abrir o segundo.
+                    setTimeout(() => showImportTypeModal(false), 0);
                 }
             },
             {
                 text: 'Substituir Lista Atual',
                 class: 'secondary',
                 action: () => {
-                    showImportTypeModal(true); // true = substituir
+                    // Adiciona setTimeout(0)
+                    setTimeout(() => showImportTypeModal(true), 0);
                 }
             },
             {
