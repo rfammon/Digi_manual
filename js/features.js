@@ -1,10 +1,10 @@
-// js/features.js (v20.3 - CORRIGIDO)
-// Este arquivo NÃO DEVE importar 'ui.js'
+// js/features.js (v21.6 - Adiciona Lógica de Filtro de Mapa)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
+// (REMOVIDA A IMPORTAÇÃO DO UI.JS - Corrigida na v19.8)
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
@@ -373,10 +373,19 @@ export function convertToLatLon(tree) {
 
 export function handleZoomToExtent() {
     if (!state.mapInstance) {
-        utils.showToast("O mapa não está inicializado.", "error");
+        // (v21.6) Se o grupo de marcadores existir, usa ele
+        if (state.mapMarkerGroup && state.mapInstance) {
+             const bounds = state.mapMarkerGroup.getBounds();
+             if (bounds.isValid()) {
+                state.mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+             }
+        } else {
+            utils.showToast("O mapa não está inicializado.", "error");
+        }
         return;
     }
 
+    // Lógica antiga (mantida por segurança, mas a lógica acima é melhor)
     let boundsArray = [];
     state.registeredTrees.forEach(tree => {
         const coords = convertToLatLon(tree); 
@@ -399,6 +408,29 @@ export function handleMapMarkerClick(id) {
         summaryTabButton.click(); 
     }
 }
+
+/**
+ * [NOVO v21.6] Filtra os marcadores no mapa.
+ * Chamado pelo listener da legenda no ui.js.
+ */
+export function filterMapMarkers(selectedRisk) {
+    if (!state.mapMarkerGroup) return;
+
+    state.mapMarkerGroup.eachLayer(layer => {
+        if (selectedRisk === 'Todos' || layer.options.riskLevel === selectedRisk) {
+            // Mostra o marcador (adiciona de volta ao grupo se não estiver)
+            if (!state.mapMarkerGroup.hasLayer(layer)) {
+                state.mapMarkerGroup.addLayer(layer);
+            }
+        } else {
+            // Esconde o marcador (remove do grupo)
+            if (state.mapMarkerGroup.hasLayer(layer)) {
+                state.mapMarkerGroup.removeLayer(layer);
+            }
+        }
+    });
+}
+
 
 // === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
 
@@ -560,8 +592,7 @@ function getCSVData() {
 
 // 
 // [ERRO CRÍTICO 2 - CORRIGIDO]
-// A função duplicada 'async function handleExportZip() { ... }'
-// que estava aqui (linhas 438-490) foi REMOVIDA.
+// A função duplicada 'async function handleExportZip() { ... }' foi REMOVIDA.
 //
 
 export async function handleImportZip(event) {
