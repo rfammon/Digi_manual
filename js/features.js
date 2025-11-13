@@ -1,776 +1,899 @@
-// js/features.js (v21.4 - OTIMIZAÇÃO DE IMAGEM)
+// js/features.js (v20.3 - OTIMIZADO)
+// Contém o "motor" da aplicação (CRUD, GIS, Import/Export).
+// A função duplicada 'handleExportZip' foi removida.
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
-import { showToast, convertLatLonToUtm } from './utils.js';
-import { 
-    addTreeToDB, getTreesFromDB, updateTreeInDB, deleteTreeFromDB, 
-    clearAllTreesFromDB, addImageToDB, getImageFromDB, deleteImageFromDB,
-    clearAllImagesFromDB 
-} from './database.js';
-import { renderSummaryTable, setupMobileChecklist, showSubTab } from './ui.js';
+import * as utils from './utils.js';
+import * as db from './database.js';
+// (REMOVIDA A IMPORTAÇÃO DO UI.JS - Corrigida na v19.8)
 
-// === 2. FUNÇÕES DE UTILIDADE/LÓGICA ===
+// === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
+export async function handleGetGPS() {
+    const gpsStatus = document.getElementById('gps-status');
+    const coordXField = document.getElementById('risk-coord-x');
+    const coordYField = document.getElementById('risk-coord-y');
+    const getGpsBtn = document.getElementById('get-gps-btn');
 
-/**
- * Retorna o valor de ordenação adequado para uma coluna.
- */
-export function getSortValue(tree, key) {
-    switch (key) {
-        case 'id':
-        case 'pontuacao':
-        case 'dap':
-        case 'coordX':
-        case 'coordY':
-        case 'utmZoneNum': // Adicionado para ordenação de número de zona
-            return parseFloat(tree[key]);
-        case 'data':
-            return new Date(tree[key]).getTime();
-        default:
-            return tree[key] ? tree[key].toLowerCase() : '';
+    if (!navigator.geolocation) {
+        gpsStatus.textContent = "Geolocalização não é suportada.";
+        gpsStatus.className = 'error';
+        return;
     }
-}
-
-/**
- * Converte coordenadas UTM de volta para Lat/Lon.
- * @param {object} tree - Objeto da árvore com dados UTM.
- * @returns {[number, number]|null} [latitude, longitude] ou null se falhar.
- */
-export function convertToLatLon(tree) {
-    if (!tree.coordX || !tree.coordY || !tree.utmZoneNum || !tree.utmZoneLetter) {
-        return null;
+    // (v20.0) Verificação de contexto seguro (HTTPS ou localhost)
+    if (!location.protocol.startsWith('https:') && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        gpsStatus.textContent = "Erro: Acesso ao GPS requer HTTPS.";
+        gpsStatus.className = 'error';
+        utils.showToast("Erro: Acesso ao GPS requer HTTPS.", "error");
+        return;
     }
+    
+    getGpsBtn.disabled = true;
+    getGpsBtn.innerHTML = '🛰️ Capturando... <span class="spinner"></span>';
+    gpsStatus.textContent = "Capturando... (1/5)";
+    gpsStatus.className = '';    
 
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+    const getSinglePosition = (opts) => new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, opts));
+
+    let readings = [];
     try {
-        if (typeof proj4 === 'undefined') {
-            console.error("Proj4js não carregado. Não é possível converter UTM para LatLon.");
-            return null;
+        for (let i = 0; i < 5; i++) {
+            gpsStatus.textContent = `Capturando... (${i + 1}/5)`;
+            const position = await getSinglePosition(options);
+            
+            // (v20.0) Usa o novo utilitário otimizado (Proj4js)
+            const utmCoords = utils.convertLatLonToUtm(position.coords.latitude, position.coords.longitude);
+            if (!utmCoords) {
+                throw new Error("Falha ao converter coordenadas GPS.");
+            }
+            readings.push(utmCoords);
         }
 
-        const utmProj = `+proj=utm +zone=${tree.utmZoneNum} +${tree.utmZoneLetter.toLowerCase() === 'n' ? 'north' : 'south'} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`;
-        const wgs84 = "EPSG:4326";
-
-        const [lon, lat] = proj4(utmProj, wgs84, [tree.coordX, tree.coordY]);
-        return [lat, lon];
-
-    } catch (e) {
-        console.error("Erro ao converter UTM para LatLon:", e);
-        showToast("Erro ao exibir árvore no mapa (conversão UTM->LatLon).", "error");
-        return null;
-    }
-}
-
-// === 3. FUNÇÕES DE MANIPULAÇÃO DE DADOS ===
-
-/**
- * Adiciona ou atualiza uma árvore no estado e no DB.
- * @param {object} treeData - Dados da árvore.
- * @param {File|Blob|null} photoBlob - Blob da foto ou null.
- */
-async function saveTreeAndPhoto(treeData, photoBlob) {
-    try {
-        let treeId = treeData.id;
-        
-        // Se for uma nova árvore, adiciona ao DB primeiro para obter um ID.
-        if (state.isEditing === false) {
-            treeId = await addTreeToDB(treeData);
-            // Atualiza o ID no objeto treeData, caso o DB tenha gerado um novo
-            treeData.id = treeId; 
-        } else {
-            await updateTreeInDB(treeData);
+        if (readings.length === 5) {
+            const avgEasting = readings.reduce((sum, r) => sum + r.easting, 0) / 5;
+            const avgNorthing = readings.reduce((sum, r) => sum + r.northing, 0) / 5;
+            coordXField.value = avgEasting.toFixed(0);    
+            coordYField.value = avgNorthing.toFixed(0);    
+            
+            const zoneStr = `${readings[4].zoneNum}${readings[4].zoneLetter}`;
+            gpsStatus.textContent = `Média de 5 leituras (Zona: ${zoneStr})`;
+            gpsStatus.className = '';
+            state.setLastUtmZone(readings[4].zoneNum, readings[4].zoneLetter);
+            
+            const defaultZoneInput = document.getElementById('default-utm-zone');
+            if (defaultZoneInput) {
+                defaultZoneInput.value = zoneStr;
+            }
         }
-
-        if (photoBlob) {
-            await addImageToDB(treeId, photoBlob);
-            // Garante que o registro da árvore indique que tem uma foto
-            treeData.hasPhoto = true; 
-            await updateTreeInDB(treeData); // Atualiza novamente a árvore para refletir 'hasPhoto'
-        } else if (treeData.hasPhoto && !state.currentTreePhoto) {
-            // Se tinha foto e foi removida durante a edição
-            await deleteImageFromDB(treeId);
-            treeData.hasPhoto = false;
-            await updateTreeInDB(treeData);
-        }
-        
-        // Atualiza o estado global com os dados mais recentes
-        const index = state.registeredTrees.findIndex(t => t.id === treeId);
-        if (index > -1) {
-            state.registeredTrees[index] = treeData;
-        } else {
-            state.registeredTrees.push(treeData);
-        }
-        state.setRegisteredTrees([...state.registeredTrees]); // Força a reatividade
-
-        return treeId;
-
     } catch (error) {
-        console.error("Erro ao salvar árvore e foto:", error);
-        showToast("Erro ao salvar dados da árvore. Tente novamente.", "error");
-        return null;
+        gpsStatus.className = 'error';
+        if (error.code) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED: gpsStatus.textContent = "Permissão ao GPS negada."; break;
+                case error.POSITION_UNAVAILABLE: gpsStatus.textContent = "Posição indisponível."; break;
+                case error.TIMEOUT: gpsStatus.textContent = "Tempo esgotado."; break;
+                default: gpsStatus.textContent = "Erro ao buscar GPS."; break;
+            }
+        } else {
+            // Erro vindo da conversão Proj4js
+            gpsStatus.textContent = error.message;
+            console.error("Erro no GPS Handle:", error.message);
+        }
+    } finally {
+        getGpsBtn.disabled = false;
+        getGpsBtn.innerHTML = '🛰️ Capturar GPS';
     }
 }
 
-// === 4. FUNÇÕES DE INTERAÇÃO COM O USUÁRIO (EVENT HANDLERS) ===
+
+// === 3. LÓGICA DO FORMULÁRIO DE RISCO (CRUD) ===
+
+export function clearPhotoPreview() {
+    const previewContainer = document.getElementById('photo-preview-container');
+    const removePhotoBtn = document.getElementById('remove-photo-btn');
+    const oldPreview = document.getElementById('photo-preview');
+
+    if (oldPreview) {
+        URL.revokeObjectURL(oldPreview.src); 
+        previewContainer.removeChild(oldPreview);
+    }
+    if (removePhotoBtn) {
+        removePhotoBtn.style.display = 'none';
+    }
+    state.setCurrentTreePhoto(null); 
+    
+    const photoInput = document.getElementById('tree-photo-input');
+    if (photoInput) {
+        photoInput.value = null;
+    }
+}
 
 /**
- * Lida com o evento de envio do formulário de registro de árvore.
+ * (v19.7) Processa a submissão do formulário. Retorna true/false.
  */
-export async function handleAddTreeSubmit(event) {
-    event.preventDefault();
-    
-    // Coleta dados do formulário
+export function handleAddTreeSubmit(event) {
+    event.preventDefault(); 
     const form = event.target;
-    const formData = new FormData(form);
+    let totalScore = 0;
     
-    const dapCm = parseFloat(formData.get('dap'));
-    const alturaM = parseFloat(formData.get('altura'));
-    const risco = formData.get('risco');
-    const pontuacao = parseInt(formData.get('pontuacao'), 10);
-    const coordX = parseFloat(formData.get('coordX'));
-    const coordY = parseFloat(formData.get('coordY'));
-    const utmZoneNum = parseInt(formData.get('utmZoneNum'), 10);
-    const utmZoneLetter = formData.get('utmZoneLetter');
-
-    // Validação básica
-    if (!form.checkValidity()) {
-        showToast("Preencha todos os campos obrigatórios.", "error");
-        form.reportValidity(); // Mostra as mensagens de validação do HTML5
-        return false;
+    // 1. Validação e Pontuação
+    const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
+    checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
+    
+    const allCheckboxes = form.querySelectorAll('.risk-checkbox');
+    const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
+    
+    let classificationText = 'Baixo Risco', classificationClass = 'risk-col-low';
+    if (totalScore >= 20) { classificationText = 'Alto Risco'; classificationClass = 'risk-col-high'; }
+    else if (totalScore >= 10) { classificationText = 'Médio Risco'; classificationClass = 'risk-col-medium'; }
+    
+    // 2. Criação do Objeto
+    const newTreeId = state.registeredTrees.length > 0 ? Math.max(...state.registeredTrees.map(t => t.id)) + 1 : 1;
+    
+    const especie = document.getElementById('risk-especie').value.trim();
+    if (!especie) {
+        utils.showToast("Erro: O campo Espécie é obrigatório.", 'error');
+        document.getElementById('risk-especie').focus();
+        return false; // Falha
     }
 
-    // Cria o objeto da árvore
-    let treeData = {
-        id: state.isEditing ? state.editingTreeId : Date.now(), // Usa ID existente se editando
-        data: formData.get('data'),
-        especie: formData.get('especie'),
-        dap: isNaN(dapCm) ? null : dapCm,
-        altura: isNaN(alturaM) ? null : alturaM,
-        coordX: isNaN(coordX) ? null : coordX,
-        coordY: isNaN(coordY) ? null : coordY,
-        utmZoneNum: isNaN(utmZoneNum) ? null : utmZoneNum,
-        utmZoneLetter: utmZoneLetter || '',
-        local: formData.get('local'),
-        avaliador: formData.get('avaliador'),
-        risco: risco,
-        pontuacao: isNaN(pontuacao) ? null : pontuacao,
-        observacoes: formData.get('observacoes'),
-        hasPhoto: !!state.currentTreePhoto // Indica se há uma foto associada
+    const newTree = {
+        id: newTreeId,
+        data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
+        especie: especie,
+        local: document.getElementById('risk-local').value || 'N/A',
+        coordX: document.getElementById('risk-coord-x').value || 'N/A',
+        coordY: document.getElementById('risk-coord-y').value || 'N/A',
+        utmZoneNum: state.lastUtmZone.num || 0,
+        utmZoneLetter: state.lastUtmZone.letter || 'Z',
+        dap: document.getElementById('risk-dap').value || 'N/A',   
+        avaliador: document.getElementById('risk-avaliador').value || 'N/A',
+        observacoes: document.getElementById('risk-obs').value || 'N/A',   
+        pontuacao: totalScore,
+        risco: classificationText,
+        riscoClass: classificationClass,
+        riskFactors: checkedRiskFactors,
+        hasPhoto: (state.currentTreePhoto !== null) 
     };
     
-    // Salva a árvore e a foto
-    const savedTreeId = await saveTreeAndPhoto(treeData, state.currentTreePhoto);
+    // 3. Salvamento de Dados
+    if (newTree.hasPhoto) {
+        db.saveImageToDB(newTree.id, state.currentTreePhoto);
+    }
 
-    if (savedTreeId) {
-        showToast(state.isEditing ? `Árvore ID ${savedTreeId} atualizada!` : `Árvore ID ${savedTreeId} cadastrada com sucesso!`);
-        form.reset(); // Limpa o formulário após o sucesso
-        state.setCurrentTreePhoto(null); // Limpa a foto do estado
-        clearPhotoPreview(); // Limpa a pré-visualização
-        // (v18.0) Volta o avaliador e data para o padrão
+    state.registeredTrees.push(newTree);
+    state.saveDataToStorage();
+    
+    utils.showToast(`✔️ Árvore "${newTree.especie}" (ID ${newTree.id}) adicionada!`, 'success');
+
+    // 4. Limpeza da UI (DOM)
+    state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
+    form.reset();
+    clearPhotoPreview(); 
+    
+    // (v20.0) Define os padrões novamente após o reset
+    try {
         document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
         document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
-        state.setIsEditing(false); // Reseta o modo de edição
-        state.setEditingTreeId(null);
-        return true;
-    }
-    return false;
+    } catch(e) { /* ignora erro */ }
+
+    document.getElementById('risk-especie').focus();
+    
+    return true; // Sucesso
 }
 
-/**
- * Lida com a exclusão de uma árvore.
- */
-export async function handleDeleteTree(id) {
-    try {
-        await deleteTreeFromDB(id);
-        await deleteImageFromDB(id); // Exclui também a foto
-        state.setRegisteredTrees(state.registeredTrees.filter(tree => tree.id !== id));
-        showToast(`Árvore ID ${id} e sua foto foram removidas.`);
-        return true;
-    } catch (error) {
-        console.error("Erro ao excluir árvore:", error);
-        showToast("Erro ao excluir a árvore. Tente novamente.", "error");
-        return false;
+
+export function handleDeleteTree(id) {
+    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
+    const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
+    
+    if (treeToDelete && treeToDelete.hasPhoto) {
+        db.deleteImageFromDB(id);
     }
+    
+    const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
+    state.setRegisteredTrees(newTrees);
+    state.saveDataToStorage(); 
+    utils.showToast(`🗑️ Árvore ID ${id} excluída.`, 'error'); 
+    return true; 
 }
 
-/**
- * Lida com o carregamento de uma árvore para edição.
- */
-export async function handleEditTree(id) {
-    const treeToEdit = state.registeredTrees.find(tree => tree.id === id);
-    if (!treeToEdit) {
-        showToast("Árvore não encontrada para edição.", "error");
-        return false;
-    }
+export function handleEditTree(id) {
+    const treeIndex = state.registeredTrees.findIndex(tree => tree.id === id);
+    if (treeIndex === -1) return false;
+    
+    const treeToEdit = state.registeredTrees[treeIndex];
 
-    // Preenche o formulário
+    // 1. Preenche campos
     document.getElementById('risk-data').value = treeToEdit.data;
     document.getElementById('risk-especie').value = treeToEdit.especie;
-    document.getElementById('risk-dap').value = treeToEdit.dap;
-    document.getElementById('risk-altura').value = treeToEdit.altura;
-    document.getElementById('risk-coordX').value = treeToEdit.coordX;
-    document.getElementById('risk-coordY').value = treeToEdit.coordY;
-    document.getElementById('risk-utm-zone-num').value = treeToEdit.utmZoneNum;
-    document.getElementById('risk-utm-zone-letter').value = treeToEdit.utmZoneLetter;
     document.getElementById('risk-local').value = treeToEdit.local;
+    document.getElementById('risk-coord-x').value = treeToEdit.coordX;
+    document.getElementById('risk-coord-y').value = treeToEdit.coordY;
+    document.getElementById('risk-dap').value = treeToEdit.dap;
     document.getElementById('risk-avaliador').value = treeToEdit.avaliador;
-    document.getElementById('risk-pontuacao').value = treeToEdit.pontuacao;
-    document.getElementById('risk-risco').value = treeToEdit.risco;
-    document.getElementById('risk-observacoes').value = treeToEdit.observacoes;
+    document.getElementById('risk-obs').value = treeToEdit.observacoes;
+    
+    state.setLastUtmZone(treeToEdit.utmZoneNum || 0, treeToEdit.utmZoneLetter || 'Z');
+    if(document.getElementById('gps-status')) {
+        document.getElementById('gps-status').textContent = `Zona (da árvore): ${state.lastUtmZone.num}${state.lastUtmZone.letter}`;
+    }
 
-    // Lida com a foto
-    clearPhotoPreview();
+    const previewContainer = document.getElementById('photo-preview-container');
+    const removePhotoBtn = document.getElementById('remove-photo-btn');
+    clearPhotoPreview(); 
+    
     if (treeToEdit.hasPhoto) {
-        getImageFromDB(treeToEdit.id, (imageBlob) => {
+        db.getImageFromDB(id, (imageBlob) => {
             if (imageBlob) {
                 const preview = document.createElement('img');
                 preview.id = 'photo-preview';
                 preview.src = URL.createObjectURL(imageBlob);
-                document.getElementById('photo-preview-container').prepend(preview);
-                document.getElementById('remove-photo-btn').style.display = 'block';
-                state.setCurrentTreePhoto(imageBlob); // Define a foto atual como o blob do DB
-            }
-        });
-    } else {
-        state.setCurrentTreePhoto(null);
-    }
-    
-    // Define o modo de edição
-    state.setIsEditing(true);
-    state.setEditingTreeId(id);
-    showToast(`Editando árvore ID ${id}.`, 'success');
-    
-    // (v20.2) Retorna true para UI.js saber que precisa atualizar o carrossel (se mobile)
-    return true; 
-}
-
-/**
- * Lida com o clique no botão "Limpar Tudo".
- */
-export async function handleClearAll() {
-    try {
-        await clearAllTreesFromDB();
-        await clearAllImagesFromDB();
-        state.setRegisteredTrees([]);
-        showToast("Todos os registros e fotos foram removidos.");
-        return true;
-    } catch (error) {
-        console.error("Erro ao limpar todos os registros:", error);
-        showToast("Erro ao limpar registros. Tente novamente.", "error");
-        return false;
-    }
-}
-
-/**
- * Limpa a pré-visualização da foto.
- */
-export function clearPhotoPreview() {
-    const preview = document.getElementById('photo-preview');
-    if (preview) {
-        URL.revokeObjectURL(preview.src); // Libera a memória do Blob URL
-        preview.remove();
-    }
-    document.getElementById('remove-photo-btn').style.display = 'none';
-    state.setCurrentTreePhoto(null); // Limpa a foto do estado
-    
-    // (v21.4) Limpa o input file também para permitir re-seleção do mesmo arquivo
-    const photoInput = document.getElementById('tree-photo-input');
-    if (photoInput) {
-        photoInput.value = '';
-    }
-}
-
-/**
- * Lida com a captura das coordenadas GPS.
- */
-export function handleGetGPS() {
-    const statusDiv = document.getElementById('gps-status');
-    if (statusDiv) {
-        statusDiv.textContent = 'Buscando GPS...';
-        statusDiv.className = 'gps-loading';
-    }
-
-    if (!navigator.geolocation) {
-        showToast("Seu navegador não suporta geolocalização.", "error");
-        if (statusDiv) { statusDiv.textContent = 'GPS Não Suportado'; statusDiv.className = 'gps-error'; }
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            
-            // Tenta converter para UTM
-            const utmCoords = convertLatLonToUtm(lat, lon);
-
-            if (utmCoords) {
-                document.getElementById('risk-coordX').value = utmCoords.easting;
-                document.getElementById('risk-coordY').value = utmCoords.northing;
-                document.getElementById('risk-utm-zone-num').value = utmCoords.zoneNum;
-                document.getElementById('risk-utm-zone-letter').value = utmCoords.zoneLetter;
-                showToast("Coordenadas GPS obtidas e convertidas para UTM!");
-                if (statusDiv) { statusDiv.textContent = 'GPS OK!'; statusDiv.className = 'gps-success'; }
+                previewContainer.prepend(preview); 
+                removePhotoBtn.style.display = 'block'; 
+                state.setCurrentTreePhoto(imageBlob); 
             } else {
-                // Em caso de falha na conversão, mostra Lat/Lon originais
-                document.getElementById('risk-coordX').value = lat.toFixed(6); // Usa Lat como X
-                document.getElementById('risk-coordY').value = lon.toFixed(6); // Usa Lon como Y
-                document.getElementById('risk-utm-zone-num').value = '';
-                document.getElementById('risk-utm-zone-letter').value = '';
-                showToast("Coordenadas GPS obtidas, mas falha na conversão para UTM. Exibindo Lat/Lon.", "error");
-                if (statusDiv) { statusDiv.textContent = 'GPS OK (Falha UTM)'; statusDiv.className = 'gps-warning'; }
+                console.warn(`Árvore ID ${id} marcada com foto, mas não encontrada no IndexedDB.`);
+                utils.showToast(`Foto da Árvore ID ${id} não encontrada.`, "error");
             }
-        },
-        (error) => {
-            let errorMessage = "Erro ao obter GPS: ";
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage += "Permissão negada. Ative o GPS nas configurações do navegador/celular.";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage += "Localização indisponível. Tente novamente.";
-                    break;
-                case error.TIMEOUT:
-                    errorMessage += "Tempo esgotado ao buscar localização.";
-                    break;
-                default:
-                    errorMessage += "Erro desconhecido.";
-                    break;
-            }
-            showToast(errorMessage, "error");
-            if (statusDiv) { statusDiv.textContent = 'Erro GPS'; statusDiv.className = 'gps-error'; }
-        },
-        {
-            enableHighAccuracy: true, // Tenta obter a melhor precisão possível
-            timeout: 10000,           // Tempo máximo (10 segundos)
-            maximumAge: 0             // Não usa posições cacheadas
-        }
-    );
-}
-
-/**
- * Lida com a ordenação da tabela.
- */
-export function handleSort(key) {
-    if (state.sortState.key === key) {
-        // Inverte a direção se for a mesma coluna
-        state.setSortState({
-            key: key,
-            direction: state.sortState.direction === 'asc' ? 'desc' : 'asc'
         });
-    } else {
-        // Define a nova coluna e direção padrão ascendente
-        state.setSortState({ key: key, direction: 'asc' });
     }
-    renderSummaryTable();
-}
 
-/**
- * Lida com o filtro da tabela.
- */
-export function handleTableFilter(event) {
-    const filterText = event.target.value.toLowerCase();
+    // Preenche checkboxes
+    const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
+    allCheckboxes.forEach((cb, index) => {
+        cb.checked = (treeToEdit.riskFactors && treeToEdit.riskFactors[index] === 1) || false;
+    });
+
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     
-    // (v19.6) Carrega todos os registros do DB e então filtra (garante que todos os dados estão lá)
-    getTreesFromDB().then(trees => {
-        state.setRegisteredTrees(trees); // Atualiza o estado com a versão completa
-        
-        const filteredTrees = trees.filter(tree => {
-            // Converte todos os campos para string e verifica a ocorrência do texto
-            return Object.values(tree).some(value => 
-                String(value).toLowerCase().includes(filterText)
-            );
-        });
-        // Atualiza o estado com os itens filtrados para que renderSummaryTable os exiba
-        state.setRegisteredTrees(filteredTrees);
-        renderSummaryTable(); // Re-renderiza com os dados filtrados
-    }).catch(error => {
-        console.error("Erro ao carregar árvores para filtro:", error);
-        showToast("Erro ao filtrar registros.", "error");
-    });
+    // Remove o item do array
+    const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
+    state.setRegisteredTrees(newTrees);
+    state.saveDataToStorage();
+
+    document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
+    
+    return isTouchDevice; // Retorna se o carrossel precisa ser atualizado
 }
 
-/**
- * [CRÍTICO PARA PERFORMANCE]
- * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
- * Retorna um novo Blob com a imagem otimizada.
- * @param {File|Blob} imageFile - O arquivo de imagem original.
- * @param {number} maxWidth - Largura máxima desejada para a imagem.
- * @param {number} quality - Qualidade JPEG (0 a 1).
- * @returns {Promise<Blob>} Um Promise que resolve para o Blob da imagem otimizada.
- */
-async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(imageFile); // Lê o arquivo como URL de dados
-
-        reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result; // Define a fonte da imagem para o URL de dados
-
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-
-                let width = img.width;
-                let height = img.height;
-
-                // Calcula novas dimensões se a largura exceder maxWidth
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
-                }
-
-                canvas.width = width;
-                canvas.height = height;
-
-                // Desenha a imagem redimensionada no canvas
-                ctx.drawImage(img, 0, 0, width, height);
-
-                // Converte o canvas para um Blob JPEG com a qualidade especificada
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/jpeg', quality);
-            };
-
-            img.onerror = (error) => reject(error); // Lida com erros de carregamento da imagem
-        };
-
-        reader.onerror = (error) => reject(error); // Lida com erros de leitura do arquivo
-    });
-}
-
-/**
- * Lida com a seleção de uma foto (v21.4: AGORA OTIMIZA A IMAGEM)
- */
-export async function handlePhotoInput(event) {
-    const file = event.target.files[0];
-    if (file) {
-        clearPhotoPreview(); 
-        
-        // --- NOVA LÓGICA DE OTIMIZAÇÃO ---
-        try {
-            const optimizedBlob = await optimizeImage(file, 800, 0.7); // 800px largura, 70% qualidade JPEG
-            state.setCurrentTreePhoto(optimizedBlob); // Armazena o Blob OTIMIZADO
-            
-            // Cria a pré-visualização a partir do Blob otimizado
-            const preview = document.createElement('img');
-            preview.id = 'photo-preview';
-            preview.src = URL.createObjectURL(optimizedBlob);
-            document.getElementById('photo-preview-container').prepend(preview);
-            document.getElementById('remove-photo-btn').style.display = 'block';
-
-        } catch (error) {
-            console.error("Erro ao otimizar imagem:", error);
-            showToast("Erro ao processar a foto. Tente outra imagem.", "error");
-            state.setCurrentTreePhoto(null);
-            clearPhotoPreview();
+export function handleClearAll() {
+    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
+    state.registeredTrees.forEach(tree => {
+        if (tree.hasPhoto) {
+            db.deleteImageFromDB(tree.id);
         }
+    });
+    
+    state.setRegisteredTrees([]); 
+    state.saveDataToStorage(); 
+    utils.showToast('🗑️ Tabela limpa.', 'error'); 
+    return true;
+}
+
+export function handleTableFilter() {
+    const filterInput = document.getElementById('table-filter-input');
+    if (!filterInput) return;
+    const filterText = filterInput.value.toLowerCase();
+    const rows = document.querySelectorAll("#summary-table-container tbody tr");
+    
+    rows.forEach(row => {
+        const rowText = row.textContent.toLowerCase();
+        if (rowText.includes(filterText)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+
+export function handleSort(sortKey) {
+    if (state.sortState.key === sortKey) {
+        const newDir = (state.sortState.direction === 'asc') ? 'desc' : 'asc';
+        state.setSortState(sortKey, newDir);
+    } else {
+        state.setSortState(sortKey, 'asc');
     }
 }
 
+// === 4. LÓGICA DE INTERAÇÃO (MAPA E TABELA) ===
 
-/**
- * Lida com o zoom no mapa para uma árvore específica.
- */
 export function handleZoomToPoint(id) {
     const tree = state.registeredTrees.find(t => t.id === id);
-    if (tree) {
-        const coords = convertToLatLon(tree);
-        if (coords) {
-            state.setZoomTargetCoords(coords);
-            showSubTab('tab-content-mapa'); // Vai para a aba do mapa
-        } else {
-            showToast("Não foi possível localizar esta árvore no mapa.", "error");
-        }
-    }
-}
-
-/**
- * Lida com o zoom no mapa para exibir todas as árvores.
- */
-export function handleZoomToExtent() {
-    if (!state.mapInstance || state.registeredTrees.length === 0) {
-        showToast("Nenhuma árvore para exibir no mapa.", "error");
+    if (!tree) {
+        utils.showToast("Árvore não encontrada.", "error");
         return;
     }
 
-    let bounds = L.latLngBounds([]);
-    let validCoordsFound = false;
+    const coords = convertToLatLon(tree); 
+    
+    if (coords) {
+        state.setZoomTargetCoords(coords); 
+        state.setHighlightTargetId(id); 
+        
+        const mapTabButton = document.querySelector('.sub-nav-btn[data-target="tab-content-mapa"]');
+        if (mapTabButton) {
+            mapTabButton.click();
+        }
+    } else {
+        utils.showToast(`Coordenadas inválidas para a Árvore ID ${id}. Verifique a Zona UTM Padrão.`, "error");
+    }
+}
 
+export function convertToLatLon(tree) {
+    if (typeof proj4 === 'undefined') {
+        console.error("Proj4js não carregado. Não é possível converter UTM.");
+        utils.showToast("Erro: Biblioteca Proj4js não carregada.", "error");
+        return null; 
+    }
+
+    const lon = parseFloat(tree.coordX); 
+    const lat = parseFloat(tree.coordY); 
+
+    let zNum, zLetter;
+
+    // 1. Tenta usar os dados da própria árvore (melhor caso)
+    if (tree.utmZoneNum > 0 && tree.utmZoneLetter && tree.utmZoneLetter !== 'Z') {
+        zNum = tree.utmZoneNum;
+        zLetter = tree.utmZoneLetter;
+    } 
+    // 2. Tenta usar o input de Zona Padrão (Fallback)
+    else {
+        const zoneInput = document.getElementById('default-utm-zone');
+        if (zoneInput && zoneInput.value) {
+            const match = zoneInput.value.trim().match(/^(\d+)([A-Z])$/i); 
+            if (match) {
+                zNum = parseInt(match[1], 10);
+                zLetter = match[2].toUpperCase();
+            }
+        }
+        // 3. Tenta usar a última zona capturada pelo GPS
+        if (!zNum && state.lastUtmZone.num > 0) {
+            zNum = state.lastUtmZone.num;
+            zLetter = state.lastUtmZone.letter;
+        }
+    }
+
+    // Tenta conversão UTM -> Lat/Lon
+    if (!isNaN(lon) && !isNaN(lat) && !isNaN(zNum) && zNum > 0 && zLetter && zLetter !== 'Z' && lon > 1000 && lat > 1000) {
+        // (v20.0) Simplificado: Proj4js lida com letras >= 'N' como 'north'
+        const hemisphere = (zLetter.toUpperCase() < 'N') ? 'south' : 'north';
+        const projString = `+proj=utm +zone=${zNum} +${hemisphere} +ellps=WGS84 +datum=WGS84 +units=m +no_defs`;
+        try {
+            const [longitude, latitude] = proj4(projString, "EPSG:4326", [lon, lat]);
+            return [latitude, longitude]; 
+        } catch (e) {
+            console.warn("Falha na conversão Proj4js.", e);
+        }
+    }
+
+    // Fallback: Se os dados PARECEM ser Lat/Lon (ex: -22, -43)
+    if (!isNaN(lon) && !isNaN(lat) && (lat >= -90 && lat <= 90) && (lon >= -180 && lon <= 180)) {
+        console.warn(`Dados (ID ${tree.id}) parecem ser Lat/Lon. Usando fallback.`);
+        return [lat, lon];
+    }
+
+    console.warn(`Ponto (ID ${tree.id}) ignorado: Coordenadas inválidas.`, tree);
+    return null;
+}
+
+export function handleZoomToExtent() {
+    if (!state.mapInstance) {
+        utils.showToast("O mapa não está inicializado.", "error");
+        return;
+    }
+
+    let boundsArray = [];
     state.registeredTrees.forEach(tree => {
-        const coords = convertToLatLon(tree);
+        const coords = convertToLatLon(tree); 
         if (coords) {
-            bounds.extend(coords);
-            validCoordsFound = true;
+            boundsArray.push(coords);
         }
     });
 
-    if (validCoordsFound) {
-        state.mapInstance.fitBounds(bounds, { padding: [50, 50] });
+    if (boundsArray.length > 0) {
+        state.mapInstance.fitBounds(boundsArray, { padding: [50, 50], maxZoom: 18 });
     } else {
-        showToast("Nenhuma coordenada válida encontrada para ajustar o mapa.", "error");
+        utils.showToast("Não há coordenadas válidas. Verifique a Zona UTM Padrão.", "error");
     }
 }
 
-// === 5. EXPORTAÇÃO E IMPORTAÇÃO DE DADOS ===
+export function handleMapMarkerClick(id) {
+    state.setHighlightTargetId(id); 
+    const summaryTabButton = document.querySelector('.sub-nav-btn[data-target="tab-content-summary"]');
+    if (summaryTabButton) {
+        summaryTabButton.click(); 
+    }
+}
+
+// === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
 
 /**
- * Exporta os dados para CSV.
+ * (v19.8) Ação de exportar apenas CSV
  */
-export async function exportActionCSV() {
-    try {
-        const allTrees = await getTreesFromDB(); // Garante que todos os dados estão incluídos
-
-        if (allTrees.length === 0) {
-            showToast("Nenhum dado para exportar.", "error");
-            return;
-        }
-
-        const headers = [
-            "ID", "Data", "Especie", "DAP (cm)", "Altura (m)", "Coord X", "Coord Y",
-            "Zona UTM", "Letra Zona UTM", "Local", "Avaliador", "Pontuacao Risco",
-            "Risco", "Observacoes", "Tem Foto" // Adicionado "Tem Foto"
-        ];
-        
-        const rows = allTrees.map(tree => [
-            tree.id,
-            tree.data,
-            tree.especie,
-            tree.dap,
-            tree.altura,
-            tree.coordX,
-            tree.coordY,
-            tree.utmZoneNum,
-            tree.utmZoneLetter,
-            tree.local,
-            tree.avaliador,
-            tree.pontuacao,
-            tree.risco,
-            tree.observacoes ? `"${tree.observacoes.replace(/"/g, '""')}"` : "", // Escapa aspas
-            tree.hasPhoto ? "Sim" : "Não" // Valor para "Tem Foto"
-        ]);
-
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(";") + "\n"
-            + rows.map(e => e.join(";")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `inventario_arvores_csv_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast("Dados CSV exportados com sucesso!");
-    } catch (error) {
-        console.error("Erro ao exportar CSV:", error);
-        showToast("Erro ao exportar dados CSV.", "error");
+export function exportActionCSV() {
+    const csvContent = getCSVData();
+    if (!csvContent) { 
+        utils.showToast("Nenhuma árvore cadastrada para exportar.", 'error'); 
+        return; 
     }
+    const d = String(new Date().getDate()).padStart(2, '0'), m = String(new Date().getMonth() + 1).padStart(2, '0'), y = new Date().getFullYear();
+    const filename = `risco_arboreo_${d}${m}${y}.csv`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }
 
 /**
- * Exporta todos os dados e fotos para um arquivo .zip.
+ * (v19.8) Ação de exportar pacote ZIP
  */
 export async function exportActionZip() {
     if (typeof JSZip === 'undefined') {
-        showToast("A biblioteca JSZip não está carregada. Não é possível exportar .ZIP.", "error");
+        utils.showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
+        console.error("Falha na exportação: JSZip não está definido. Verifique se o arquivo 'libs/jszip.min.js' foi carregado corretamente no index.html.");
         return;
+    }
+    if (state.registeredTrees.length === 0) {
+        utils.showToast("Nenhum dado para exportar.", 'error');
+        return;
+    }
+
+    const zipStatus = document.getElementById('zip-status');
+    const zipStatusText = document.getElementById('zip-status-text');
+    if (zipStatus) {
+        zipStatusText.textContent = 'Gerando pacote .zip...';
+        zipStatus.style.display = 'flex';
     }
 
     try {
         const zip = new JSZip();
-        const allTrees = await getTreesFromDB();
-        
-        if (allTrees.length === 0) {
-            showToast("Nenhum dado para exportar.", "error");
-            return;
+        const csvContent = getCSVData();
+        if (csvContent) {
+            // Remove o BOM (Byte Order Mark) se existir, antes de salvar no ZIP
+            zip.file("manifesto_dados.csv", csvContent.replace(/^\uFEFF/, ''), {
+                encoding: "UTF-8"
+            });
         }
 
-        // Adiciona um arquivo CSV com os metadados
-        const headers = [
-            "ID", "Data", "Especie", "DAP (cm)", "Altura (m)", "Coord X", "Coord Y",
-            "Zona UTM", "Letra Zona UTM", "Local", "Avaliador", "Pontuacao Risco",
-            "Risco", "Observacoes", "Nome Foto" // Novo header para o nome do arquivo da foto
-        ];
-        const csvRows = allTrees.map(tree => {
-            const photoFileName = tree.hasPhoto ? `foto_${tree.id}.jpeg` : '';
-            return [
-                tree.id,
-                tree.data,
-                tree.especie,
-                tree.dap,
-                tree.altura,
-                tree.coordX,
-                tree.coordY,
-                tree.utmZoneNum,
-                tree.utmZoneLetter,
-                tree.local,
-                tree.avaliador,
-                tree.pontuacao,
-                tree.risco,
-                tree.observacoes ? `"${tree.observacoes.replace(/"/g, '""')}"` : "",
-                photoFileName
-            ];
-        });
-        const csvContent = headers.join(";") + "\n" + csvRows.map(e => e.join(";")).join("\n");
-        zip.file("inventario_arvores_metadata.csv", csvContent);
-
-        // Adiciona as fotos
-        const photoPromises = allTrees.filter(tree => tree.hasPhoto).map(async tree => {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const blob = await getImageFromDB(tree.id);
-                    if (blob) {
-                        zip.file(`fotos/foto_${tree.id}.jpeg`, blob);
-                        resolve();
-                    } else {
-                        console.warn(`Foto para ID ${tree.id} não encontrada no DB.`);
-                        resolve(); // Resolve mesmo que a foto não seja encontrada
-                    }
-                } catch (imgErr) {
-                    console.error(`Erro ao adicionar foto ${tree.id} ao zip:`, imgErr);
-                    resolve(); // Resolve para não parar o processo se uma foto falhar
+        zipStatusText.textContent = 'Coletando imagens do banco de dados...';
+        const images = await db.getAllImagesFromDB();
+        
+        if (images.length > 0) {
+            const imgFolder = zip.folder("images");
+            images.forEach(imgData => {
+                // (v20.0) Verificação de consistência
+                const treeExists = state.registeredTrees.some(t => t.id === imgData.id && t.hasPhoto);
+                if (treeExists && imgData.imageBlob) {
+                    const extension = (imgData.imageBlob.type.split('/')[1] || 'jpg').split('+')[0];
+                    const filename = `tree_id_${imgData.id}.${extension}`;
+                    imgFolder.file(filename, imgData.imageBlob, { binary: true });
                 }
             });
-        });
-        await Promise.all(photoPromises);
+        }
 
-        const content = await zip.generateAsync({ type: "blob" });
-        const fileName = `inventario_arvores_completo_${new Date().toISOString().slice(0, 10)}.zip`;
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(content);
-        link.download = fileName;
+        zipStatusText.textContent = 'Compactando arquivos... (pode levar um momento)';
+        const zipBlob = await zip.generateAsync({
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 }
+        });
+
+        const d = String(new Date().getDate()).padStart(2, '0'), m = String(new Date().getMonth() + 1).padStart(2, '0'), y = new Date().getFullYear();
+        const filename = `backup_completo_risco_${d}${m}${y}.zip`;
+
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(zipBlob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-        showToast("Pacote .ZIP exportado com sucesso!");
+        URL.revokeObjectURL(url);
+        
+        utils.showToast('📦 Pacote .zip exportado com sucesso!', 'success');
 
     } catch (error) {
-        console.error("Erro ao exportar .ZIP:", error);
-        showToast("Erro ao exportar pacote .ZIP.", "error");
+        console.error("Erro ao gerar o .zip:", error);
+        utils.showToast("Erro ao gerar o pacote .zip.", 'error');
+    } finally {
+        if (zipStatus) zipStatus.style.display = 'none';
     }
 }
 
+/**
+ * (v19.8) Ação de importar apenas CSV
+ */
+export function importActionCSV() {
+    document.getElementById('csv-importer').click();
+}
 
 /**
- * Lida com a importação de um arquivo CSV.
+ * (v19.8) Ação de importar pacote ZIP
  */
-export async function handleFileImport(event) {
-    const file = event.target.files[0];
-    if (!file) {
-        return;
+export function importActionZip() {
+    if (typeof JSZip === 'undefined') {
+         utils.showToast("Erro: Biblioteca JSZip não carregada. Não é possível importar .ZIP.", 'error');
+         console.error("Tentativa de importar ZIP falhou: JSZip não está definido.");
+         return;
     }
+    document.getElementById('zip-importer').click();
+}
 
-    const replaceData = event.replaceData; // Captura o flag 'replaceData' do evento
+
+// --- Funções de Suporte (Privadas deste módulo) ---
+
+function getCSVData() {
+    if (state.registeredTrees.length === 0) return null;
+    const headers = ["ID", "Data Coleta", "Especie", "Coord X (UTM)", "Coord Y (UTM)", "Zona UTM Num", "Zona UTM Letter", "DAP (cm)", "Local", "Avaliador", "Pontuacao", "Classificacao de Risco", "Observacoes", "RiskFactors", "HasPhoto"];
+    // \uFEFF = BOM (Byte Order Mark) para garantir que o Excel leia UTF-8 (acentos) corretamente
+    let csvContent = "\uFEFF" + headers.join(";") + "\n"; 
     
-    if (file.type !== 'text/csv') {
-        showToast("Por favor, selecione um arquivo CSV.", "error");
-        return;
-    }
+    state.registeredTrees.forEach(tree => {
+        // (v20.0) Limpa dados que podem conter ';' ou quebras de linha
+        const clean = (str) => (str || '').toString().replace(/[\n;]/g, ',');
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const text = e.target.result;
-            const lines = text.split('\n').filter(line => line.trim() !== ''); // Remove linhas vazias
-            
-            if (lines.length < 2) {
-                showToast("CSV vazio ou inválido (cabeçalho + pelo menos uma linha de dados).", "error");
-                return;
-            }
-
-            const headers = lines[0].split(';');
-            const importedTrees = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(';');
-                if (values.length !== headers.length) {
-                    console.warn(`Linha ${i + 1} ignorada devido a número incorreto de colunas.`);
-                    continue;
-                }
-                
-                let tree = {};
-                headers.forEach((header, index) => {
-                    const key = header.trim().replace(/ /g, '').replace(/\(.*\)/g, ''); // Normaliza chaves
-                    let value = values[index].trim();
-                    if (value.startsWith('"') && value.endsWith('"')) {
-                        value = value.slice(1, -1).replace(/""/g, '"'); // Remove aspas e des-escapa
-                    }
-                    
-                    // Converte para tipos corretos
-                    switch(key.toLowerCase()) {
-                        case 'id':
-                        case 'dapcm':
-                        case 'alturam':
-                        case 'coordx':
-                        case 'coordy':
-                        case 'zonautm':
-                        case 'pontuacaorisco':
-                            tree[key.toLowerCase()] = parseFloat(value) || null;
-                            break;
-                        case 'temfoto': // Novo campo para importação
-                            tree.hasPhoto = (value.toLowerCase() === 'sim');
-                            break;
-                        default:
-                            tree[key.toLowerCase()] = value;
-                            break;
-                    }
-                });
-                
-                // Mapeamento para nomes de chaves internos esperados (se necessário)
-                // Exemplo: 'dapcm' -> 'dap'
-                if (tree.dapcm !== undefined) { tree.dap = tree.dapcm; delete tree.dapcm; }
-                if (tree.alturam !== undefined) { tree.altura = tree.alturam; delete tree.alturam; }
-                if (tree.zonautm !== undefined) { tree.utmZoneNum = tree.zonautm; delete tree.zonautm; }
-                if (tree.letrazonautm !== undefined) { tree.utmZoneLetter = tree.letrazonautm; delete tree.letrazonautm; }
-                if (tree.pontuacaorisco !== undefined) { tree.pontuacao = tree.pontuacaorisco; delete tree.pontuacaorisco; }
-                
-                importedTrees.push(tree);
-            }
-
-            if (replaceData) {
-                await clearAllTreesFromDB();
-                await clearAllImagesFromDB(); // Limpa as fotos também
-            }
-            
-            let addedCount = 0;
-            for (const tree of importedTrees) {
-                 // Verifica se o ID já existe e tenta atualizar, caso contrário, adiciona.
-                const existingTree = await state.getTreeByIdFromDB(tree.id);
-                if (existingTree) {
-                    await updateTreeInDB(tree);
-                } else {
-                    await addTreeToDB(tree);
-                }
-                addedCount++;
-            }
-            
-            // Recarrega todos os dados após a importação
-            const updatedTrees = await getTreesFromDB();
-            state.setRegisteredTrees(updatedTrees);
-            
-            showToast(`${addedCount} árvores importadas com sucesso!`);
-            renderSummaryTable();
-        } catch (error) {
-            console.error("Erro ao importar CSV:", error);
-            showToast("Erro ao processar arquivo CSV.", "error");
-        }
-    };
-    reader.readAsText(file);
+        const riskFactorsString = (tree.riskFactors || []).join(',');
+        
+        const row = [
+            tree.id, 
+            tree.data, 
+            clean(tree.especie), 
+            tree.coordX, 
+            tree.coordY, 
+            tree.utmZoneNum || '', 
+            tree.utmZoneLetter || '', 
+            tree.dap, 
+            clean(tree.local), 
+            clean(tree.avaliador), 
+            tree.pontuacao, 
+            tree.risco, 
+            clean(tree.observacoes), 
+            riskFactorsString,
+            tree.hasPhoto ? 'Sim' : 'Nao' 
+        ];
+        csvContent += row.join(";") + "\n";
+    });
+    return csvContent;
 }
 
+// 
+// [ERRO CRÍTICO 2 - CORRIGIDO]
+// A função duplicada 'async function handleExportZip() { ... }'
+// que estava aqui (linhas 438-490) foi REMOVIDA.
+//
 
-/**
- * Lida com a importação de um arquivo ZIP.
- */
 export async function handleImportZip(event) {
     if (typeof JSZip === 'undefined') {
-        showToast("A biblioteca JSZip não está carregada. Não é possível importar .ZIP.", "error");
-        return;
+        utils.showToast("Erro: Biblioteca JSZip não carregada. Verifique o console (F12).", 'error');
+        console.error("Falha na importação: JSZip não está definido.");
+        return; 
     }
+    
     const file = event.target.files[0];
-    if (!file) {
-        return;
+    if (!file) return;
+
+    const zipStatus = document.getElementById('zip-status');
+    const zipStatusText = document.getElementById('zip-status-text');
+    if (zipStatus) {
+        zipStatusText.textContent = 'Lendo o pacote .zip...';
+        zipStatus.style.display = 'flex';
     }
+
+    try {
+        const zip = await JSZip.loadAsync(file);
+        
+        const csvFile = zip.file("manifesto_dados.csv");
+        if (!csvFile) {
+            throw new Error("O arquivo 'manifesto_dados.csv' não foi encontrado no .zip.");
+        }
+        
+        const csvContent = await csvFile.async("string");
+        const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+        
+        if (lines.length <= 1) {
+            throw new Error("O manifesto CSV está vazio.");
+        }
+        
+        // (v19.8) Lógica de substituição (passada pelo 'replaceData' no ui.js)
+        const append = !event.replaceData;
+        let newTrees = append ? [...state.registeredTrees] : [];
+        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) : 0;
+        
+        if (!append) {
+             // Limpa o DB de imagens ANTES de adicionar novas
+             await db.clearImageDB();
+        }
+
+        zipStatusText.textContent = 'Processando manifesto de dados...';
+        let imageSavePromises = []; 
+
+        for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].split(';');
+            if (row.length < 15) { 
+                console.warn("Linha CSV mal formatada, ignorada:", lines[i]);
+                continue;
+            }
+
+            const oldId = row[0]; // ID original do arquivo .zip
+            const newId = ++maxId; // Novo ID sequencial
+            
+            const pontuacao = parseInt(row[10], 10) || 0;
+            let riscoClass = 'risk-col-low';
+            if (pontuacao >= 20) riscoClass = 'risk-col-high';
+            else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
+
+            const treeData = {
+                id: newId, 
+                data: row[1] || 'N/A',
+                especie: row[2] || 'N/A',
+                coordX: row[3] || 'N/A',
+                coordY: row[4] || 'N/A',
+                utmZoneNum: parseInt(row[5], 10) || 0,
+                utmZoneLetter: row[6] || 'Z',
+                dap: row[7] || 'N/A',
+                local: row[8] || 'N/A',
+                avaliador: row[9] || 'N/A',
+                pontuacao: pontuacao,
+                risco: row[11] || 'N/A',
+                observacoes: row[12] || 'N/A',
+                riskFactors: (row[13] || '').split(',').map(item => parseInt(item, 10) || 0),
+                riscoClass: riscoClass,
+                hasPhoto: (row[14] && row[14].trim().toLowerCase() === 'sim')
+            };
+
+            if (treeData.hasPhoto) {
+                // Procura por qualquer imagem que comece com "tree_id_[oldId]"
+                const imgFile = zip.file(new RegExp(`^images/tree_id_${oldId}\\.(jpg|jpeg|png|webp)$`, "i"))[0];
+                
+                if (imgFile) {
+                    imageSavePromises.push(
+                        imgFile.async("blob").then(blob => {
+                            // (v21.5) A otimização de imagem acontece na *entrada* (ui.js),
+                            // então aqui salvamos o blob do zip diretamente.
+                            db.saveImageToDB(newId, blob); // Salva com o NOVO ID
+                        })
+                    );
+                } else {
+                    console.warn(`Foto para o ID ${oldId} não encontrada no .zip.`);
+                    treeData.hasPhoto = false; 
+                }
+            }
+            newTrees.push(treeData);
+        }
+
+        zipStatusText.textContent = `Salvando ${imageSavePromises.length} imagens no banco de dados...`;
+        await Promise.all(imageSavePromises);
+
+        state.setRegisteredTrees(newTrees);
+        state.saveDataToStorage();
+        
+        utils.showToast(`📤 Importação do .zip concluída! ${lines.length - 1} registros carregados.`, 'success');
+
+    } catch (error) {
+        console.error("Erro ao importar o .zip:", error);
+        utils.showToast(`Erro: ${error.message}`, 'error');
+    } finally {
+        if (zipStatus) zipStatus.style.display = 'none';
+        event.target.value = null; 
+    }
+}
+
+export async function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const content = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = (e) => reject(new Error("Erro ao ler o ficheiro."));
+        reader.readAsText(file);
+    });
+
+    try {
+        const lines = content.split('\n').filter(line => line.trim() !== '');
+        if (lines.length <= 1) { 
+            throw new Error("O ficheiro CSV está vazio ou é inválido.");
+        }
+        
+        // (v19.8) Lógica de substituição (passada pelo 'replaceData' no ui.js)
+        const append = !event.replaceData;
+        let newTrees = append ? [...state.registeredTrees] : [];
+        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) : 0;
+        
+        if (!append) {
+             // Limpa o DB de imagens (CSV não importa fotos, então limpa tudo)
+             await db.clearImageDB();
+        }
+
+        for (let i = 1; i < lines.length; i++) {
+            const row = lines[i].split(';');
+            
+            // (v20.0) Detecção de formato (header-based)
+            // Para simplificar, mantemos a detecção baseada em contagem de colunas
+            const isV18Format = row.length >= 15; // Formato v18+ (com HasPhoto)
+            const isV17Format = row.length === 14; // Formato v17 (com Zona UTM, sem HasPhoto)
+            const isV16Format = row.length >= 12 && row.length < 14; // Formato v16 (sem Zona UTM)
+
+            if (!isV16Format && !isV17Format && !isV18Format) { 
+                console.warn("Linha CSV mal formatada, ignorada:", lines[i]); 
+                continue; 
+            }
+
+            let pontuacaoIdx, riscoIdx, obsIdx, factorsIdx, dapIdx, localIdx, avaliadorIdx;
+            let utmNum = 0, utmLetter = 'Z', hasPhoto = false;
+
+            if (isV18Format) {
+                utmNum = parseInt(row[5], 10) || 0;
+                utmLetter = row[6] || 'Z';
+                dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
+                riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
+                hasPhoto = (row[14] && row[14].trim().toLowerCase() === 'sim');
+            } else if (isV17Format) {
+                utmNum = parseInt(row[5], 10) || 0;
+                utmLetter = row[6] || 'Z';
+                dapIdx = 7; localIdx = 8; avaliadorIdx = 9; pontuacaoIdx = 10;
+                riscoIdx = 11; obsIdx = 12; factorsIdx = 13;
+            } else { // V16
+                dapIdx = 5; localIdx = 6; avaliadorIdx = 7; pontuacaoIdx = 8;
+                riscoIdx = 9; obsIdx = 10; factorsIdx = 11;
+            }
+
+            const pontuacao = parseInt(row[pontuacaoIdx], 10) || 0;
+            let riscoClass = 'risk-col-low';
+            if (pontuacao >= 20) riscoClass = 'risk-col-high';
+            else if (pontuacao >= 10) riscoClass = 'risk-col-medium';
+
+            const treeData = {
+                id: ++maxId, 
+                data: row[1] || 'N/A',
+                especie: row[2] || 'N/A',
+                coordX: row[3] || 'N/A',
+                coordY: row[4] || 'N/A',
+                utmZoneNum: utmNum,
+                utmZoneLetter: utmLetter,
+                dap: row[dapIdx] || 'N/A',
+                local: row[localIdx] || 'N/A',
+                avaliador: row[avaliadorIdx] || 'N/A',
+                pontuacao: pontuacao,
+                risco: row[riscoIdx] || 'N/A',
+                observacoes: row[obsIdx] || 'N/A',
+                riskFactors: (row[factorsIdx] || '').split(',').map(item => parseInt(item, 10) || 0),
+                riscoClass: riscoClass,
+                hasPhoto: hasPhoto // CSV não importa fotos, mas mantém o status
+            };
+            newTrees.push(treeData);
+        }
+        state.setRegisteredTrees(newTrees);
+        state.saveDataToStorage();
+        utils.showToast(`📤 Importação de CSV concluída! ${lines.length - 1} registros carregados.`, 'success'); 
+    
+    } catch (error) {
+        console.error("Erro ao processar o ficheiro CSV:", error);
+        utils.showToast(error.message || "Erro ao processar o ficheiro.", 'error'); 
+    } finally {
+        event.target.value = null; 
+    }
+}
+
+
+// === 6. LÓGICA DE FEATURES COMPLEMENTARES (CHAT, CONTATO, EMAIL) ===
+
+function generateEmailSummaryText() {
+    if (state.registeredTrees.length === 0) return "Nenhuma árvore foi cadastrada na tabela de resumo.";
+    let textBody = "Segue o relatório resumido das árvores avaliadas:\n\n";
+    textBody += "ID\t|\tData\t\t|\tEspécie (Nome/Tag)\t|\tLocal\t\t|\tClassificação de Risco\t|\tObservações\n";
+    textBody += "----------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+    
+    state.registeredTrees.forEach(tree => {
+        const [y, m, d] = (tree.data || '---').split('-');
+        const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
+        const cleanEspecie = (tree.especie || 'N/A').padEnd(20, ' ').substring(0, 20);
+        const cleanLocal = (tree.local || 'N/A').padEnd(15, ' ').substring(0, 15);
+        const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30);
+        textBody += `${tree.id}\t|\t${displayDate}\t|\t${cleanEspecie}\t|\t${cleanLocal}\t|\t${tree.risco}\t|\t${cleanObs}\n`;
+    });
+    
+    textBody += "\n\n";
+    textBody += "Instrução Importante:\n";
+    textBody += "Para o relatório completo (com coordenadas, DAP, etc.), clique em 'Exportar Dados' no aplicativo e anexe o arquivo baixado a este e-mail antes de enviar.\n";
+    return textBody;
+}
+
+export function sendEmailReport() {
+    const targetEmail = ""; // Deixe em branco para o usuário preencher
+    const subject = "Relatório de Avaliação de Risco Arbóreo";
+    const emailBody = generateEmailSummaryText();
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(emailBody);
+    const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
+    
+    // [CORREÇÃO BUG 1]: Verifica o limite de caracteres para o mailto
+    if (mailtoLink.length > 2000) { 
+        utils.showToast("Muitos dados para e-mail. Use 'Exportar Dados'.", 'error'); 
+        return; 
+    }
+    window.location.href = mailtoLink;
+}
+
+export function handleContactForm(event) {
+    event.preventDefault();   
+    const targetEmail = "rafael.ammon.prestserv@petrobras.com.br";
+    const nome = document.getElementById('nome').value;
+    const emailRetorno = document.getElementById('email').value;
+    const assunto = document.getElementById('assunto').value;
+    const mensagem = document.getElementById('mensagem').value;
+    const emailBody = `
+Prezado(a),
+
+Esta é uma dúvida enviada através do Manual Digital de Poda e Corte.
+---------------------------------------------------
+Enviado por: ${nome}
+Email de Retorno: ${emailRetorno}
+---------------------------------------------------
+
+Mensagem:
+${mensagem}
+    `;
+    const encodedSubject = encodeURIComponent(assunto);
+    const encodedBody = encodeURIComponent(emailBody);
+    const mailtoLink = `mailto:${targetEmail}?subject=${encodedSubject}&body=${encodedBody}`;
+    window.location.href = mailtoLink;
+}
+
+export async function handleChatSend() {
+    const chatInput = document.getElementById('chat-input');
+    const chatResponseBox = document.getElementById('chat-response-box');
+    const userQuery = chatInput.value.trim();
+    if (userQuery === "") return;
+    
+    chatResponseBox.innerHTML = `<p class="chat-response-text loading">Buscando no manual...</p>`;
+    chatInput.value = "";
+    
+    try {
+        const PONTESEGURA_URL = "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI";
+        if (PONTESEGURA_URL === "URL_DA_SUA_FUNCAO_GOOGLE_CLOUD_AQUI") {
+             chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: gray;"><strong>Status:</strong> O assistente digital ainda precisa ser configurado com uma URL de API válida (Google Cloud Function).</p>`;
+             return;
+        }
+        
+        const response = await fetch(PONTESEGURA_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ query: userQuery }) 
+        });
+        if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+        const data = await response.json();
+        chatResponseBox.innerHTML = `<p class="chat-response-text">${data.response}</p>`;
+        
+    } catch (error) {
+        console.error('Erro na API Gemini:', error);
+        chatResponseBox.innerHTML = `<p class="chat-response-text" style="color: red;"><strong>Erro:</strong> ${error.message}</p>`;
+    }
+}
+
+/**
+ * (v19.6) Helper para ordenação (lido pelo ui.js)
+ */
+export function getSortValue(tree, key) {
+    const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
+    if (numericKeys.includes(key)) {
+        const value = tree[key];
+        // Trata 'N/A' ou '' como 0 para ordenação numérica
+        return parseFloat(value) || 0; 
+    }
+    
+    const value = tree[key];
+    if (typeof value === 'string') {
+        return value.toLowerCase();
+    }
+    return value || '';
+}
