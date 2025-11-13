@@ -1,4 +1,4 @@
-// js/ui.js (v21.9 - FINAL - Correção de Filtro, Escopo e Zoom)
+// js/ui.js (v22.0 - Correção de Lógica de Filtro, Zoom e Escopo)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -7,7 +7,7 @@ import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
-// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
+// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag.
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
@@ -420,6 +420,12 @@ function renderTreesOnMap(treesData) {
             showMapInfoBox(tree);
         });
     });
+    
+    // [CORREÇÃO v21.9] Aplica o filtro atual DEPOIS que os marcadores são renderizados
+    const currentFilter = document.querySelector('#map-legend-filter input[name="risk-filter"]:checked');
+    if (currentFilter) {
+        handleMapFilterChange({ target: currentFilter }); // Simula o evento de change
+    }
 }
 
 /**
@@ -452,6 +458,10 @@ function showMapInfoBox(tree) {
     const infoBox = document.getElementById('map-info-box');
     if (!infoBox) return;
 
+    // [CORREÇÃO v21.9] Reseta o zoom e o tamanho ao abrir
+    currentInfoBoxZoom = 0; // Reseta o nível de zoom
+    infoBox.style.width = ''; // Reseta para o tamanho padrão do CSS
+
     let color, riskText;
     if (tree.risco === 'Alto Risco') {
         color = '#C62828'; riskText = '🔴 Alto Risco';
@@ -473,13 +483,16 @@ function showMapInfoBox(tree) {
     // Se tiver foto, adiciona o container para ela
     if (tree.hasPhoto) {
         infoHTML += `<div id="map-info-photo" class="loading-photo">Carregando foto...</div>`;
-        // Adiciona botões de zoom (CSS cuida de esconder em mobile)
-        infoHTML += `
-            <div class="map-photo-zoom">
-                <button id="zoom-out-btn" title="Diminuir Zoom">-</button>
-                <button id="zoom-in-btn" title="Aumentar Zoom">+</button>
-            </div>
-        `;
+        
+        // [CORREÇÃO v21.9] Botões de zoom só são adicionados se NÃO for touch
+        if (!isTouchDevice) {
+            infoHTML += `
+                <div class="map-photo-zoom">
+                    <button id="zoom-out-btn" title="Diminuir Zoom">-</button>
+                    <button id="zoom-in-btn" title="Aumentar Zoom">+</button>
+                </div>
+            `;
+        }
     }
     
     infoBox.innerHTML = infoHTML;
@@ -509,38 +522,29 @@ function showMapInfoBox(tree) {
     }
 }
 
-/**
- * [NOVO v21.9] Controla o zoom da imagem no InfoBox
- */
+// [NOVO v21.9] Variáveis e Lógica de Zoom do InfoBox
+let currentInfoBoxZoom = 0; 
+const ZOOM_LEVELS = [280, 400, 550]; // Define os Níveis de Zoom (Pequeno, Médio, Grande)
+
 function zoomMapImage(direction) {
-    const img = document.getElementById('infobox-img');
-    if (!img) return;
+    const infoBox = document.getElementById('map-info-box');
+    if (!infoBox) return;
 
-    // Pega o max-width atual (ex: '250px' ou '100%')
-    let currentWidthStyle = img.style.maxWidth || '100%';
-    let currentWidth;
+    // Atualiza o nível de zoom
+    currentInfoBoxZoom += direction;
 
-    // Se for '100%', usa o tamanho base de 250px (definido pelo CSS)
-    if (currentWidthStyle === '100%') {
-        currentWidth = 250; 
-    } else {
-        currentWidth = parseInt(currentWidthStyle);
-    }
+    // Limita o zoom (0 = min, 2 = max)
+    if (currentInfoBoxZoom < 0) currentInfoBoxZoom = 0;
+    if (currentInfoBoxZoom >= ZOOM_LEVELS.length) currentInfoBoxZoom = ZOOM_LEVELS.length - 1;
 
-    // Calcula o novo zoom
-    const step = 50; // Aumenta/diminui 50px
-    let newWidth = currentWidth + (step * direction);
-
-    // Limites (mínimo de 100px, máximo de 600px)
-    if (newWidth < 100) newWidth = 100;
-    if (newWidth > 600) newWidth = 600;
-
-    img.style.maxWidth = `${newWidth}px`;
+    const newWidth = ZOOM_LEVELS[currentInfoBoxZoom];
+    infoBox.style.width = `${newWidth}px`;
 }
 
 
 /**
  * [NOVO v21.7] Esconde o painel de informações do mapa.
+ * [ATUALIZADO v21.9] Reseta o zoom.
  */
 function hideMapInfoBox() {
     const infoBox = document.getElementById('map-info-box');
@@ -553,6 +557,10 @@ function hideMapInfoBox() {
         
         infoBox.classList.add('hidden');
         infoBox.innerHTML = ''; // Limpa o conteúdo
+        
+        // Reseta o zoom e o tamanho
+        currentInfoBoxZoom = 0; 
+        infoBox.style.width = ''; // Remove o estilo inline
     }
 }
 
@@ -659,6 +667,7 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
  */
 export function setupRiskCalculator() {
         
+    // [CORREÇÃO BUG 1/4 v21.9]: Mover isTouchDevice para o TOPO do setup
     const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
