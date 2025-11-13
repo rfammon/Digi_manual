@@ -1,5 +1,4 @@
-// js/state.js (v20.0 - FINAL)
-// O "cérebro" da Aplicação e fonte da verdade para o DB.
+// js/state.js (v21.6 - Adicionado mapMarkerGroup)
 
 // === 1. Chaves de Armazenamento ===
 const STORAGE_KEY = 'manualPodaData';
@@ -15,6 +14,9 @@ export let db = null;
 
 // O estado do mapa (será definido pelo ui.js)
 export let mapInstance = null;
+
+// [NOVO v21.6] Armazena o FeatureGroup do Leaflet (para filtragem)
+export let mapMarkerGroup = null;
 
 // O estado do tooltip (será definido pelo ui.js)
 export let currentTooltip = null;
@@ -45,6 +47,11 @@ export function setDb(databaseInstance) {
 
 export function setMapInstance(map) {
     mapInstance = map;
+}
+
+// [NOVO v21.6] Setter para o grupo de marcadores
+export function setMapMarkerGroup(group) {
+    mapMarkerGroup = group;
 }
 
 export function setCurrentTooltip(tooltip) {
