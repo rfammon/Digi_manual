@@ -1,29 +1,22 @@
-// js/ui.js (v21.0 - Completo, com Classes de Botão Corrigidas)
+// js/ui.js (v21.1 - Novos Ícones e Correção de Classe do Modal)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js'; 
+import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
-// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
 
-/**
- * Carrega o HTML de um tópico do manual na view principal.
- * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
- * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
- */
 export function loadContent(detailView, content) {
     if (!detailView) return;    
     
     if (content) {
         detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
         
-        // Ativa os tooltips interativos para o conteúdo recém-carregado
         setupGlossaryInteractions(detailView);    
         setupEquipmentInteractions(detailView);
         setupPurposeInteractions(detailView);
@@ -35,21 +28,10 @@ export function loadContent(detailView, content) {
 
 // === 3. LÓGICA DA CALCULADORA DE RISCO (UI) ===
 
-let mobileChecklist = {
-    currentIndex: 0,
-    totalQuestions: 0,
-    questions: null,
-    wrapper: null,
-    card: null,
-    navPrev: null,
-    navNext: null,
-    counter: null
-};
+let mobileChecklist = { /* ... */ };
 
-/**
- * (v16.0) Mostra a pergunta do carrossel mobile no índice especificado.
- */
 export function showMobileQuestion(index) {
+    // ... (Código completo da v20.9) ...
     const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
     const questionRow = questions[index];
     if (!questionRow) return;
@@ -85,10 +67,8 @@ export function showMobileQuestion(index) {
     mobileChecklist.currentIndex = index;
 }
 
-/**
- * (v20.2) Inicializa o carrossel mobile (mantém a lógica de clonagem para re-setup de edição).
- */
 export function setupMobileChecklist() {
+    // ... (Código completo da v20.9) ...
     mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
     if (!mobileChecklist.wrapper) return;
     
@@ -106,7 +86,6 @@ export function setupMobileChecklist() {
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
-    // --- Clonagem para limpeza de listeners em re-setup (modo edição) ---
     const newCard = mobileChecklist.card.cloneNode(true);
     mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
     mobileChecklist.card = newCard;
@@ -119,7 +98,6 @@ export function setupMobileChecklist() {
     mobileChecklist.navNext.parentNode.replaceChild(newNavNext, mobileChecklist.navNext);
     mobileChecklist.navNext = newNavNext;
     
-    // Adiciona o listener para o "toggle" (Sim/Não)
     mobileChecklist.card.addEventListener('change', (e) => {
         const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
         if (proxyCheckbox) {
@@ -129,7 +107,6 @@ export function setupMobileChecklist() {
         }
     });
 
-    // Adiciona listeners para os botões de navegação do carrossel
     mobileChecklist.navPrev.addEventListener('click', () => {
         if (mobileChecklist.currentIndex > 0) {
             showMobileQuestion(mobileChecklist.currentIndex - 1);
@@ -146,7 +123,7 @@ export function setupMobileChecklist() {
 
 /**
  * (v18.1) Renderiza a tabela de resumo de árvores.
- * Lê o estado global 'registeredTrees' e 'sortState'.
+ * (v21.1) Atualiza os ícones para versões monocromáticas.
  */
 export function renderSummaryTable() {
     const container = document.getElementById('summary-table-container');
@@ -231,6 +208,7 @@ export function renderSummaryTable() {
             ? `<button type="button" class="photo-preview-btn" data-id="${tree.id}">📷</button>` 
             : '—'; 
         
+        // [CORREÇÃO 6]: Ícones atualizados
         tableHTML += `
             <tr data-tree-id="${tree.id}">
                 <td>${tree.id}</td>
@@ -245,9 +223,9 @@ export function renderSummaryTable() {
                 <td>${tree.pontuacao}</td>
                 <td class="${tree.riscoClass}">${tree.risco}</td>
                 <td>${tree.observacoes}</td>
-                <td class="col-zoom"><button type="button" class="zoom-tree-btn" data-id="${tree.id}">🔎</button></td>
-                <td class="col-edit"><button type="button" class="edit-tree-btn" data-id="${tree.id}">✏️</button></td>
-                <td class="col-delete"><button type="button" class="delete-tree-btn" data-id="${tree.id}">🗑️</button></td>
+                <td class="col-zoom"><button type="button" class="zoom-tree-btn" data-id="${tree.id}">🔍</button></td>
+                <td class="col-edit"><button type="button" class="edit-tree-btn" data-id="${tree.id}">✎</button></td>
+                <td class="col-delete"><button type="button" class="delete-tree-btn" data-id="${tree.id}">✖</button></td>
             </tr>
         `;
     });
@@ -260,22 +238,20 @@ export function renderSummaryTable() {
  * (v17.6) Mostra a sub-aba correta (Registrar, Resumo, Mapa).
  */
 export function showSubTab(targetId) {
+    // ... (Código completo da v20.9) ...
     const subTabPanes = document.querySelectorAll('.sub-tab-content');
     subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
     
     const subNavButtons = document.querySelectorAll('.sub-nav-btn');
     subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
 
-    // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
     if (targetId === 'tab-content-mapa') {
-        // Delay para garantir que o container está visível
         setTimeout(() => { initMap(); }, 50); 
     }
     
-    // (v18.0) Lógica de Destaque da Linha
     if (targetId === 'tab-content-summary' && state.highlightTargetId) {
         highlightTableRow(state.highlightTargetId);
-        state.setHighlightTargetId(null); // Limpa o alvo
+        state.setHighlightTargetId(null); 
     }
 }
 
@@ -283,15 +259,13 @@ export function showSubTab(targetId) {
  * (v19.8) Destaque da linha
  */
 function highlightTableRow(id) {
-    // (v19.8) Atraso para garantir que a aba trocou
+    // ... (Código completo da v20.9) ...
     setTimeout(() => {
         const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
         if (row) {
-            // Remove destaques antigos
             const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
             oldHighlights.forEach(r => r.classList.remove('highlight'));
             
-            // Adiciona novo destaque e scroll
             row.classList.add('highlight');
             row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
@@ -308,10 +282,10 @@ function highlightTableRow(id) {
  * (v20.0) Inicializa o mapa Leaflet
  */
 function initMap() {
+    // ... (Código completo da v20.9) ...
     const mapContainer = document.getElementById('map-container');
     if (!mapContainer) return; 
     
-    // (v19.7) Verificação de bibliotecas (agora globais)
     if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
         mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Verifique a pasta /libs/.</p>';
         return;
@@ -333,7 +307,7 @@ function initMap() {
         return null;
     }).filter(tree => tree !== null); 
     
-    let mapCenter = [-15.7801, -47.9292]; // Centro do Brasil
+    let mapCenter = [-15.7801, -47.9292]; 
     let initialZoom = 4; 
 
     if (boundsArray.length > 0) {
@@ -363,9 +337,9 @@ function initMap() {
  * (v20.0) Desenha as árvores no mapa
  */
 function renderTreesOnMap(treesData) {
+    // ... (Código completo da v20.9) ...
     if (!state.mapInstance) return;
 
-    // Limpa marcadores antigos
     state.mapInstance.eachLayer(function (layer) {
         if (layer.options && layer.options.isTreeMarker) {
             state.mapInstance.removeLayer(layer);
@@ -410,7 +384,6 @@ function renderTreesOnMap(treesData) {
                         const imgUrl = URL.createObjectURL(imageBlob);
                         const finalContent = popupContent + `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img">`;
                         e.popup.setContent(finalContent);
-                        // Revoga o URL do blob quando o popup fechar
                         state.mapInstance.once('popupclose', () => URL.revokeObjectURL(imgUrl));
                     } else {
                         e.popup.setContent(popupContent + '<p style="color:red;">Foto não encontrada.</p>');
@@ -435,9 +408,6 @@ function setupFileImporters() {
     let csvImporter = document.getElementById('csv-importer');
 
     // Clonagem necessária para o browser aceitar o .click() e remover listeners de 'change'
-    // Isso é crucial para evitar que o evento seja disparado múltiplas vezes, 
-    // resultando em comportamento inesperado na importação.
-    
     if (zipImporter) {
         const newZip = zipImporter.cloneNode(true);
         zipImporter.parentNode.replaceChild(newZip, zipImporter);
@@ -475,7 +445,6 @@ function setupFileImporters() {
 
 /**
  * (v20.3 - CORREÇÃO DE CRASH) Função principal que inicializa todos os listeners da Calculadora.
- * Removido o perigoso removeEventListener.
  */
 export function setupRiskCalculator() {
         
@@ -484,9 +453,7 @@ export function setupRiskCalculator() {
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
-        // [CORREÇÃO DE CRASH]: Removemos o perigoso removeEventListener e a clonagem.
-        
-        // Define o handler explicitamente
+        // [CORREÇÃO DE CRASH]: Define o handler e anexa ao nó existente.
         const subNavHandler = (e) => {
             const button = e.target.closest('.sub-nav-btn');
             if (button) {
@@ -495,7 +462,6 @@ export function setupRiskCalculator() {
             }
         };
         
-        // Adicionamos o listener ao nó existente
         subNav.addEventListener('click', subNavHandler);
         // Ativa a primeira aba (Registrar)
         showSubTab('tab-content-register');
@@ -959,7 +925,7 @@ function showExportModal() {
     let buttons = [
         {
             text: 'Exportar Apenas .CSV (s/ fotos)',
-            class: 'secondary',
+            class: 'secondary', // Amarelo
             action: features.exportActionCSV
         },
         {
@@ -971,7 +937,7 @@ function showExportModal() {
     if (typeof JSZip !== 'undefined') {
         buttons.unshift({ // Adiciona no início
             text: 'Exportar Pacote .ZIP (Completo)',
-            class: 'primary',
+            class: 'primary', // Verde
             action: features.exportActionZip
         });
     } else {
@@ -986,7 +952,7 @@ function showExportModal() {
 }
 
 /**
- * (v21.0 - CORREÇÃO DE CLASSE) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
+ * (v21.1 - CORREÇÃO DE CLASSE) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
  */
 function showImportModal() {
     
