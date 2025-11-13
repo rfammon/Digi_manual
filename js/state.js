@@ -1,4 +1,5 @@
-// js/state.js (v19.4 - "Memória/ECU" da Aplicação)
+// js/state.js (v20.0 - FINAL)
+// O "cérebro" da Aplicação e fonte da verdade para o DB.
 
 // === 1. Chaves de Armazenamento ===
 const STORAGE_KEY = 'manualPodaData';
@@ -33,7 +34,6 @@ export let highlightTargetId = null;
 export let currentTreePhoto = null; // Armazena o File/Blob da foto atual
 
 // === 3. Funções "Setters" (para modificar o estado) ===
-// Funções que permitem que outros módulos alterem o estado centralizado aqui.
 
 export function setRegisteredTrees(newTrees) {
     registeredTrees = newTrees;

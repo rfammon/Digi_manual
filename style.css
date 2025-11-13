@@ -1325,3 +1325,20 @@ html {
 .modal-btn.cancel:hover {
     background-color: #ccc;
 }
+
+/* -------------------------------------- */
+/* 20. IMPORT/EXPORT PACOTE (.ZIP) (v20.1) */
+/* -------------------------------------- */
+
+/* BUGFIX: Classe para esconder inputs de arquivo
+   sem quebrar a funcionalidade .click() do JS */
+.visually-hidden-input {
+    position: absolute !important; /* Adicionado !important para forçar */
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    border: 0 !important;
+}

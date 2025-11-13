@@ -41,7 +41,7 @@
                     </div>
             </section>
 
-            <section class="app-view" id="calculadora-view" style="display: none;">
+            <section class="app-view conteudo-detalhe" id="calculadora-view" style="display: none;">
                 
                 <h3>📊 Calculadora de Risco Arbóreo</h3>
                 <p>Use o mapa para visualização geoespacial do risco, a aba "Registrar" para coleta e "Resumo" para gerenciar os dados.</p>
@@ -168,8 +168,8 @@
                         
                         <div id="import-export-controls" class="risk-buttons-area">
                             
-                            <input type="file" id="zip-importer" accept=".zip,application/zip,application/x-zip-compressed" style="display: none;">
-                            <input type="file" id="csv-importer" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain" style="display: none;">
+                            <input type="file" id="zip-importer" class="visually-hidden-input" accept=".zip,application/zip,application/x-zip-compressed">
+                            <input type="file" id="csv-importer" class="visually-hidden-input" accept="text/csv,application/csv,application/vnd.ms-excel,.csv,text/plain">
                             
                             <button type="button" id="import-data-btn" class="export-btn zip-import-label">📤 Importar Dados</button>
                             <button type="button" id="export-data-btn" class="export-btn">📥 Exportar Dados</button>

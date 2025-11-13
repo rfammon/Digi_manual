@@ -1,20 +1,19 @@
-// js/ui.js (v20.0 - CORRETO E COMPATÍVEL)
-// Este arquivo não precisou de alterações, pois já estava 
-// projetado para "anexar" a elementos existentes no DOM.
+// js/ui.js (v20.9 - FINAL - Completo e Otimizado)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js';
+import { showToast, debounce } from './utils.js'; 
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
 
+// [CORREÇÃO CRÍTICA v20.7]: Definição da função auxiliar imgTag, que estava faltando.
+const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 
 // === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
 
 /**
  * Carrega o HTML de um tópico do manual na view principal.
- * Esta função agora é chamada apenas pelo main.js para tópicos do manual.
  * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
  * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
  */
@@ -55,7 +54,6 @@ export function showMobileQuestion(index) {
     const questionRow = questions[index];
     if (!questionRow) return;
     
-    // (v20.0) Debug: Adiciona verificação de 'cells'
     if (!questionRow.cells || questionRow.cells.length < 4) {
         console.error("showMobileQuestion: A linha da tabela (tr) está malformada.", questionRow);
         return;
@@ -88,18 +86,16 @@ export function showMobileQuestion(index) {
 }
 
 /**
- * (v16.0) Inicializa o carrossel mobile (lendo a tabela desktop).
+ * (v20.2) Inicializa o carrossel mobile (mantém a lógica de clonagem para re-setup de edição).
  */
 export function setupMobileChecklist() {
     mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
     if (!mobileChecklist.wrapper) return;
     
-    // Encontra os elementos (pode ser a primeira vez ou um recarregamento)
     mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
     mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
     mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
     mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
-    // (v20.0) A tabela agora está estática no index.html
     mobileChecklist.questions = document.querySelectorAll('#risk-calculator-form .risk-table tbody tr');
     
     if (mobileChecklist.questions.length === 0 || !mobileChecklist.card || !mobileChecklist.navPrev) {
@@ -110,7 +106,7 @@ export function setupMobileChecklist() {
     mobileChecklist.currentIndex = 0;
     mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
-    // (Correção v16.1) Clona nós para limpar listeners antigos ao recarregar (ex: modo de edição)
+    // --- Clonagem para limpeza de listeners em re-setup (modo edição) ---
     const newCard = mobileChecklist.card.cloneNode(true);
     mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
     mobileChecklist.card = newCard;
@@ -127,7 +123,6 @@ export function setupMobileChecklist() {
     mobileChecklist.card.addEventListener('change', (e) => {
         const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
         if (proxyCheckbox) {
-            // Sincroniza o toggle mobile com o checkbox real (oculto) da tabela
             const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
             const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
             realCheckbox.checked = proxyCheckbox.checked;
@@ -146,7 +141,6 @@ export function setupMobileChecklist() {
         }
     });
 
-    // Mostra a primeira pergunta
     showMobileQuestion(0);
 }
 
@@ -431,10 +425,57 @@ function renderTreesOnMap(treesData) {
     });
 }
 
+// === Lógica de Inicialização de Inputs de Arquivo (CRÍTICO PARA IMPORTAÇÃO) ===
 
 /**
- * (v19.8) Função principal que inicializa todos os listeners da Calculadora.
- * (v20.0) Esta função é chamada UMA VEZ pelo main.js
+ * (v20.0 - NOVO) Funções para garantir que os inputs de arquivo sejam limpos de listeners antigos.
+ */
+function setupFileImporters() {
+    let zipImporter = document.getElementById('zip-importer');
+    let csvImporter = document.getElementById('csv-importer');
+
+    // Clonagem necessária para o browser aceitar o .click() e remover listeners de 'change'
+    // Isso é crucial para evitar que o evento seja disparado múltiplas vezes, 
+    // resultando em comportamento inesperado na importação.
+    
+    if (zipImporter) {
+        const newZip = zipImporter.cloneNode(true);
+        zipImporter.parentNode.replaceChild(newZip, zipImporter);
+        zipImporter = newZip;
+    }
+
+    if (csvImporter) {
+        const newCsv = csvImporter.cloneNode(true);
+        csvImporter.parentNode.replaceChild(newCsv, csvImporter);
+        csvImporter = newCsv;
+    }
+    
+    // RE-ANEXA OS LISTENERS AOS NOVOS ELEMENTOS
+    if (zipImporter) {
+        zipImporter.addEventListener('change', (e) => {
+            e.replaceData = zipImporter.dataset.replaceData === 'true';
+            features.handleImportZip(e).then(() => {
+                renderSummaryTable(); 
+            });
+        });
+    }
+    
+    if (csvImporter) {
+        csvImporter.addEventListener('change', (e) => {
+            e.replaceData = csvImporter.dataset.replaceData === 'true';
+            features.handleFileImport(e).then(() => {
+                renderSummaryTable();
+            });
+        });
+    }
+    
+    return { zipImporter, csvImporter };
+}
+
+
+/**
+ * (v20.3 - CORREÇÃO DE CRASH) Função principal que inicializa todos os listeners da Calculadora.
+ * Removido o perigoso removeEventListener.
  */
 export function setupRiskCalculator() {
         
@@ -443,32 +484,34 @@ export function setupRiskCalculator() {
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
     if (subNav) {
-        // (v20.0) Limpa listeners antigos (boa prática, embora agora seja chamado só uma vez)
-        const newNav = subNav.cloneNode(true);
-        subNav.parentNode.replaceChild(newNav, subNav);
+        // [CORREÇÃO DE CRASH]: Removemos o perigoso removeEventListener e a clonagem.
         
-        newNav.addEventListener('click', (e) => {
+        // Define o handler explicitamente
+        const subNavHandler = (e) => {
             const button = e.target.closest('.sub-nav-btn');
             if (button) {
                 e.preventDefault();
                 showSubTab(button.getAttribute('data-target'));
             }
-        });
+        };
+        
+        // Adicionamos o listener ao nó existente
+        subNav.addEventListener('click', subNavHandler);
         // Ativa a primeira aba (Registrar)
         showSubTab('tab-content-register');
     }
+    
+    // --- (CRÍTICO) Re-cria e re-anexa os inputs de arquivo ---
+    const { zipImporter, csvImporter } = setupFileImporters(); 
+
 
     // --- Conexão de Botões e Inputs (Features) ---
     const form = document.getElementById('risk-calculator-form');
-    const summaryContainer = document.getElementById('summary-table-container');
+    let summaryContainer = document.getElementById('summary-table-container'); 
     
-    // (v19.8) Botões do Modal
+    // Elementos que precisamos
     const importDataBtn = document.getElementById('import-data-btn');
     const exportDataBtn = document.getElementById('export-data-btn');
-    const zipImporter = document.getElementById('zip-importer');
-    const csvImporter = document.getElementById('csv-importer');
-
-    // Botões Antigos
     const sendEmailBtn = document.getElementById('send-email-btn');
     const getGpsBtn = document.getElementById('get-gps-btn');    
     const clearAllBtn = document.getElementById('clear-all-btn');    
@@ -482,22 +525,6 @@ export function setupRiskCalculator() {
     if (importDataBtn) importDataBtn.addEventListener('click', showImportModal);
     if (exportDataBtn) exportDataBtn.addEventListener('click', showExportModal);
     
-    // (v19.7) Listeners de importação (chamados pelo modal)
-    if (zipImporter) zipImporter.addEventListener('change', (e) => {
-        // (v19.8) Passa o 'replaceData' via dataset
-        e.replaceData = zipImporter.dataset.replaceData === 'true';
-        features.handleImportZip(e).then(() => {
-            renderSummaryTable(); 
-        });
-    });
-    if (csvImporter) csvImporter.addEventListener('change', (e) => {
-        // (v19.8) Passa o 'replaceData' via dataset
-        e.replaceData = csvImporter.dataset.replaceData === 'true';
-        features.handleFileImport(e).then(() => {
-            renderSummaryTable();
-        });
-    });  
-
     // Listeners restantes
     if (zoomBtn) zoomBtn.addEventListener('click', features.handleZoomToExtent);
     if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
@@ -530,10 +557,7 @@ export function setupRiskCalculator() {
                 const preview = document.createElement('img');
                 preview.id = 'photo-preview';
                 preview.src = URL.createObjectURL(file);
-                // (v20.0) Revoga o blob anterior se houver
-                preview.onload = () => {
-                   // URL.revokeObjectURL(preview.src); // Não revogar, é necessário para o state
-                };
+                
                 document.getElementById('photo-preview-container').prepend(preview);
                 document.getElementById('remove-photo-btn').style.display = 'block';
                 state.setCurrentTreePhoto(file); 
@@ -546,8 +570,6 @@ export function setupRiskCalculator() {
 
     // Lógica do Formulário (Adicionar e Limpar)
     if (form) {
-        // (v20.0) A definição de valores padrão (data, avaliador) foi movida para o main.js
-
         // Oculta o botão GPS em desktops
         if (getGpsBtn && !isTouchDevice) {
             const gpsContainer = getGpsBtn.closest('.gps-button-container');
@@ -577,7 +599,7 @@ export function setupRiskCalculator() {
                 form.reset();   
                 features.clearPhotoPreview(); 
                 
-                // (v20.0) Re-aplica os padrões após o reset
+                // Re-aplica os padrões após o reset
                 try {
                     document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
                     document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
@@ -596,13 +618,13 @@ export function setupRiskCalculator() {
     // Renderiza a tabela inicial
     renderSummaryTable(); 
     
-    // (v19.7) Event Delegation com atualização de UI centralizada
+    // (v20.2 - CORREÇÃO CRÍTICA): Clonagem para limpeza de listeners
     if (summaryContainer) {
-        // (v20.0) Clona para limpar listeners antigos (boa prática)
         const newSummaryContainer = summaryContainer.cloneNode(true);
         summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
+        summaryContainer = newSummaryContainer; // Reatribui a referência local
         
-        newSummaryContainer.addEventListener('click', (e) => {
+        summaryContainer.addEventListener('click', (e) => {
             const deleteButton = e.target.closest('.delete-tree-btn');
             const editButton = e.target.closest('.edit-tree-btn');    
             const zoomButton = e.target.closest('.zoom-tree-btn'); 
@@ -610,7 +632,6 @@ export function setupRiskCalculator() {
             const photoButton = e.target.closest('.photo-preview-btn'); 
     
             if (deleteButton) {
-                // (v19.8) Confirmação de exclusão
                 showActionModal({
                     title: 'Excluir Registro',
                     description: `Tem certeza que deseja excluir a Árvore ID ${deleteButton.dataset.id}?`,
@@ -627,7 +648,6 @@ export function setupRiskCalculator() {
             
             if (editButton) {    
                 const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
-                
                 showSubTab('tab-content-register'); 
                 
                 if (needsCarouselUpdate && isTouchDevice) {
@@ -652,6 +672,7 @@ export function setupRiskCalculator() {
         });
     }
 
+
     if (isTouchDevice) {
         setupMobileChecklist();
     }
@@ -660,7 +681,7 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
-// (v20.0) Define 'isTouchDevice' globalmente para este módulo
+// [CORREÇÃO CRÍTICA v20.7]: As consts foram movidas para cá para garantir o escopo.
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
@@ -672,7 +693,6 @@ export function createTooltip() {
         tooltip.id = 'glossary-tooltip';
         document.body.appendChild(tooltip);   
     }
-    // (v20.0) Garante que o listener de fechar só seja adicionado uma vez
     if (!tooltip.dataset.clickToCloseAdded) {
         tooltip.addEventListener(popupCloseEvent, (e) => { e.stopPropagation(); hideTooltip(); });
         tooltip.dataset.clickToCloseAdded = 'true';
@@ -700,7 +720,6 @@ function positionTooltip(termElement) {
     const rect = termElement.getBoundingClientRect();
     const scrollY = window.scrollY, scrollX = window.scrollX;
     
-    // (v20.0) Usa requestAnimationFrame para garantir que o DOM foi pintado
     requestAnimationFrame(() => {
         if (!state.currentTooltip) return;
         
@@ -726,9 +745,6 @@ function positionTooltip(termElement) {
     });
 }
 
-/**
- * (v20.0) Busca e exibe a foto (usado na tabela de resumo)
- */
 function handlePhotoPreviewClick(id, targetElement) {
     getImageFromDB(id, (imageBlob) => {
         if (!imageBlob) {
@@ -752,10 +768,13 @@ function handlePhotoPreviewClick(id, targetElement) {
 
 function setupGlossaryInteractions(detailView) {
     const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');    
+    // Define o handler de fechar com debounce para evitar flicker em desktop
+    const debouncedHide = debounce(hideTooltip, 200);
+
     glossaryTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
             termElement.addEventListener('mouseenter', showGlossaryTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('mouseleave', debouncedHide); // <--- APLICAÇÃO DO DEBOUNCE
         }
         termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);    
     });
@@ -777,7 +796,6 @@ function showGlossaryTooltip(event) {
 function toggleGlossaryTooltip(event) {
     event.preventDefault(); event.stopPropagation();
     const tooltip = document.getElementById('glossary-tooltip');
-    // (v20.0) Verifica se o tooltip atual é de foto, para não fechar
     const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
     
     if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && 
@@ -790,10 +808,12 @@ function toggleGlossaryTooltip(event) {
 
 function setupEquipmentInteractions(detailView) {
     const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
+    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+    
     equipmentTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
             termElement.addEventListener('mouseenter', showEquipmentTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('mouseleave', debouncedHide); // <--- APLICAÇÃO DO DEBOUNCE
         }
         termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
     });
@@ -805,6 +825,7 @@ function showEquipmentTooltip(event) {
     const data = equipmentData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
+    // CORREÇÃO: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -827,10 +848,12 @@ function toggleEquipmentTooltip(event) {
 
 function setupPurposeInteractions(detailView) {
     const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
+    const debouncedHide = debounce(hideTooltip, 200); // Define o debounce
+
     purposeTermsElements.forEach(termElement => {
         if (!isTouchDevice) {
             termElement.addEventListener('mouseenter', showPurposeTooltip);
-            termElement.addEventListener('mouseleave', hideTooltip);
+            termElement.addEventListener('mouseleave', debouncedHide); // <--- APLICAÇÃO DO DEBOUNCE
         }
         termElement.addEventListener(termClickEvent, togglePurposeTooltip);
     });
@@ -842,6 +865,7 @@ function showPurposeTooltip(event) {
     const data = podaPurposeData[termKey];
     if (!data) return;
     const tooltip = createTooltip();
+    // CORREÇÃO: imgTag agora está definida no topo
     tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
     positionTooltip(termElement);
     tooltip.style.opacity = '1';
@@ -862,7 +886,7 @@ function togglePurposeTooltip(event) {
     }
 }
 
-// === 5. (v19.8) LÓGICA DO MODAL CUSTOMIZADO ===
+// === 5. LÓGICA DO MODAL CUSTOMIZADO ===
 
 /**
  * Exibe um modal de ação customizado.
@@ -896,13 +920,12 @@ function showActionModal({ title, description, buttons }) {
             if (btnConfig.action) {
                 btnConfig.action(); // Executa a ação (ex: exportCSV)
             }
-            hideActionModal(); // Fecha o modal
+            hideActionModal(); // Feche o modal
         });
         actionsEl.appendChild(button);
     });
 
     // Adiciona o listener para fechar ao clicar fora (no overlay)
-    // (v20.0) Adiciona um 'self' para evitar clonar o listener
     const self = modal;
     const closeOverlay = (e) => {
         if (e.target === self) {
@@ -924,9 +947,6 @@ function hideActionModal() {
     if (modal) {
         modal.classList.remove('show');
     }
-    // (v20.0) Limpa listeners de clique no overlay (caso não tenham sido removidos)
-    const newModal = modal.cloneNode(true);
-    modal.parentNode.replaceChild(newModal, modal);
 }
 
 /**
@@ -946,8 +966,6 @@ function showExportModal() {
         }
     ];
 
-    // (v19.9) CORREÇÃO: Remove a checagem 'hasPhotos'.
-    // O botão ZIP aparece se a biblioteca JSZip foi carregada.
     if (typeof JSZip !== 'undefined') {
         buttons.unshift({ // Adiciona no início
             text: 'Exportar Pacote .ZIP (Completo)',
@@ -966,11 +984,10 @@ function showExportModal() {
 }
 
 /**
- * (v19.8) Configura e exibe o modal de IMPORTAÇÃO.
+ * (v20.4/v20.6 - REVERSÃO) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
  */
 function showImportModal() {
     
-    // (v19.8) Mostra o modal de 3 opções (Adicionar, Substituir, Cancelar)
     showActionModal({
         title: '📤 Importar Dados',
         description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira? (Substituir apagará todos os dados atuais)',
@@ -979,15 +996,17 @@ function showImportModal() {
                 text: 'Adicionar à Lista Atual',
                 class: 'primary',
                 action: () => {
-                    // (v19.8) Mostra o segundo modal (escolha de arquivo)
-                    showImportTypeModal(false); // false = não substituir
+                    // Adiciona setTimeout(0) para garantir que o primeiro modal feche 
+                    // e o DOM se estabilize antes de abrir o segundo.
+                    setTimeout(() => showImportTypeModal(false), 0);
                 }
             },
             {
                 text: 'Substituir Lista Atual',
-                class: 'secondary', // (v19.9) Corrigido de 'secondary'
+                class: 'secondary',
                 action: () => {
-                    showImportTypeModal(true); // true = substituir
+                    // Adiciona setTimeout(0)
+                    setTimeout(() => showImportTypeModal(true), 0);
                 }
             },
             {
@@ -999,12 +1018,19 @@ function showImportModal() {
 }
 
 /**
- * (v19.8) Mostra o SEGUNDO modal de importação (escolha de tipo de arquivo)
+ * (v20.4/v20.6 - REVERSÃO) Mostra o SEGUNDO modal de importação (escolha de tipo de arquivo)
  */
 function showImportTypeModal(replaceData) {
+    // Busca os inputs de arquivo (eles foram clonados e re-anexados em setupRiskCalculator)
     const csvInput = document.getElementById('csv-importer');
     const zipInput = document.getElementById('zip-importer');
 
+    if (!csvInput || !zipInput) {
+        console.error("Inputs de importação não encontrados ou clonagem falhou.");
+        showToast("Erro de configuração. Recarregue a página.", "error");
+        return;
+    }
+    
     // Define o modo (append ou replace) no dataset dos inputs
     csvInput.dataset.replaceData = replaceData;
     zipInput.dataset.replaceData = replaceData;
