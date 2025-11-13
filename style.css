@@ -1,4 +1,4 @@
-/* style.css (v21.10 - Correção de Layout do InfoBox e Zoom de Imagem) */
+/* style.css (v22.0 - Correção de Transição de Zoom do InfoBox) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -1144,13 +1144,14 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     position: fixed; 
     top: 120px; /* Distância do topo (abaixo do header) */
     right: 20px;
-    width: 280px;
+    width: 280px; /* Largura Padrão (Zoom 0) */
     background: var(--bg-surface);
     border-radius: var(--border-radius-md);
     box-shadow: var(--shadow-lg);
     z-index: 998; /* Abaixo do header/modal, mas acima do conteúdo */
     padding: var(--space-md);
-    transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+    /* [CORREÇÃO v22.0]: Adiciona 'width' à transição */
+    transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
     
     /* Começa escondido */
     opacity: 0;
@@ -1202,11 +1203,13 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #map-info-box .manual-img {
     width: 100%;
-    /* [CORREÇÃO v21.9] O max-width será controlado pelo JS. */
+    /* [CORREÇÃO v22.0] max-width será controlado pelo JS */
+    max-width: 100%; 
     height: auto;
-    object-fit: cover;
+    object-fit: cover; 
     margin-top: var(--space-sm);
-    transition: max-width 0.3s ease-in-out;
+    /* Remove a transição da imagem, a transição é na 'width' do container */
+    transition: none; 
 }
 
 /* [NOVO v21.9] Controles de Zoom da Imagem (Desktop) */
