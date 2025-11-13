@@ -1,11 +1,10 @@
-// js/features.js (v19.8 - CORRIGIDO: Remoção da dependência circular)
+// js/features.js (v19.7 - CORRIGIDO: Remoção da dependência circular)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as utils from './utils.js';
 import * as db from './database.js';
 // (REMOVIDA A IMPORTAÇÃO DO UI.JS - ESSA É A CORREÇÃO)
-
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
 export async function handleGetGPS() {
@@ -169,7 +168,8 @@ export function handleAddTreeSubmit(event) {
 
 
 export function handleDeleteTree(id) {
-    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
+    if (!confirm(`Tem certeza que deseja excluir a Árvore ID ${id}?`)) return false; 
+    
     const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
     
     if (treeToDelete && treeToDelete.hasPhoto) {
@@ -242,7 +242,8 @@ export function handleEditTree(id) {
 }
 
 export function handleClearAll() {
-    // (v19.8) A confirmação (confirm()) foi movida para o ui.js
+    if (!confirm("Tem certeza que deseja apagar TODAS as árvores cadastradas? Esta ação não pode ser desfeita.")) return false;
+    
     state.registeredTrees.forEach(tree => {
         if (tree.hasPhoto) {
             db.deleteImageFromDB(tree.id);
@@ -385,6 +386,7 @@ export function handleMapMarkerClick(id) {
 }
 
 // === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
+// (REMOVIDO 'confirm()' - AGORA SÃO FUNÇÕES DIRETAS)
 
 /**
  * (v19.8) Ação de exportar apenas CSV
@@ -645,17 +647,12 @@ export async function handleImportZip(event) {
             throw new Error("O manifesto CSV está vazio.");
         }
         
-        // (v19.8) Pergunta movida para o UI.JS
-        // const append = confirm("..."); 
-        
-        let newTrees = state.registeredTrees; // Assume que vai adicionar
-        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) + 1 : 0;
-        
         // (v19.8) Lógica de substituição (passada pelo 'replaceData' no ui.js)
         const append = !event.replaceData;
+        let newTrees = append ? [...state.registeredTrees] : [];
+        let maxId = newTrees.length > 0 ? Math.max(...newTrees.map(t => t.id)) + 1 : 0;
+        
         if (!append) {
-             newTrees = [];
-             maxId = 0;
              const transaction = state.db.transaction(["treeImages"], "readwrite");
              transaction.objectStore("treeImages").clear();
         }
@@ -921,6 +918,10 @@ export async function handleChatSend() {
     }
 }
 
+/**
+ * (v19.6) CORREÇÃO: Adicionado 'export' para que o ui.js possa usá-lo.
+ * Helper para ordenação (lido pelo ui.js)
+ */
 export function getSortValue(tree, key) {
     const numericKeys = ['id', 'dap', 'pontuacao', 'coordX', 'coordY', 'utmZoneNum'];
     if (numericKeys.includes(key)) {
