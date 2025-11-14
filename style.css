@@ -1405,3 +1405,50 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     display: none;
   }
 }
+
+/* -------------------------------------- */
+/* 18. [NOVO v24.0] RESPONSIVIDADE DA TABELA */
+/* -------------------------------------- */
+
+/* 1. COMPORTAMENTO DE SCROLL (PADRÃO) */
+/* Isso garante que, mesmo no desktop, se a janela for
+   estreita, a tabela não quebre o layout, mas sim role
+   horizontalmente. (Já deve existir no seu CSS, Seção 10). */
+#summary-table-container {
+  overflow-x: auto;
+}
+
+/* 2. PRIORIDADE DE COLUNAS (MOBILE-FIRST) */
+/* Esta é a nova lógica de ocultação responsiva. */
+
+/* P1 (ID, Espécie, Risco, Ações) = Sempre visíveis. */
+
+/* P2 (Data, Foto, Local, Pontos)
+   Ocultos por padrão (Mobile) */
+.summary-table .col-p2 {
+  display: none;
+}
+
+/* P3 (Coords, Zona, DAP, Avaliador, Obs)
+   Ocultos por padrão (Mobile) */
+.summary-table .col-p3 {
+  display: none;
+}
+
+/* 3. BREAKPOINT TABLET (>= 768px) */
+/* Mostra P2 (Data, Foto, Local, Pontos) */
+@media (min-width: 768px) {
+  .summary-table .col-p2 {
+    display: table-cell;
+    vertical-align: middle;
+  }
+}
+
+/* 4. BREAKPOINT DESKTOP (>= 1024px) */
+/* Mostra P3 (Coords, Zona, DAP, etc.) */
+@media (min-width: 1024px) {
+  .summary-table .col-p3 {
+    display: table-cell;
+    vertical-align: middle;
+  }
+}
