@@ -1,4 +1,4 @@
-// js/modal.ui.js (v23.12 - Correção do Bug de Arrastar e Fechar)
+// js/modal.ui.js (v23.16 - Correção do Bug de Arrastar e Selecionar)
 
 // === 1. IMPORTAÇÕES ===
 import { registeredTrees } from './state.js';
@@ -9,17 +9,15 @@ import { getImageFromDB } from './database.js';
 // === 2. ESTADO DO MÓDULO ===
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-// [MODIFICADO v23.12] O 'modal' agora é o 'container' (o próprio dialog)
 const photoViewer = {
-  container: null, // Era 'modal'
-  // 'dialog' foi removido, pois 'container' é o diálogo
+  container: null, 
   title: null,
   content: null,
   closeBtn: null,
   isDragging: false,
   offset: { x: 0, y: 0 },
   zoomLevel: 0,
-  zoomLevels: [300, 450, 600] 
+  zoomLevels: [300, 450, 600]
 };
 
 // === 3. FUNÇÕES DO MODAL DE AÇÃO (Genérico) ===
@@ -140,28 +138,29 @@ function showImportTypeModal(replaceData) {
 
 
 // #####################################################################
-// ### LÓGICA DO VISUALIZADOR DE FOTOS (v23.12 - Refatorado) ###
+// ### LÓGICA DO VISUALIZADOR DE FOTOS (v23.16 - Correção de Arrastar) ###
 // #####################################################################
 
 /**
- * [PRIVADO v23.12] Torna o diálogo de foto arrastável (desktop).
+ * [PRIVADO v23.16] Torna o diálogo de foto arrastável (desktop).
  */
 function _makeDraggable() {
-  // [MODIFICADO v23.12] Usa 'container' e 'title'
-  const { container, title } = photoViewer; 
+  const { container, title } = photoViewer;
   if (isTouchDevice || !container || !title) return;
 
   title.style.cursor = 'move';
 
   const onMouseDown = (e) => {
+    // [NOVO v23.16] Impede a seleção de texto durante o arraste
+    document.body.classList.add('user-select-none');
+    
     photoViewer.isDragging = true;
     const rect = container.getBoundingClientRect();
     
-    // Trava a posição atual em pixels, removendo o 'transform'
     container.style.position = 'fixed';
     container.style.top = `${rect.top}px`;
     container.style.left = `${rect.left}px`;
-    container.style.transform = ''; // Remove o translate(-50%, -50%)
+    container.style.transform = ''; 
     
     photoViewer.offset.x = e.clientX - rect.left;
     photoViewer.offset.y = e.clientY - rect.top;
@@ -177,7 +176,6 @@ function _makeDraggable() {
     let newX = e.clientX - photoViewer.offset.x;
     let newY = e.clientY - photoViewer.offset.y;
 
-    // Limita ao viewport
     newX = Math.max(0, Math.min(newX, window.innerWidth - container.offsetWidth));
     newY = Math.max(0, Math.min(newY, window.innerHeight - container.offsetHeight));
 
@@ -186,6 +184,9 @@ function _makeDraggable() {
   };
 
   const onMouseUp = () => {
+    // [NOVO v23.16] Reabilita a seleção de texto
+    document.body.classList.remove('user-select-none');
+    
     photoViewer.isDragging = false;
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
@@ -202,31 +203,26 @@ function _hidePhotoViewer() {
   if (!container) return;
 
   container.classList.remove('show');
-  // [NOVO v23.12] Oculta após a animação de fade-out
   setTimeout(() => {
-    container.style.display = 'none'; 
-  
-    // Limpa o conteúdo e revoga o blob
+    container.style.display = 'none';
     const img = content.querySelector('img');
     if (img && img.src.startsWith('blob:')) {
         URL.revokeObjectURL(img.src);
     }
     content.innerHTML = '';
-    
-    // Reseta o CSS para a centralização padrão
     container.style.width = '';
     container.style.top = '50%';
     container.style.left = '50%';
     container.style.transform = 'translate(-50%, -50%) scale(0.95)';
     container.style.position = 'fixed';
-  }, 200); // 200ms = duração da transição de opacidade
+  }, 200);
 }
 
 /**
  * [PRIVADO v23.12] Aplica o zoom na imagem do visualizador.
  */
 function _zoomPhotoViewer(direction) {
-  const { container, zoomLevels } = photoViewer; // Usa 'container'
+  const { container, zoomLevels } = photoViewer;
   if (!container || isTouchDevice) return;
 
   photoViewer.zoomLevel += direction;
@@ -242,7 +238,6 @@ function _zoomPhotoViewer(direction) {
  * @param {number} treeId 
  */
 export function showPhotoViewer(treeId) {
-  // [MODIFICADO v23.12] Usa 'container'
   const { container, title, content, zoomLevels } = photoViewer;
   if (!container) return;
 
@@ -260,11 +255,9 @@ export function showPhotoViewer(treeId) {
 
     const imgUrl = URL.createObjectURL(imageBlob);
     
-    // Reseta o zoom e define o tamanho padrão
     photoViewer.zoomLevel = 0;
     container.style.width = `${zoomLevels[0]}px`;
     
-    // [NOVO v23.12] Garante que o CSS de centralização esteja aplicado
     container.style.top = '50%';
     container.style.left = '50%';
     container.style.transform = 'translate(-50%, -50%) scale(0.95)';
@@ -286,34 +279,29 @@ export function showPhotoViewer(treeId) {
     document.getElementById('pv-zoom-out-btn')?.addEventListener('click', () => _zoomPhotoViewer(-1));
     document.getElementById('pv-zoom-in-btn')?.addEventListener('click', () => _zoomPhotoViewer(1));
     
-    // Mostra o modal
     container.style.display = 'block';
-    // Força o navegador a recalcular o layout (para a transição 'show' funcionar)
     void container.offsetWidth; 
     container.classList.add('show');
   });
 }
 
 /**
- * (PÚBLICO) [MODIFICADO v23.12] Inicializa os listeners do modal de foto.
+ * (PÚBLICO) (v23.12) Inicializa os listeners do modal de foto.
  */
 export function initPhotoViewer() {
-  // [MODIFICADO v23.12] Seleciona o 'dialog' como o 'container' principal
   photoViewer.container = document.getElementById('photo-viewer-dialog');
   photoViewer.title = document.getElementById('photo-viewer-title');
   photoViewer.content = document.getElementById('photo-viewer-content');
   photoViewer.closeBtn = document.getElementById('photo-viewer-close');
 
-  // [CORREÇÃO v23.12] Adiciona "Guard Clauses"
   if (!photoViewer.container || !photoViewer.title || !photoViewer.content || !photoViewer.closeBtn) {
     console.warn("Componente Photo Viewer não inicializado. O HTML (index.html) parece estar desatualizado.");
-    return; // Não anexa listeners a elementos nulos
+    return;
   }
 
   photoViewer.closeBtn.addEventListener('click', _hidePhotoViewer);
   
   // [REMOVIDO v23.12] Listener de clique no overlay (CAUSADOR DO BUG)
-  // photoViewer.modal.addEventListener('click', (e) => ...);
 
   _makeDraggable(); // Ativa o "arrastar" (só desktop)
 }
