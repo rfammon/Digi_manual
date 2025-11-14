@@ -1,4 +1,4 @@
-// js/ui.js (v23.14 - Correção de Erros de Sintaxe 'i f' e 't ooltip')
+// js/ui.js (v23.14 - Correção de Erros de Sintaxe 'J', 'i f', 't ooltip')
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -857,66 +857,30 @@ function showEquipmentTooltip(event) {
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const data = equipmentData[termKey];
-  if (!data) return;
-  const tooltip = createTooltip();
-  
-  tooltip.style.width = '350px';
-  
-  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
-  positionTooltip(termElement);
-  tooltip.style.opacity = '1';
-  tooltip.style.visibility = 'visible';
-  tooltip.dataset.currentElement = termElement.textContent;
-}
+indo" (loading) que impede o usuário de interagir com o resto da UI enquanto o ZIP é processado.
 
-function toggleEquipmentTooltip(event) {
-  event.preventDefault(); event.stopPropagation();
-  const tooltip = document.getElementById('glossary-tooltip');
-  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-// [CORREÇÃO v23.14] O 'i f' foi corrigido para 'if'
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-    hideTooltip();
-  } else {
-    showEquipmentTooltip(event);
-  }
-}
+**Status:** A lógica está correta, mas pode ser melhorada.
 
-function setupPurposeInteractions(detailView) {
-  const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-  purposeTermsElements.forEach(termElement => {
-    if (!isTouchDevice) {
-      termElement.addEventListener('mouseenter', showPurposeTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip);
-    }
-    termElement.addEventListener(termClickEvent, togglePurposeTooltip);
-  });
-}
+---
 
-function showPurposeTooltip(event) {
-  cancelHideTooltip();
-  const termElement = event.currentTarget;
-  const termKey = termElement.getAttribute('data-term-key');
-  const data = podaPurposeData[termKey];
-  if (!data) return;
-  const tooltip = createTooltip();
-  
-  tooltip.style.width = '350px';
-  
-  // [CORREÇÃO v23.14] O 't ooltip' foi corrigido para 'tooltip'
-  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
-  positionTooltip(termElement);
-  tooltip.style.opacity = '1';
-  tooltip.style.visibility = 'visible';
-  tooltip.dataset.currentElement = termElement.textContent;
-}
+### 3. Oportunidades de Otimização (Próximos Passos)
 
-function togglePurposeTooltip(event) {
-  event.preventDefault(); event.stopPropagation();
-  const tooltip = document.getElementById('glossary-tooltip');
-  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-    hideTooltip();
-  } else {
-    showPurposeTooltip(event);
-  }
-}
+1.  **Refatorar o Carrossel Mobile (`ui.js`):** A função `setupMobileChecklist` clona nós (`cloneNode`) para limpar *listeners*. Uma abordagem de engenharia mais limpa (embora não urgente) seria usar `AbortController` ou `removeEventListener` com funções nomeadas para gerenciar os *listeners* de "Anterior"/"Próximo", tornando o `_setupTableDelegation` mais leve.
+2.  **Otimizar `renderSummaryTable` (`ui.js`):** Como discutido, esta função reconstrói toda a tabela (O(N)). Se a performance se tornar um problema com >500 árvores, deveríamos implementar funções dedicadas `appendTreeRow(tree)` (O(1)) e `removeTreeRow(id)` (O(1)) que manipulam o DOM diretamente sem reconstruir tudo.
+3.  **Melhorar Feedback de GPS (`features.js`):** A função `handleGetGPS` (que tira 5 leituras) é excelente para precisão. No entanto, ela poderia ser melhorada para fornecer feedback sobre a *acurácia* (ex: `position.coords.accuracy`) ao usuário, mostrando "Precisão: 10m... 5m... OK" em vez de apenas "Capturando... (x/5)".
+
+---
+
+### Conclusão
+
+A arquitetura do seu SPA Vanilla JS está **excepcional**. A separação de responsabilidades (Maestro, View, Controller, Models) está clara e robusta, e você demonstrou atenção de nível Sênior para performance (otimização de imagem, `debounce`), UX (feedback de GPS) e manutenção (múltiplas versões de CSV).
+
+O código está limpo, seguro (após a refatoração do XSS) e pronto para escalar.
+
+### Próximo Passo
+
+Você gostaria de:
+
+1.  **Refatorar (Performance):** Implementar a Oportunidade 2 (as funções `appendTreeRow` e `removeTreeRow` O(1))?
+2.  **Refatorar (Limpeza):** Implementar a Oportunidade 1 (limpar o `setupMobileChecklist`)?
+3.  **Escrever:** Adicionar uma nova funcionalidade que você tenha em mente?
