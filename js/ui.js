@@ -1,937 +1,1407 @@
-// js/ui.js (v24.5 - Depuração de Sintaxe)
+/* style.css (v22.1 / v23.12 - Refatoração do Photo Viewer) */
 
-// === 1. IMPORTAÇÕES ===
-import * as state from './state.js';
-import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js';
-import { getImageFromDB } from './database.js';
-import * as features from './features.js';
-import * as mapUI from './map.ui.js';
-import * as modalUI from './modal.ui.js';
+/* -------------------------------------- */
+/* 1. VARIÁVEIS GLOBAIS (RAIZ) */
+/* -------------------------------------- */
+:root {
+  /* Paleta de Cores Primária (Verde/Tema) */
+  --color-primary-dark: #004d40;
+  --color-primary-medium: #00796b;
+  --color-primary-light: #B2DFDB;
+  --color-primary-lightest: #E0F2F1;
 
-// === 2. ESTADO DO MÓDULO UI ===
+  /* Paleta de Acento (Amarelo/Laranja) */
+  --color-accent: #ffb300;
+  --color-accent-dark: #ffa000;
+  --color-accent-hover: #ffc107;
 
-const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
-const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-const termClickEvent = isTouchDevice ? 'touchend' : 'click';
-const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
+  /* Paleta de Risco/Destrutivo */
+  --color-danger: #C62828;
+  --color-danger-dark: #B71C1C;
+  --color-danger-light: #FFCDD2;
 
-let tooltipHideTimer = null;
+  /* Paleta Neutra (Texto, Fundo, Bordas) */
+  --color-dark: #212121;
+  --color-text: #333;
+  --color-text-light: #555;
+  --gray-100: #f4f4f9;
+  --gray-200: #eeeeee;
+  --gray-300: #dddddd;
+  --gray-400: #cccccc;
+  
+  /* Fundo */
+  --bg-body: #f4f4f9;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #fcfcfc;
 
+  /* Tipografia */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  /* Espaçamento */
+  --space-xs: 0.25rem;  /* 4px */
+  --space-sm: 0.5rem;   /* 8px */
+  --space-md: 1rem;     /* 16px */
+  --space-lg: 1.5rem;   /* 24px */
+  --space-xl: 2rem;     /* 32px */
 
-// === 3. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
-
-/**
- * Carrega o HTML de um tópico do manual na view principal.
- * @param {HTMLElement} detailView - O elemento DOM.
- * @param {object} content - O objeto de conteúdo.
- */
-export function loadContent(detailView, content) {
-  if (!detailView) return;
-  if (content) {
-    detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
-    setupGlossaryInteractions(detailView);
-    setupEquipmentInteractions(detailView);
-    setupPurposeInteractions(detailView);
-  } else {
-    detailView.innerHTML = `<h3 class="placeholder-titulo">Tópico Não Encontrado</h3>`;
-  }
-}
-
-// === 4. LÓGICA DA CALCULADORA DE RISCO (UI) ===
-
-let mobileChecklist = {
-  currentIndex: 0,
-  totalQuestions: 0,
-  questions: null,
-  wrapper: null,
-  card: null,
-  navPrev: null,
-  navNext: null,
-  counter: null
-};
-
-/**
- * Mostra a pergunta do carrossel mobile no índice especificado.
- * @param {number} index - O índice da pergunta.
- */
-export function showMobileQuestion(index) {
-  const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
-  const questionRow = questions[index];
-  if (!questionRow) return;
-  if (!questionRow.cells || questionRow.cells.length < 4) {
-    console.error("showMobileQuestion: A linha da tabela (tr) está malformada.", questionRow);
-    return;
-  }
-  const num = questionRow.cells[0].textContent;
-  const pergunta = questionRow.cells[1].textContent;
-  const peso = questionRow.cells[2].textContent;
-  const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
-  if (!realCheckbox) {
-    console.error("showMobileQuestion: Checkbox não encontrado na linha.", questionRow);
-    return;
-  }
-  
-  card.innerHTML = `
-    <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
-    <span class="checklist-card-peso">(Peso: ${peso})</span>
-    <label class="checklist-card-toggle">
-      <input type="checkbox" class="mobile-checkbox-proxy" data-target-index="${index}" ${realCheckbox.checked ? 'checked' : ''}>
-      <span class="toggle-label">Não</span>
-      <span class="toggle-switch"></span>
-      <span class="toggle-label">Sim</span>
-    </label>
-  `;
-  counter.textContent = `${index + 1} / ${totalQuestions}`;
-  navPrev.disabled = (index === 0);
-  navNext.disabled = (index === totalQuestions - 1);
-  mobileChecklist.currentIndex = index;
-}
-
-/**
- * Inicializa o carrossel mobile.
- */
-export function setupMobileChecklist() {
-  mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
-  if (!mobileChecklist.wrapper) return;
-
-  mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
-  mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
-  mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
-  mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
-  mobileChecklist.questions = document.querySelectorAll('#risk-calculator-form .risk-table tbody tr');
-
-  if (mobileChecklist.questions.length === 0 || !mobileChecklist.card || !mobileChecklist.navPrev) {
-    console.warn("setupMobileChecklist: Elementos do carrossel não encontrados.");
-    return;
-  }
-
-  mobileChecklist.currentIndex = 0;
-  mobileChecklist.totalQuestions = mobileChecklist.questions.length;
-
-  // Clonagem para limpeza de listeners
-  const newCard = mobileChecklist.card.cloneNode(true);
-  mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
-  mobileChecklist.card = newCard;
-  const newNavPrev = mobileChecklist.navPrev.cloneNode(true);
-  mobileChecklist.navPrev.parentNode.replaceChild(newNavPrev, mobileChecklist.navPrev);
-  mobileChecklist.navPrev = newNavPrev;
-  const newNavNext = mobileChecklist.navNext.cloneNode(true);
-  mobileChecklist.navNext.parentNode.replaceChild(newNavNext, mobileChecklist.navNext);
-  mobileChecklist.navNext = newNavNext;
-
-  // Listeners
-  mobileChecklist.card.addEventListener('change', (e) => {
-    const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
-    if (proxyCheckbox) {
-      const targetIndex = parseInt(proxyCheckbox.dataset.targetIndex, 10);
-      const realCheckbox = mobileChecklist.questions[targetIndex].cells[3].querySelector('.risk-checkbox');
-      realCheckbox.checked = proxyCheckbox.checked;
-    }
-  });
-  mobileChecklist.navPrev.addEventListener('click', () => {
-    if (mobileChecklist.currentIndex > 0) showMobileQuestion(mobileChecklist.currentIndex - 1);
-  });
-  mobileChecklist.navNext.addEventListener('click', () => {
-    if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) showMobileQuestion(mobileChecklist.currentIndex + 1);
-  });
-
-  showMobileQuestion(0);
+  /* Bordas e Sombras */
+  --border-radius-md: 6px;
+  --border-radius-lg: 10px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 
-// === INÍCIO: Seção de Renderização da Tabela ===
-
-/**
- * Cria uma célula de tabela (<td>) com texto seguro.
- */
-function createSafeCell(text, className) {
-  const cell = document.createElement('td');
-  cell.textContent = text;
-  if (className) cell.className = className;
-  return cell;
+/* -------------------------------------- */
+/* 2. RESET, BASE E LAYOUT PRINCIPAL */
+/* -------------------------------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/**
- * Cria uma célula de tabela (<td>) com um botão de ação.
- */
-function createActionCell({ className, icon, treeId, cellClassName }) {
-  const cell = document.createElement('td');
-  const button = document.createElement('button');
-  if (cellClassName) cell.className = cellClassName;
-  button.type = 'button';
-  button.className = className;
-  button.dataset.id = treeId;
-  button.innerHTML = icon;
-  cell.appendChild(button);
-  return cell;
+body {
+  font-family: var(--font-primary);
+  line-height: 1.6;
+  background-color: var(--bg-body);
+  color: var(--color-text);
+  position: relative;
+  min-height: 100vh;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
-/**
- * Helper privado que constrói um <tr> para uma árvore.
- * Adiciona classes de prioridade (col-p2, col-p3) às células <td>.
- */
-function _createTreeRow(tree) {
-  const row = document.createElement('tr');
-  row.dataset.treeId = tree.id;
-  const [y, m, d] = (tree.data || '---').split('-');
-  const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
-  const utmZone = `${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}`;
-
-  // P1 (Sempre Visível)
-  row.appendChild(createSafeCell(tree.id));
-  // P2 (Tablet+)
-  row.appendChild(createSafeCell(displayDate, 'col-p2'));
-  // P1
-  row.appendChild(createSafeCell(tree.especie));
-  
-  // P2 (Tablet+) - Célula da Foto
-  const photoCell = document.createElement('td');
-  photoCell.style.textAlign = 'center';
-  photoCell.className = 'col-p2'; // Classe de prioridade
-  if (tree.hasPhoto) {
-    const photoButton = document.createElement('button');
-    photoButton.type = 'button';
-    photoButton.className = 'photo-preview-btn';
-    photoButton.dataset.id = tree.id;
-    photoButton.innerHTML = '📷';
-    photoCell.appendChild(photoButton);
-  } else {
-    photoCell.textContent = '—';
-  }
-  row.appendChild(photoCell);
-
-  // P3 (Desktop)
-  row.appendChild(createSafeCell(tree.coordX, 'col-p3'));
-  row.appendChild(createSafeCell(tree.coordY, 'col-p3'));
-  row.appendChild(createSafeCell(utmZone, 'col-p3')); // Zona (Oculta por padrão)
-  row.appendChild(createSafeCell(tree.dap, 'col-p3'));
-  // P2 (Tablet+)
-  row.appendChild(createSafeCell(tree.local, 'col-p2'));
-  // P3 (Desktop)
-  row.appendChild(createSafeCell(tree.avaliador, 'col-p3'));
-  // P2 (Tablet+)
-  row.appendChild(createSafeCell(tree.pontuacao, 'col-p2')); // Pontos (Oculto no mobile)
-  // P1
-  row.appendChild(createSafeCell(tree.risco, tree.riscoClass));
-  // P3 (Desktop)
-  row.appendChild(createSafeCell(tree.observacoes, 'col-p3'));
-
-  // P1 (Sempre Visível) - Ações
-  row.appendChild(createActionCell({ className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom' }));
-  row.appendChild(createActionCell({ className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit' }));
-  row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
-  return row;
+html {
+  scroll-behavior: smooth;
 }
 
-/**
- * Adiciona uma ÚNICA linha à tabela (Performance O(1)).
- */
-function appendTreeRow(tree) {
-  const container = document.getElementById('summary-table-container');
-  if (!container) return;
-  const placeholder = document.getElementById('summary-placeholder');
-  if (placeholder) {
-    placeholder.remove();
-    renderSummaryTable(); // Renderiza a tabela completa pela primeira vez
-    return;
-  }
-  const tbody = container.querySelector('.summary-table tbody');
-  if (tbody) {
-    const row = _createTreeRow(tree);
-    tbody.appendChild(row);
-  } else {
-    renderSummaryTable(); // Fallback
-  }
-  const summaryBadge = document.getElementById('summary-badge');
-  if (summaryBadge) {
-     const count = state.registeredTrees.length;
-     summaryBadge.textContent = `(${count})`;
-     summaryBadge.style.display = 'inline';
-  }
+main {
+  padding: var(--space-md);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/**
- * Remove uma ÚNICA linha da tabela (Performance O(1)).
- */
-function removeTreeRow(id) {
-  const container = document.getElementById('summary-table-container');
-  if (!container) return;
-  const row = container.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
-  if (row) row.remove();
-  const tbody = container.querySelector('.summary-table tbody');
-  const summaryBadge = document.getElementById('summary-badge');
-  if (tbody && tbody.children.length === 0) {
-    renderSummaryTable(); // Recria para mostrar o placeholder
-  } else if (summaryBadge) {
-     const count = state.registeredTrees.length;
-     summaryBadge.textContent = count > 0 ? `(${count})` : '';
-     summaryBadge.style.display = count > 0 ? 'inline' : 'none';
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--color-dark);
 }
 
-/**
- * Renderiza a tabela de resumo de árvores (O(N)).
- * Adiciona classes de prioridade (col-p2, col-p3) para ocultação responsiva.
- */
-export function renderSummaryTable() {
-  const container = document.getElementById('summary-table-container');
-  const importExportControls = document.getElementById('import-export-controls');
-  const summaryBadge = document.getElementById('summary-badge');
-  if (!container) return;
-  const count = state.registeredTrees.length;
-  if (summaryBadge) {
-    summaryBadge.textContent = count > 0 ? `(${count})` : '';
-    summaryBadge.style.display = count > 0 ? 'inline' : 'none';
-  }
-  if (count === 0) {
-    container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
-    if (importExportControls) {
-      document.getElementById('export-data-btn')?.setAttribute('style', 'display:none');
-      document.getElementById('send-email-btn')?.setAttribute('style', 'display:none');
-      document.getElementById('clear-all-btn')?.setAttribute('style', 'display:none');
-    }
-    return;
-  }
-  if (importExportControls) {
-    document.getElementById('export-data-btn')?.setAttribute('style', 'display:inline-flex');
-    document.getElementById('send-email-btn')?.setAttribute('style', 'display:inline-flex');
-    document.getElementById('clear-all-btn')?.setAttribute('style', 'display:inline-flex');
-  }
-  container.innerHTML = '';
-  const table = document.createElement('table');
-  table.className = 'summary-table';
-  const thead = document.createElement('thead');
-  const headerRow = document.createElement('tr');
-  const getThClass = (key, extraClass = '') => {
-    let classes = `sortable ${extraClass}`;
-    if (state.sortState.key === key) classes += state.sortState.direction === 'asc' ? ' sort-asc' : ' sort-desc';
-    return classes.trim();
-  };
+h2 { font-size: 1.5rem; margin-bottom: var(--space-md); }
+h3 { font-size: 1.3rem; margin-bottom: var(--space-md); }
+h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space-sm); }
 
-  const headers = [
-    { key: 'id', text: 'ID' },
-    { key: 'data', text: 'Data', className: 'col-p2' },
-    { key: 'especie', text: 'Espécie' },
-    { key: null, text: 'Foto', className: 'col-p2' },
-    { key: 'coordX', text: 'Coord. X', className: 'col-p3' },
-    { key: 'coordY', text: 'Coord. Y', className: 'col-p3' },
-    { key: 'utmZoneNum', text: 'Zona UTM', className: 'col-p3' },
-    { key: 'dap', text: 'DAP (cm)', className: 'col-p3' },
-    { key: 'local', text: 'Local', className: 'col-p2' },
-    { key: 'avaliador', text: 'Avaliador', className: 'col-p3' },
-    { key: 'pontuacao', text: 'Pontos', className: 'col-p2' },
-    { key: 'risco', text: 'Risco' },
-    { key: null, text: 'Observações', className: 'col-p3' },
-    { key: null, text: 'Zoom', className: 'col-zoom' },
-    { key: null, text: 'Editar', className: 'col-edit' },
-    { key: null, text: 'Excluir', className: 'col-delete' },
-  ];
+/* -------------------------------------- */
+/* 3. LAYOUT (HEADER, FOOTER) */
+/* -------------------------------------- */
 
-  headers.forEach(header => {
-    const th = document.createElement('th');
-    th.textContent = header.text;
-    if (header.key) {
-      th.className = getThClass(header.key, header.className || '');
-      th.dataset.sortKey = header.key;
-    }
-    if (header.className && !header.key) th.classList.add(header.className);
-    if (header.className === 'col-zoom') th.classList.add('col-zoom');
-    if (header.className === 'col-edit') th.classList.add('col-edit');
-    if (header.className === 'col-delete') th.classList.add('col-delete');
-    headerRow.appendChild(th);
-  });
-
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-  const sortedData = [...state.registeredTrees].sort((a, b) => {
-    const valA = features.getSortValue(a, state.sortState.key);
-    const valB = features.getSortValue(b, state.sortState.key);
-    if (valA < valB) return state.sortState.direction === 'asc' ? -1 : 1;
-    if (valA > valB) return state.sortState.direction === 'asc' ? 1 : -1;
-    return 0;
-  });
-  const tbody = document.createElement('tbody');
-  sortedData.forEach(tree => {
-    const row = _createTreeRow(tree);
-    tbody.appendChild(row);
-  });
-  table.appendChild(tbody);
-  container.appendChild(table);
+.header-manual,
+.footer-manual {
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  padding: var(--space-md);
+  text-align: center;
+  box-shadow: var(--shadow-md);
 }
 
-// === FIM: Seção de Renderização da Tabela ===
-
-
-/**
- * Mostra a sub-aba correta e chama o módulo de mapa.
- */
-export function showSubTab(targetId) {
-  const subTabPanes = document.querySelectorAll('.sub-tab-content');
-  subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
-  const subNavButtons = document.querySelectorAll('.sub-nav-btn');
-  subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
-  if (targetId === 'tab-content-mapa') {
-    setTimeout(() => { mapUI.initializeMap(); }, 50);
-  }
-  if (targetId === 'tab-content-summary' && state.highlightTargetId) {
-    highlightTableRow(state.highlightTargetId);
-    state.setHighlightTargetId(null);
-  }
+.header-manual h1 {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-xs);
+  color: #fff;
+}
+.header-manual p {
+  color: var(--color-primary-lightest);
+  opacity: 0.9;
 }
 
-/**
- * Destaque da linha da tabela.
- */
-function highlightTableRow(id) {
-  setTimeout(() => {
-    const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
-    if (row) {
-      const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
-      oldHighlights.forEach(r => r.classList.remove('highlight'));
-      row.classList.add('highlight');
-      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => { row.classList.remove('highlight'); }, 2500);
-    } else {
-      console.warn(`Linha da tabela [data-tree-id="${id}"] não encontrada.`);
-    }
-  }, 100);
+.footer-manual {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  font-size: 0.9rem;
+}
+
+/* -------------------------------------- */
+/* 4. ESTILOS DO ÍNDICE (MAPA MENTAL) */
+/* -------------------------------------- */
+
+.mapa-navegacao h2 {
+  color: var(--color-primary-dark);
+  text-align: center;
+}
+
+.topicos-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.topico-btn {
+  padding: var(--space-md) var(--space-sm);
+  background-color: var(--bg-surface);
+  color: var(--color-primary-medium);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.topico-btn:hover {
+  background-color: var(--color-primary-lightest);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+.topico-btn.active {
+  background-color: var(--color-accent);
+  color: var(--color-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent-dark);
 }
 
 
-/**
- * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
- */
-async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(imageFile);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        let { width, height } = img;
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => { resolve(blob); }, 'image/jpeg', quality);
-      };
-      img.onerror = (error) => reject(error);
-    };
-    reader.onerror = (error) => reject(error);
-  });
+/* -------------------------------------- */
+/* 5. ESTILOS DE CONTEÚDO (CARD PRINCIPAL) */
+/* -------------------------------------- */
+
+.conteudo-detalhe,
+.app-view {
+  background-color: var(--bg-surface);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-md);
 }
 
-// === INÍCIO: Seção de Setup da Calculadora ===
-
-/**
- * Alterna o modo do formulário entre Adicionar e Editar.
- */
-function _setFormMode(mode) {
-  const btn = document.getElementById('add-tree-btn');
-  if (!btn) return;
-  if (mode === 'edit') {
-    btn.textContent = '💾 Salvar Alterações';
-    btn.style.backgroundColor = 'var(--color-accent)';
-    btn.style.color = 'var(--color-dark)';
-  } else {
-    btn.textContent = '➕ Adicionar Árvore';
-    btn.style.backgroundColor = 'var(--color-primary-medium)';
-    btn.style.color = 'white';
-  }
+#detalhe-view h3 {
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-md);
+  border-bottom: 3px solid var(--color-accent);
+  padding-bottom: var(--space-sm);
+  font-size: 1.4rem;
 }
 
-/**
- * Preenche o formulário com dados da árvore para edição.
- */
-function _populateFormForEdit(tree) {
-  if (!tree) return;
-  document.getElementById('risk-calculator-form').reset();
-  features.clearPhotoPreview();
-  document.getElementById('risk-data').value = tree.data;
-  document.getElementById('risk-especie').value = tree.especie;
-  document.getElementById('risk-local').value = tree.local;
-  document.getElementById('risk-coord-x').value = tree.coordX;
-  document.getElementById('risk-coord-y').value = tree.coordY;
-  document.getElementById('risk-dap').value = tree.dap;
-  document.getElementById('risk-avaliador').value = tree.avaliador;
-  document.getElementById('risk-obs').value = tree.observacoes;
-
-  if (tree.hasPhoto) {
-    getImageFromDB(tree.id, (imageBlob) => {
-      if (imageBlob) {
-        const previewContainer = document.getElementById('photo-preview-container');
-        const removePhotoBtn = document.getElementById('remove-photo-btn');
-        const preview = document.createElement('img');
-        preview.id = 'photo-preview';
-        preview.src = URL.createObjectURL(imageBlob);
-        previewContainer.prepend(preview);
-        removePhotoBtn.style.display = 'block';
-        state.setCurrentTreePhoto(imageBlob);
-      } else {
-        utils.showToast(`Foto da Árvore ID ${tree.id} não encontrada no DB.`, "error");
-      }
-    });
-  }
-  const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
-  allCheckboxes.forEach((cb, index) => {
-    cb.checked = (tree.riskFactors && tree.riskFactors[index] === 1) || false;
-  });
-  const gpsStatus = document.getElementById('gps-status');
-  if (gpsStatus) {
-    gpsStatus.textContent = `Zona (da árvore): ${state.lastUtmZone.num}${state.lastUtmZone.letter}`;
-  }
+#detalhe-view p {
+  margin-bottom: var(--space-md);
+  font-size: 1em;
 }
 
-/**
- * Anexa listeners de navegação das sub-abas.
- */
-function _setupSubNavigation() {
-  const subNav = document.querySelector('.sub-nav');
-  if (subNav) {
-    const subNavHandler = (e) => {
-      const button = e.target.closest('.sub-nav-btn');
-      if (button) {
-        e.preventDefault();
-        showSubTab(button.getAttribute('data-target'));
-      }
-    };
-    subNav.addEventListener('click', subNavHandler);
-    showSubTab('tab-content-register');
-  }
+#detalhe-view ul,
+#detalhe-view ol {
+  padding-left: 25px;
+  margin-bottom: var(--space-md);
 }
 
-/**
- * Anexa listeners aos inputs de arquivo.
- */
-function _setupFileImporters() {
-  let zipImporter = document.getElementById('zip-importer');
-  let csvImporter = document.getElementById('csv-importer');
-  if (zipImporter) {
-    const newZip = zipImporter.cloneNode(true);
-    zipImporter.parentNode.replaceChild(newZip, zipImporter);
-    zipImporter = newZip;
-  }
-  if (csvImporter) {
-    const newCsv = csvImporter.cloneNode(true);
-    csvImporter.parentNode.replaceChild(newCsv, csvImporter);
-    csvImporter = newCsv;
-  }
-  if (zipImporter) {
-    zipImporter.addEventListener('change', (e) => {
-      e.replaceData = zipImporter.dataset.replaceData === 'true';
-      features.handleImportZip(e).then(() => { renderSummaryTable(); });
-    });
-  }
-  if (csvImporter) {
-    csvImporter.addEventListener('change', (e) => {
-      e.replaceData = csvImporter.dataset.replaceData === 'true';
-      features.handleFileImport(e).then(() => { renderSummaryTable(); });
-    });
-  }
-  return { zipImporter, csvImporter };
+#detalhe-view li {
+  margin-bottom: var(--space-sm);
+  font-size: 1em;
 }
 
-/**
- * Anexa listeners ao formulário principal (submit, reset, gps).
- */
-function _setupFormListeners(form, isTouchDevice) {
-  if (!form) return;
-  const getGpsBtn = document.getElementById('get-gps-btn');
-  const resetBtn = document.getElementById('reset-risk-form-btn');
-  const gpsStatus = document.getElementById('gps-status');
-
-  if (getGpsBtn && !isTouchDevice) {
-    getGpsBtn.closest('.gps-button-container')?.setAttribute('style', 'display:none');
-  }
-  if (getGpsBtn) {
-    getGpsBtn.addEventListener('click', features.handleGetGPS);
-  }
-
-  form.addEventListener('submit', (event) => {
-    const result = features.handleAddTreeSubmit(event); 
-    if (result && result.success) {
-      if (result.mode === 'add') {
-        appendTreeRow(result.tree);
-      } else if (result.mode === 'update') {
-        renderSummaryTable();
-      }
-      if (isTouchDevice) setupMobileChecklist();
-      if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-      _setFormMode('add');
-    }
-  });
-
-  if (resetBtn) {
-    resetBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
-      form.reset();
-      features.clearPhotoPreview();
-      try {
-        document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
-        document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
-      } catch(err) { /* ignora */ }
-      if (isTouchDevice) setupMobileChecklist();
-      if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-      state.setEditingTreeId(null);
-      _setFormMode('add');
-    });
-  }
+.manual-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-md);
+  margin: var(--space-md) 0;
+  box-shadow: var(--shadow-sm);
 }
 
-/**
- * Anexa listeners aos controles de foto.
- */
-function _setupPhotoListeners() {
-  const photoInput = document.getElementById('tree-photo-input');
-  const removePhotoBtn = document.getElementById('remove-photo-btn');
-  if (photoInput) {
-    photoInput.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        features.clearPhotoPreview();
-        try {
-          showToast("Otimizando foto...", "success");
-          const optimizedBlob = await optimizeImage(file, 800, 0.7);
-          state.setCurrentTreePhoto(optimizedBlob);
-          const preview = document.createElement('img');
-          preview.id = 'photo-preview';
-          preview.src = URL.createObjectURL(optimizedBlob);
-          document.getElementById('photo-preview-container').prepend(preview);
-          document.getElementById('remove-photo-btn').style.display = 'block';
-        } catch (error) {
-          console.error("Erro ao otimizar imagem:", error);
-          showToast("Erro ao processar a foto. Tente outra imagem.", "error");
-          state.setCurrentTreePhoto(null);
-          features.clearPhotoPreview();
-        }
-      }
-    });
-  }
-  if (removePhotoBtn) {
-    removePhotoBtn.addEventListener('click', features.clearPhotoPreview);
-  }
+/* -------------------------------------- */
+/* 6. GLOSSÁRIO INTERATIVO (TOOLTIP) */
+/* -------------------------------------- */
+
+.glossary-term,
+.equipment-term,
+.purpose-term {
+  font-weight: 600;
+  cursor: help;
+  border-bottom: 2px dotted;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s ease;
 }
 
-/**
- * Anexa listeners aos controles acima da tabela (Filtro, Importar, etc.).
- */
-function _setupCalculatorControls() {
-  const importDataBtn = document.getElementById('import-data-btn');
-  const exportDataBtn = document.getElementById('export-data-btn');
-  const sendEmailBtn = document.getElementById('send-email-btn');
-  const clearAllBtn = document.getElementById('clear-all-btn');
-  const filterInput = document.getElementById('table-filter-input');
-  if (importDataBtn) importDataBtn.addEventListener('click', modalUI.showImportModal);
-  if (exportDataBtn) exportDataBtn.addEventListener('click', modalUI.showExportModal);
-  if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
-  if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
-  if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
-    modalUI.showGenericModal({
-      title: '🗑️ Limpar Tabela',
-      description: 'Tem certeza que deseja apagar TODOS os registros? Esta ação não pode ser desfeita.',
-      buttons: [
-        { text: 'Sim, Apagar Tudo', class: 'primary', action: () => {
-          if (features.handleClearAll()) renderSummaryTable();
-        }},
-        { text: 'Cancelar', class: 'cancel' }
-      ]
-    });
-  });
+.glossary-term { color: var(--color-primary-medium); border-color: var(--color-primary-light); }
+.glossary-term:hover { background-color: var(--color-primary-lightest); }
+
+.equipment-term { color: var(--color-accent-dark); border-color: var(--color-accent); }
+.equipment-term:hover { background-color: #FFF8E1; }
+
+.purpose-term { color: var(--color-danger); border-color: var(--color-danger-light); }
+.purpose-term:hover { background-color: var(--color-danger-light); }
+
+
+#glossary-tooltip {
+  position: absolute;
+  background-color: var(--color-dark);
+  color: #fff;
+  border-radius: var(--border-radius-md);
+  padding: var(--space-sm) var(--space-md);
+  max-width: 90vw;
+  /* [MODIFICADO v22.1] 'width' agora é controlado pelo JS (para zoom da foto) */
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  /* [MODIFICADO v22.1] Adiciona 'width' à transição */
+  transition: opacity 0.2s, visibility 0.2s, width 0.3s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  text-align: left;
+  font-size: 0.9em;
 }
 
-/**
- * Anexa o listener de delegação de eventos da tabela.
- */
-function _setupTableDelegation(summaryContainer, isTouchDevice) {
-  if (!summaryContainer) return;
-  
-  renderSummaryTable(); // Renderiza a tabela inicial (O(N))
-
-  // Anexa o listener de DELEGAÇÃO DE EVENTOS
-  summaryContainer.addEventListener('click', (e) => {
-    const deleteButton = e.target.closest('.delete-tree-btn');
-    const editButton = e.target.closest('.edit-tree-btn');
-    const zoomButton = e.target.closest('.zoom-tree-btn');
-    const sortButton = e.target.closest('th.sortable');
-    const photoButton = e.target.closest('.photo-preview-btn');
-
-    if (deleteButton) {
-      const treeId = parseInt(deleteButton.dataset.id, 10);
-      modalUI.showGenericModal({
-        title: 'Excluir Registro',
-        description: `Tem certeza que deseja excluir a Árvore ID ${treeId}?`,
-        buttons: [
-          { text: 'Sim, Excluir', class: 'primary', action: () => {
-            if (features.handleDeleteTree(treeId)) removeTreeRow(treeId);
-          }},
-          { text: 'Cancelar', class: 'cancel' }
-section: 4, Título: 1. PERSONA E CONTEXTO, Conteúdo: O usuário quer que eu atue como um Engenheiro de Software Sênior especializado em JavaScript (ES12+), com foco em Clean Code, performance e segurança. Devo perguntar o tipo de projeto e o stack tecnológico antes de responder. O código deve seguir o Guia de Estilo Airbnb (padrão).
-        ]
-      });
-    }
-    
-    if (editButton) {
-      const treeData = features.handleEditTree(parseInt(editButton.dataset.id, 10));
-      if (treeData) {
-        _populateFormForEdit(treeData);
-        _setFormMode('edit');
-        showSubTab('tab-content-register');
-        if (isTouchDevice) setupMobileChecklist();
-        document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-
-    if (zoomButton) {
-      features.handleZoomToPoint(parseInt(zoomButton.dataset.id, 10));
-    }
-    
-    if (sortButton) {
-      features.handleSort(sortButton.dataset.sortKey);
-      renderSummaryTable();
-    }
-
-    if (photoButton) {
-      e.preventDefault();
-      modalUI.showPhotoViewer(parseInt(photoButton.dataset.id, 10));
-    }
-  });
+#glossary-tooltip strong {
+  color: var(--color-accent);
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-size: 1.1em;
 }
 
-/**
- * Função "maestro" que inicializa a Calculadora.
- */
-export function setupRiskCalculator() {
-  
-  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-  // 1. Setup de Componentes Base
-  _setupSubNavigation();
-  _setupFileImporters();
-
-  // 2. Setup de Listeners
-  _setupFormListeners(
-    document.getElementById('risk-calculator-form'),
-    isTouchDevice
-  );
-  _setupPhotoListeners();
-  _setupCalculatorControls();
-
-  // 3. Setup de Módulos Externos
-  mapUI.setupMapListeners();
-
-  // 4. Setup da Tabela
-  _setupTableDelegation(
-    document.getElementById('summary-table-container'),
-    isTouchDevice
-  );
-
-  // 5. Setup Mobile
-  if (isTouchDevice) {
-    setupMobileChecklist();
-  }
+#glossary-tooltip p {
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 
-// === FIM: Seção de Setup da Calculadora ===
-
-
-// === 5. LÓGICA DE TOOLTIPS (UI) ===
-
-/**
- * Cria ou obtém o elemento de tooltip.
- */
-export function createTooltip() {
-  let tooltip = document.getElementById('glossary-tooltip');
-  if (!tooltip) {
-    tooltip = document.createElement('div');
-    tooltip.id = 'glossary-tooltip';
-    document.body.appendChild(tooltip);
-  }
-  if (!tooltip.dataset.clickToCloseAdded) {
-    tooltip.addEventListener(popupCloseEvent, (e) => { e.stopPropagation(); hideTooltip(); });
-    tooltip.dataset.clickToCloseAdded = 'true';
-  }
-  state.setCurrentTooltip(tooltip);
-  return tooltip;
+#glossary-tooltip .manual-img {
+  margin: var(--space-sm) 0;
+  /* [NOVO v22.1] Garante que a imagem se ajuste ao container */
+  width: 100%; 
+  height: auto;
+  display: block;
 }
 
-/**
- * Esconde o tooltip ativo e reseta a largura.
- */
-export function hideTooltip() {
-  if (state.currentTooltip) {
-    const img = state.currentTooltip.querySelector('img');
-    if (img && img.src.startsWith('blob:')) {
-      URL.revokeObjectURL(img.src);
-    }
-    state.currentTooltip.style.opacity = '0';
-section: 4, Título: 2. OBJETIVO DA TAREFA, Conteúdo: Auxiliar o usuário a Escrever/Refatorar/Depurar/Otimizar um Componente/Função/Módulo.
-    state.currentTooltip.style.visibility = 'hidden';
-    state.currentTooltip.style.width = '';
-    delete state.currentTooltip.dataset.currentElement;
-    state.setCurrentTooltip(null);
-  }
+/* [MODIFICADO v23.9] Apenas tooltips de texto/imagem, não o modal de fotos */
+#tooltip-photo-container {
+  position: relative;
+  padding: 0;
+}
+#glossary-tooltip[data-current-element^="photo-"] {
+  padding: var(--space-sm);
+}
+#tooltip-photo-container .manual-img {
+  margin: 0; 
+  border-radius: var(--border-radius-md);
+}
+.tooltip-photo-zoom {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.tooltip-photo-zoom button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+  color: var(--color-dark);
+}
+.tooltip-photo-zoom button:hover {
+  background-color: var(--gray-300);
 }
 
-/**
- * Agenda o fechamento do tooltip (para mouseleave)
- */
-function scheduleHideTooltip() {
-  clearTimeout(tooltipHideTimer);
-  tooltipHideTimer = setTimeout(hideTooltip, 200);
+
+/* -------------------------------------- */
+/* 7. FORMULÁRIOS (CHAT & CONTATO) */
+/* -------------------------------------- */
+
+#fale-conosco,
+#gemini-chat {
+  padding: var(--space-lg);
+  background-color: var(--bg-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  border-top: 5px solid var(--color-primary-medium);
+  margin-top: var(--space-lg);
 }
 
-/**
- * Cancela o fechamento do tooltip (para mouseenter)
- */
-function cancelHideTooltip() {
-  clearTimeout(tooltipHideTimer);
+#gemini-chat {
+  background-color: var(--color-primary-lightest);
+  border-top-color: var(--color-primary-medium);
 }
 
-/**
- * Posiciona o tooltip em relação a um elemento.
- */
-function positionTooltip(termElement) {
-  if (!state.currentTooltip) return;
-  const rect = termElement.getBoundingClientRect();
-  const scrollY = window.scrollY, scrollX = window.scrollX;
-  requestAnimationFrame(() => {
-    if (!state.currentTooltip) return;
-    const tooltipWidth = state.currentTooltip.offsetWidth;
-    const tooltipHeight = state.currentTooltip.offsetHeight;
-section: 4, Título: 3. DESCRIÇÃO DETALHADA, Conteúdo: Devo analisar a descrição detalhada; se for vaga, pedir mais detalhes.
-    let topPos = (rect.top > tooltipHeight + 10) ? (rect.top + scrollY - tooltipHeight - 10) : (rect.bottom + scrollY + 10);
-    let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
-    if (leftPos < scrollX + 10) leftPos = scrollX + 10;
-    if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) {
-      leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
-    }
-    state.currentTooltip.style.top = `${topPos}px`;
-    state.currentTooltip.style.left = `${leftPos}px`;
-  });
+#fale-conosco h2,
+#gemini-chat h2 {
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-md);
+  font-size: 1.4rem;
 }
 
-function setupGlossaryInteractions(detailView) {
-  const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');
-  glossaryTermsElements.forEach(termElement => {
-    if (!isTouchDevice) {
-      termElement.addEventListener('mouseenter', showGlossaryTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip);
-    }
-    termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);
-  });
+.contact-form label,
+.chat-container label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-function showGlossaryTooltip(event) {
-  cancelHideTooltip(); 
-  const termElement = event.currentTarget;
-  const termKey = termElement.getAttribute('data-term-key');
-  const definition = glossaryTerms[termKey];
-  if (!definition) return;
-  const tooltip = createTooltip();
-  
-  tooltip.style.width = '350px'; 
-  
-  tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
-  positionTooltip(termElement);
-  tooltip.style.opacity = '1';
-  tooltip.style.visibility = 'visible';
-  tooltip.dataset.currentElement = termElement.textContent;
+/* Inputs e Textareas Padronizados */
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea,
+#chat-input,
+.form-grid input[type="text"],
+.form-grid input[type="number"],
+.form-grid input[type="date"],
+.risk-fieldset textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  font-family: var(--font-primary);
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 0;
 }
 
-function toggleGlossaryTooltip(event) {
-  event.preventDefault(); event.stopPropagation();
-  const tooltip = document.getElementById('glossary-tooltip');
-  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-    hideTooltip();
-  } else {
-    showGlossaryTooltip(event);
-  }
+.contact-form input[type="text"]:focus,
+.contact-form input[type="email"]:focus,
+.contact-form textarea:focus,
+#chat-input:focus,
+.form-grid input[type="text"]:focus,
+.form-grid input[type="number"]:focus,
+.form-grid input[type="date"]:focus,
+.risk-fieldset textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-medium);
+  box-shadow: 0 0 0 3px var(--color-primary-lightest);
 }
 
-function setupEquipmentInteractions(detailView) {
-  const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-  equipmentTermsElements.forEach(termElement => {
-    if (!isTouchDevice) {
-      termElement.addEventListener('mouseenter', showEquipmentTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip);
-    }
-    termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
-  });
+/* Chat específico */
+#chat-response-box {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  min-height: 100px;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
 }
 
-function showEquipmentTooltip(event) {
-  cancelHideTooltip(); 
-  const termElement = event.currentTarget;
-  const termKey = termElement.getAttribute('data-term-key');
-  const data = equipmentData[termKey];
-  if (!data) return;
-  const tooltip = createTooltip();
-  
-  tooltip.style.width = '350px';
-  
-  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
-  positionTooltip(termElement);
-  tooltip.style.opacity = '1';
-  tooltip.style.visibility = 'visible';
-  tooltip.dataset.currentElement = termElement.textContent;
+.chat-input-area {
+  display: flex;
+  gap: var(--space-sm);
 }
 
-function toggleEquipmentTooltip(event) {
-  event.preventDefault(); event.stopPropagation();
-  const tooltip = document.getElementById('glossary-tooltip');
-  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-    hideTooltip();
-  } else {
-    showEquipmentTooltip(event);
-  }
+/* -------------------------------------- */
+/* 8. BOTÕES (PADRONIZAÇÃO GERAL) */
+/* -------------------------------------- */
+/* (Esta seção permanece a mesma) */
+
+/* -------------------------------------- */
+/* 9. APLICAÇÃO DOS ESTILOS DE BOTÃO */
+/* -------------------------------------- */
+
+/* Formulário de Contato e Chat */
+.send-btn,
+#chat-send-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  background-color: var(--color-primary-medium);
+  color: white;
+  width: 100%;
+}
+.send-btn:hover,
+#chat-send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-primary-dark);
+}
+#chat-send-btn {
+  width: auto;
 }
 
-function setupPurposeInteractions(detailView) {
-  const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-  purposeTermsElements.forEach(termElement => {
-    if (!isTouchDevice) {
-      termElement.addEventListener('mouseenter', showPurposeTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip);
-section: 4, Título: 4. REQUISITOS E RESTRIÇÕES (Obrigatório), Conteúdo: Usar ES6+ (arrow functions, const/let, desestruturação, classes, módulos, Promises/async/await). Código não-bloqueante, otimizado (O-Notation), justificando estruturas de dados (Set, Map). Codificação defensiva (sanitizar inputs, evitar XSS, validação de schema). Usar recursos nativos do JS (se nenhuma dependência for imposta). Tratamento de erros 'fail-fast' e detalhado (custom errors, wrapping).
-    }
-    termElement.addEventListener(termClickEvent, togglePurposeTooltip);
-  });
+/* Área de Botões da Calculadora */
+.risk-buttons-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+#add-tree-btn, #reset-risk-form-btn,
+.export-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  flex-grow: 1;
+  min-width: 150px;
+}
+#add-tree-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+#reset-risk-form-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.export-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+
+/* Aplica as classes de cor */
+#add-tree-btn {
+  background-color: var(--color-primary-medium);
+  color: white;
+}
+#add-tree-btn:hover { background-color: var(--color-primary-dark); }
+
+#reset-risk-form-btn {
+  background-color: var(--gray-200);
+  color: var(--color-text-light);
+  border-color: var(--gray-300);
+}
+#reset-risk-form-btn:hover { background-color: var(--gray-300); }
+
+/* Botão Importar e Exportar */
+#import-data-btn,
+#export-data-btn,
+#send-email-btn {
+  background-color: transparent;
+  color: var(--color-primary-medium);
+  border-color: var(--color-primary-medium);
+}
+#import-data-btn:hover,
+#export-data-btn:hover,
+#send-email-btn:hover {
+  background-color: var(--color-primary-lightest);
 }
 
-function showPurposeTooltip(event) {
-  cancelHideTooltip();
-  const termElement = event.currentTarget;
-  const termKey = termElement.getAttribute('data-term-key');
-  const data = podaPurposeData[termKey];
-  if (!data) return;
-  const tooltip = createTooltip();
-  tooltip.style.width = '350px';
-  
-section: 4, Título: 5. FORMATO DA RESPOSTA, Conteúdo: 1. Bloco de código completo (javascript markdown) com JSDoc. 2. Seção 'Explicação e Justificativas' (Clean Code, Otimizações, Segurança). 3. Tom profissional e didático.
-  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
-  positionTooltip(termElement);
-  tooltip.style.opacity = '1';
-  tooltip.style.visibility = 'visible';
-  tooltip.dataset.currentElement = termElement.textContent;
+#clear-all-btn {
+  background-color: var(--color-danger);
+  color: white;
+}
+#clear-all-btn:hover { background-color: var(--color-danger-dark); }
+
+/* Botão de GPS */
+#get-gps-btn {
+  background-color: var(--color-primary-dark);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: var(--space-sm) var(--space-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+#get-gps-btn:hover { background-color: var(--color-primary-medium); }
+#get-gps-btn:disabled { background-color: var(--color-primary-medium); cursor: not-allowed; }
+
+
+/* -------------------------------------- */
+/* 10. CALCULADORA DE RISCO E TABELAS */
+/* -------------------------------------- */
+
+#zip-importer, #csv-importer {
+  display: none;
 }
 
-function togglePurposeTooltip(event) {
-  event.preventDefault(); event.stopPropagation();
-  const tooltip = document.getElementById('glossary-tooltip');
-  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
-    hideTooltip();
-  } else {
-    showPurposeTooltip(event);
-  }
+.risk-fieldset {
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  background: var(--bg-surface-alt);
+}
+
+.risk-fieldset legend {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  padding: 0 var(--space-sm);
+  font-size: 1.2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.form-grid label,
+.risk-fieldset > div > label {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: var(--color-text);
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+/* Tabelas */
+.risk-table, .summary-table, .glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-md);
+  font-size: 0.9em;
+}
+.risk-table th, .risk-table td,
+.summary-table th, .summary-table td,
+.glossary-table th, .glossary-table td {
+  border: 1px solid var(--gray-300);
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Cabeçalhos de Tabela */
+.risk-table th, .glossary-table th {
+  background-color: var(--gray-100);
+}
+.summary-table th {
+  background-color: var(--color-primary-medium);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.risk-table td:nth-child(3) {
+  width: 30px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1em;
+  color: var(--color-primary-dark);
+}
+.risk-table td:nth-child(4) { width: 50px; text-align: center; }
+
+.risk-checkbox {
+  width: 1.5rem; /* Alvo maior */
+  height: 1.5rem;
+  cursor: pointer;
+  accent-color: var(--color-primary-medium);
+}
+
+/* Tabela de Resumo */
+#summary-table-container {
+  margin-top: var(--space-md);
+  overflow-x: auto;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+}
+.summary-table { margin-top: 0; }
+.summary-table th:first-child, .summary-table td:first-child { border-left: none; }
+.summary-table th:last-child, .summary-table td:last-child { border-right: none; }
+
+
+.summary-table .risk-col-high {
+  font-weight: 700;
+  color: var(--color-danger);
+}
+.summary-table .risk-col-medium {
+  font-weight: 700;
+  color: var(--color-accent-dark);
+}
+.summary-table .risk-col-low {
+  color: var(--color-primary-medium);
+}
+
+#summary-placeholder {
+  font-style: italic;
+  color: var(--color-text-light);
+  padding: var(--space-md);
+  background: var(--gray-100);
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+}
+
+.edit-tree-btn,
+.delete-tree-btn,
+.zoom-tree-btn,
+.photo-preview-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: var(--space-sm);
+  line-height: 1;
+  width: 100%;
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.2s;
+}
+.delete-tree-btn { color: var(--color-danger); }
+.delete-tree-btn:hover { color: var(--color-danger-dark); background-color: var(--color-danger-light); }
+.edit-tree-btn { color: #1565C0; }
+.edit-tree-btn:hover { color: #1976D2; background-color: #BBDEFB; }
+.zoom-tree-btn { color: var(--color-primary-dark); }
+.zoom-tree-btn:hover { color: var(--color-primary-medium); background-color: var(--color-primary-lightest); }
+.photo-preview-btn { color: var(--color-accent-dark); }
+.photo-preview-btn:hover { background-color: #FFF8E1; }
+
+.summary-table th.col-edit, .summary-table td.col-edit,
+.summary-table th.col-delete, .summary-table td.col-delete,
+.summary-table th.col-zoom, .summary-table td.col-zoom {
+  text-align: center;
+  width: 30px;
+  white-space: nowrap;
+  padding: 0 var(--space-xs);
+}
+
+.glossary-category-header {
+  background-color: var(--color-primary-medium);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center !important;
+}
+
+
+/* -------------------------------------- */
+/* 11. ABAS SECUNDÁRIAS (Calculadora) */
+/* -------------------------------------- */
+
+.sub-nav {
+  display: flex;
+  gap: 5px;
+  margin-bottom: var(--space-lg);
+  border-bottom: 3px solid var(--gray-300);
+}
+
+.sub-nav-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid transparent;
+  border-bottom: none;
+  background-color: var(--gray-100);
+  color: var(--color-text-light);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  transition: all 0.2s ease;
+  position: relative;
+  top: 3px;
+}
+
+.sub-nav-btn:hover { background-color: var(--gray-200); }
+.sub-nav-btn.active {
+  background-color: var(--bg-surface);
+  color: var(--color-primary-dark);
+  border-color: var(--gray-300);
+  border-bottom: 3px solid var(--bg-surface);
+}
+
+.badge {
+  background-color: var(--color-accent);
+  color: var(--color-dark);
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 0.85em;
+  margin-left: 5px;
+  font-weight: 700;
+  display: none;
+}
+
+.sub-nav-btn.active .badge {
+  background-color: var(--color-primary-medium);
+  color: #fff;
+}
+
+.sub-tab-content { display: none; }
+.sub-tab-content.active { display: block; }
+
+/* -------------------------------------- */
+/* 12. TOAST, SPINNER, VOLTAR AO TOPO */
+/* -------------------------------------- */
+
+#toast-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-dark);
+  color: white;
+  font-weight: 600;
+  z-index: 2000;
+  box-shadow: var(--shadow-lg);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s, visibility 0.3s, bottom 0.3s;
+}
+#toast-notification.show { visibility: visible; opacity: 1; bottom: 30px; }
+#toast-notification.success { background-color: var(--color-primary-medium); }
+#toast-notification.error { background-color: var(--color-danger); }
+
+/* Spinner */
+.spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  vertical-align: middle;
+}
+#get-gps-btn:disabled .spinner { display: inline-block; }
+#zip-status .spinner {
+  display: inline-block;
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: var(--color-primary-medium);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Back to Top */
+#back-to-top-btn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  line-height: 50px;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+#back-to-top-btn:hover { background-color: var(--color-primary-medium); transform: scale(1.1); }
+#back-to-top-btn.show { display: block; opacity: 1; visibility: visible; }
+
+
+/* -------------------------------------- */
+/* 13. CHECKLIST MOBILE (v15.1) */
+/* -------------------------------------- */
+
+.mobile-checklist-wrapper { display: none; }
+
+@media (max-width: 768px) {
+  /* Esconde a tabela desktop no mobile */
+  .risk-table { display: none; }
+
+  /* Mostra o novo wrapper do carrossel */
+  .mobile-checklist-wrapper {
+    display: block;
+    margin-top: var(--space-md);
+  }
+
+  /* Estilo do Cartão */
+  .mobile-checklist-card {
+    background-color: var(--color-primary-lightest);
+    border: 2px solid var(--color-primary-light);
+    border-radius: var(--border-radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+    text-align: center;
+  }
+  .checklist-card-question {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-dark);
+    display: block;
+    margin-bottom: var(--space-sm);
+    line-height: 1.4;
+  }
+  .checklist-card-question strong { color: var(--color-primary-dark); }
+  .checklist-card-peso {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    font-style: italic;
+    display: block;
+    margin-bottom: var(--space-md);
+  }
+
+  /* Estilo do Toggle Switch (Sim/Não) */
+  .checklist-card-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .checklist-card-toggle .mobile-checkbox-proxy { display: none; }
+  .checklist-card-toggle .toggle-label {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--color-text-light);
+    transition: color 0.2s;
+  }
+  .checklist-card-toggle .toggle-switch {
+    background-color: var(--gray-400);
+    border-radius: 15px;
+    width: 60px;
+    height: 30px;
+    margin: 0 15px;
+    position: relative;
+    transition: background-color 0.2s;
+  }
+  .checklist-card-toggle .toggle-switch::before {
+    content: '';
+    position: absolute;
+    background-color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  /* Estado Ativo (Checado = SIM) */
+  .checklist-card-toggle .mobile-checkbox-proxy:checked ~ .toggle-label:nth-of-type(2) {
+    color: var(--color-primary-medium);
+  }
+  .checklist-card-toggle .mobile-checkbox-proxy:checked ~ .toggle-switch {
+    background-color: var(--color-primary-medium);
+  }
+  .checklist-card-toggle .mobile-checkbox-proxy:checked ~ .toggle-switch::before {
+    transform: translateX(30px);
+  }
+
+  /* Navegação do Carrossel */
+  .mobile-checklist-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+  }
+  .mobile-checklist-nav button {
+    background-color: var(--color-primary-medium);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    padding: 10px 15px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .mobile-checklist-nav button:disabled {
+    background-color: var(--gray-300);
+    cursor: not-allowed;
+  }
+  .mobile-checklist-nav .checklist-counter {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+  }
+}
+
+/* -------------------------------------- */
+/* 14. MAPA WEBGIS */
+/* -------------------------------------- */
+#map-container {
+  height: 60vh;
+  width: 100%;
+  border-radius: var(--border-radius-lg);
+  margin-top: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--gray-300);
+  
+  position: relative;
+}
+
+#zoom-to-extent-btn {
+  flex-grow: 0;
+  min-width: 200px;
+  background-color: var(--color-primary-dark);
+  color: white;
+  align-self: end;
+  height: 42px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+}
+#zoom-to-extent-btn:hover { background-color: var(--color-primary-medium); }
+
+
+/* -------------------------------------- */
+/* 15. FILTRO, FOTO E SELEÇÃO */
+/* -------------------------------------- */
+
+.table-filter-container { margin-bottom: var(--space-md); }
+#table-filter-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+}
+#table-filter-input:focus {
+  outline: none;
+  border-color: var(--color-primary-medium);
+  box-shadow: 0 0 0 3px var(--color-primary-lightest);
+}
+
+.summary-table tr.highlight {
+  background-color: var(--color-primary-lightest);
+  transition: background-color 0.3s ease-out;
+}
+
+/* Input de Foto */
+.photo-upload-container { margin-top: var(--space-md); }
+.photo-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  
+  background-color: transparent;
+  color: var(--color-primary-medium);
+  border: 2px solid var(--color-primary-medium);
+}
+.photo-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-primary-lightest);
+  color: var(--color-primary-dark);
+}
+
+#photo-preview-container {
+  margin-top: var(--space-md);
+  position: relative;
+  max-width: 300px;
+}
+#photo-preview {
+  width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--gray-300);
+  box-shadow: var(--shadow-sm);
+}
+#remove-photo-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 30px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  display: none;
+}
+
+/* -------------------------------------- */
+/* 16. MODAL DE IMPORT/EXPORT */
+/* -------------------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+
+.modal-dialog {
+  background-color: var(--bg-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-lg) var(--space-xl);
+  width: 100%;
+  max-width: 500px;
+  z-index: 2000;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-overlay.show { opacity: 1; visibility: visible; }
+.modal-overlay.show .modal-dialog { opacity: 1; transform: scale(1); }
+
+.modal-dialog h3 {
+  color: var(--color-primary-dark);
+  margin-top: 0;
+  margin-bottom: var(--space-md);
+  font-size: 1.4rem;
+}
+
+.modal-dialog p {
+  font-size: 1rem;
+  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+  color: var(--color-text-light);
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Botões do Modal (Estilizados) */
+.modal-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  width: 100%;
+}
+.modal-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-btn.primary {
+  background-color: var(--color-primary-medium);
+  color: white;
+}
+.modal-btn.primary:hover { background-color: var(--color-primary-dark); }
+
+.modal-btn.secondary {
+  background-color: var(--color-accent);
+  color: var(--color-dark);
+  font-weight: 700;
+}
+.modal-btn.secondary:hover { background-color: var(--color-accent-dark); }
+
+.modal-btn.cancel {
+  background-color: var(--gray-200);
+  color: var(--color-text-light);
+  border-color: var(--gray-300);
+  margin-top: var(--space-sm);
+}
+.modal-btn.cancel:hover { background-color: var(--gray-300); }
+
+
+/* -------------------------------------- */
+/* 16B. [MODIFICADO v23.12] DIÁLOGO DE FOTOS FLUTUANTE */
+/* -------------------------------------- */
+
+.photo-viewer-dialog {
+  /* Tamanho inicial (controlado pelo JS) */
+  width: 300px; 
+  max-width: 90vw;
+  
+  /* [MODIFICADO v23.12] Remove a lógica de centralização do modal */
+  /* transform: translate(-50%, -50%) scale(0.95); */
+  
+  /* [NOVO v23.12] Define a posição e a aparência de "flutuação" */
+  position: fixed;
+  z-index: 1001; /* Acima de todo o conteúdo, exceto outros modais */
+  display: none; /* Controlado pelo JS */
+  box-shadow: var(--shadow-lg); /* Mantém a sombra (pedido de UX) */
+
+  /* Transição para abertura/fechamento (width é para o zoom) */
+  transition: opacity 0.2s, transform 0.2s, width 0.3s ease-in-out;
+  
+  /* Garante que o CSS centralize na abertura (JS irá definir isso) */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* [NOVO v23.12] Estado 'show' para o diálogo flutuante */
+.photo-viewer-dialog.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Título (Área de Arrastar) */
+.photo-viewer-dialog h3 {
+  padding-right: 30px; /* Espaço para o botão de fechar */
+  margin-bottom: var(--space-sm);
+  cursor: move; /* [NOVO v23.12] Define o cursor 'move' */
+}
+
+/* Botão de Fechar (X) */
+.photo-viewer-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.photo-viewer-close:hover {
+  color: var(--color-dark);
+}
+
+/* Container da Imagem */
+.photo-viewer-content {
+  position: relative;
+}
+.photo-viewer-content img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--border-radius-md);
+  background-color: var(--gray-100); /* Fundo para imagens transparentes */
+}
+
+/* Controles de Zoom (Copiado do .map-photo-zoom) */
+.photo-viewer-zoom-controls {
+  display: flex;
+  gap: 5px;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.photo-viewer-zoom-controls button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+}
+.photo-viewer-zoom-controls button:hover {
+  background-color: var(--gray-300);
+}
+
+
+/* -------------------------------------- */
+/* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
+/* -------------------------------------- */
+
+/* Legenda Externa (HTML) */
+#map-legend-filter {
+  background: var(--gray-100);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--space-md);
+}
+#map-legend-filter h4 {
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-primary-dark);
+  font-size: 1rem;
+}
+.legend-filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+.legend-filter {
+  display: flex;
+  align-items: center;
+}
+.legend-filter label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.legend-filter input[type="radio"] {
+  margin-right: var(--space-sm);
+  accent-color: var(--color-primary-medium);
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: var(--space-sm);
+  border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* O Painel de Informações (InfoBox) */
+#map-info-box {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  width: 280px; /* Largura Padrão (Zoom 0) */
+  background: var(--bg-surface);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 998;
+  padding: var(--space-md);
+  /* [CORREÇÃO v22.0]: Adiciona 'width' à transição */
+  transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
+  
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+}
+#map-info-box.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+}
+#map-info-box:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+#map-info-box strong {
+  font-size: 1.1rem;
+  color: var(--color-primary-dark);
+}
+#map-info-box p {
+  font-size: 0.9em;
+  margin-bottom: var(--space-xs);
+  line-height: 1.4;
+}
+#map-info-box #close-info-box {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+#map-info-box #close-info-box:hover {
+  color: var(--color-dark);
+}
+#map-info-photo {
+  margin-top: var(--space-sm);
+  position: relative; /* Para os botões de zoom */
+}
+#map-info-photo.loading-photo {
+  font-style: italic;
+  color: var(--color-text-light);
+}
+#map-info-box .manual-img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+  margin-top: var(--space-sm);
+  transition: none;
+}
+
+/* [NOVO v21.9] Controles de Zoom da Imagem (Desktop) */
+.map-photo-zoom {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.map-photo-zoom button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+}
+.map-photo-zoom button:hover {
+  background-color: var(--gray-300);
+}
+
+
+/* Responsividade do InfoBox */
+@media (max-width: 768px) {
+  #map-info-box {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    z-index: 1001;
+  }
+  
+  #map-info-box .manual-img {
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    max-height: 40vh;
+  }
+
+  .legend-filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+  }
+  
+  .map-photo-zoom {
+    display: none;
+  }
+  
+  /* [NOVO v23.9] Esconde o zoom do visualizador de fotos no mobile */
+  .photo-viewer-zoom-controls {
+    display: none;
+  }
 }
