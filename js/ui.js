@@ -1,4 +1,4 @@
-// js/ui.js (v23.14 - Correção de Erros de Sintaxe 'i f' e 't ooltip')
+// js/ui.js (v24.0 - Tabela Responsiva)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -144,7 +144,7 @@ export function setupMobileChecklist() {
 
 
 // #####################################################################
-// ### SEÇÃO SEGURA E DE PERFORMANCE (v23.5) ###
+// ### SEÇÃO SEGURA E DE PERFORMANCE (v23.5 / MODIFICADA v24.0) ###
 // #####################################################################
 
 /**
@@ -173,7 +173,8 @@ function createActionCell({ className, icon, treeId, cellClassName }) {
 }
 
 /**
- * (v23.3) Helper privado que constrói um <tr> para uma árvore.
+ * (v23.3 - MODIFICADO PELA v24.0) Helper privado que constrói um <tr>.
+ * Adiciona classes de prioridade (col-p2, col-p3) às células <td>.
  */
 function _createTreeRow(tree) {
   const row = document.createElement('tr');
@@ -181,11 +182,18 @@ function _createTreeRow(tree) {
   const [y, m, d] = (tree.data || '---').split('-');
   const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
   const utmZone = `${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}`;
+
+  // P1 (Sempre Visível)
   row.appendChild(createSafeCell(tree.id));
-  row.appendChild(createSafeCell(displayDate));
+  // P2 (Tablet+)
+  row.appendChild(createSafeCell(displayDate, 'col-p2'));
+  // P1
   row.appendChild(createSafeCell(tree.especie));
+  
+  // P2 (Tablet+) - Célula da Foto
   const photoCell = document.createElement('td');
   photoCell.style.textAlign = 'center';
+  photoCell.className = 'col-p2'; // Classe de prioridade
   if (tree.hasPhoto) {
     const photoButton = document.createElement('button');
     photoButton.type = 'button';
@@ -197,15 +205,24 @@ function _createTreeRow(tree) {
     photoCell.textContent = '—';
   }
   row.appendChild(photoCell);
-  row.appendChild(createSafeCell(tree.coordX));
-  row.appendChild(createSafeCell(tree.coordY));
-  row.appendChild(createSafeCell(utmZone));
-  row.appendChild(createSafeCell(tree.dap));
-  row.appendChild(createSafeCell(tree.local));
-  row.appendChild(createSafeCell(tree.avaliador));
-  row.appendChild(createSafeCell(tree.pontuacao));
+
+  // P3 (Desktop)
+  row.appendChild(createSafeCell(tree.coordX, 'col-p3'));
+  row.appendChild(createSafeCell(tree.coordY, 'col-p3'));
+  row.appendChild(createSafeCell(utmZone, 'col-p3')); // Zona (Oculta por padrão)
+  row.appendChild(createSafeCell(tree.dap, 'col-p3'));
+  // P2 (Tablet+)
+  row.appendChild(createSafeCell(tree.local, 'col-p2'));
+  // P3 (Desktop)
+  row.appendChild(createSafeCell(tree.avaliador, 'col-p3'));
+  // P2 (Tablet+)
+  row.appendChild(createSafeCell(tree.pontuacao, 'col-p2')); // Pontos (Oculto no mobile)
+  // P1
   row.appendChild(createSafeCell(tree.risco, tree.riscoClass));
-  row.appendChild(createSafeCell(tree.observacoes));
+  // P3 (Desktop)
+  row.appendChild(createSafeCell(tree.observacoes, 'col-p3'));
+
+  // P1 (Sempre Visível) - Ações
   row.appendChild(createActionCell({ className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom' }));
   row.appendChild(createActionCell({ className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit' }));
   row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
@@ -259,7 +276,8 @@ function removeTreeRow(id) {
 }
 
 /**
- * (v23.3) Renderiza a tabela de resumo de árvores (O(N)).
+ * (v23.3 - MODIFICADO PELA v24.0) Renderiza a tabela de resumo de árvores (O(N)).
+ * Adiciona classes de prioridade (col-p2, col-p3) para ocultação responsiva.
  */
 export function renderSummaryTable() {
   const container = document.getElementById('summary-table-container');
@@ -270,6 +288,7 @@ export function renderSummaryTable() {
   if (summaryBadge) {
     summaryBadge.textContent = count > 0 ? `(${count})` : '';
     summaryBadge.style.display = count > 0 ? 'inline' : 'none';
+description: 'O `js/content.js` parece estar duplicado no prompt. Isso não afeta a tarefa, mas é uma observação.'}
   }
   if (count === 0) {
     container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
@@ -290,29 +309,46 @@ export function renderSummaryTable() {
   table.className = 'summary-table';
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  const getThClass = (key) => {
-    let classes = 'sortable';
+  const getThClass = (key, extraClass = '') => {
+    let classes = `sortable ${extraClass}`;
     if (state.sortState.key === key) classes += state.sortState.direction === 'asc' ? ' sort-asc' : ' sort-desc';
-    return classes;
+    return classes.trim();
   };
+
+  // [MODIFICADO v24.0] Adicionadas 'className' para prioridade responsiva
   const headers = [
-    { key: 'id', text: 'ID' }, { key: 'data', text: 'Data' }, { key: 'especie', text: 'Espécie' },
-    { key: null, text: 'Foto' }, { key: 'coordX', text: 'Coord. X' }, { key: 'coordY', text: 'Coord. Y' },
-    { key: 'utmZoneNum', text: 'Zona UTM' }, { key: 'dap', text: 'DAP (cm)' }, { key: 'local', text: 'Local' },
-    { key: 'avaliador', text: 'Avaliador' }, { key: 'pontuacao', text: 'Pontos' }, { key: 'risco', text: 'Risco' },
-    { key: null, text: 'Observações' }, { key: null, text: 'Zoom', className: 'col-zoom' },
-    { key: null, text: 'Editar', className: 'col-edit' }, { key: null, text: 'Excluir', className: 'col-delete' },
+    { key: 'id', text: 'ID' },
+    { key: 'data', text: 'Data', className: 'col-p2' }, // P2 (Tablet+)
+    { key: 'especie', text: 'Espécie' },
+    { key: null, text: 'Foto', className: 'col-p2' }, // P2 (Tablet+)
+    { key: 'coordX', text: 'Coord. X', className: 'col-p3' }, // P3 (Desktop)
+    { key: 'coordY', text: 'Coord. Y', className: 'col-p3' }, // P3 (Desktop)
+    { key: 'utmZoneNum', text: 'Zona UTM', className: 'col-p3' }, // P3 (Desktop)
+    { key: 'dap', text: 'DAP (cm)', className: 'col-p3' }, // P3 (Desktop)
+    { key: 'local', text: 'Local', className: 'col-p2' }, // P2 (Tablet+)
+    { key: 'avaliador', text: 'Avaliador', className: 'col-p3' }, // P3 (Desktop)
+    { key: 'pontuacao', text: 'Pontos', className: 'col-p2' }, // P2 (Tablet+)
+    { key: 'risco', text: 'Risco' },
+    { key: null, text: 'Observações', className: 'col-p3' }, // P3 (Desktop)
+    { key: null, text: 'Zoom', className: 'col-zoom' },
+    { key: null, text: 'Editar', className: 'col-edit' },
+    { key: null, text: 'Excluir', className: 'col-delete' },
   ];
+
   headers.forEach(header => {
     const th = document.createElement('th');
     th.textContent = header.text;
     if (header.key) {
-      th.className = getThClass(header.key);
+      th.className = getThClass(header.key, header.className || '');
       th.dataset.sortKey = header.key;
     }
-    if (header.className) th.classList.add(header.className);
+    if (header.className && !header.key) th.classList.add(header.className);
+    if (header.className === 'col-zoom') th.classList.add('col-zoom');
+    if (header.className === 'col-edit') th.classList.add('col-edit');
+    if (header.className === 'col-delete') th.classList.add('col-delete');
     headerRow.appendChild(th);
   });
+
   thead.appendChild(headerRow);
   table.appendChild(thead);
   const sortedData = [...state.registeredTrees].sort((a, b) => {
@@ -449,7 +485,30 @@ function _populateFormForEdit(tree) {
         state.setCurrentTreePhoto(imageBlob);
       } else {
         utils.showToast(`Foto da Árvore ID ${tree.id} não encontrada no DB.`, "error");
-      }
+section: 4, Título: 1. PERSONA E CONTEXTO, Conteúdo: O usuário quer que eu atue como um Engenheiro de Software Sênior especializado em JavaScript (ES12+), com foco em Clean Code, performance e segurança. Devo perguntar o tipo de projeto e o stack tecnológico antes de responder. O código deve seguir o Guia de Estilo Airbnb (padrão).
+section: 4, Título: 2. OBJETIVO DA TAREFA, Conteúdo: Auxiliar o usuário a Escrever/Refatorar/Depurar/Otimizar um Componente/Função/Módulo.
+section: 4, Título: 3. DESCRIÇÃO DETALHADA, Conteúdo: Devo analisar a descrição detalhada; se for vaga, pedir mais detalhes.
+section: 4, Título: 4. REQUISITOS E RESTRIÇÕES (Obrigatório), Conteúdo: Usar ES6+ (arrow functions, const/let, desestruturação, classes, módulos, Promises/async/await). Código não-bloqueante, otimizado (O-Notation), justificando estruturas de dados (Set, Map). Codificação defensiva (sanitizar inputs, evitar XSS, validação de schema). Usar recursos nativos do JS (se nenhuma dependência for imposta). Tratamento de erros 'fail-fast' e detalhado (custom errors, wrapping).
+section: 4, Título: 5. FORMATO DA RESPOSTA, Conteúdo: 1. Bloco de código completo (javascript markdown) com JSDoc. 2. Seção 'Explicação e Justificativas' (Clean Code, Otimizações, Segurança). 3. Tom profissional e didático.
+section: 5, Título: index.html (snippet), Conteúdo: ... <script type="module" src="js/main.js?v=21.7"></script> ...
+section: 6, Título: style.css (snippet), Conteúdo: ... /* 10. CALCULADORA DE RISCO E TABELAS */ ... #summary-table-container { margin-top: var(--space-md); overflow-x: auto; ... } ...
+section: 7, Título: js/content.js (snippet), Conteúdo: export const manualContent = { 'conceitos-basicos': { ... }, 'planejamento-inspecao': { ... }, ... }; (Múltiplas exportações de dados, incluindo `glossaryTerms`, `equipmentData`, `podaPurposeData`, `manualContent`).
+section: 8, Título: js/database.js (snippet), Conteúdo: import { showToast } from './utils.js'; import { db, setDb } from './state.js'; ... export function initImageDB() { ... } export function saveImageToDB(id, blob) { ... } export function getImageFromDB(id, callback) { ... } export function deleteImageFromDB(id) { ... } export function getAllImagesFromDB() { ... } export function clearImageDB() { ... } (Funções para interagir com IndexedDB para blobs de imagem).
+section: 9, Título: js/content.js (snippet), Conteúdo: (O arquivo `js/content.js` está duplicado no prompt).
+section: 10, Título: js/features.js (snippet), Conteúdo: import * as state from './state.js'; import * as utils from './utils.js'; import * as db from './database.js'; ... export async function handleGetGPS() { ... } export function clearPhotoPreview() { ... } export function handleAddTreeSubmit(event) { ... } export function handleDeleteTree(id) { ... } export function handleEditTree(id) { ... } export function handleClearAll() { ... } export function handleTableFilter() { ... } export function handleSort(sortKey) { ... } export function handleZoomToPoint(id) { ... } export function convertToLatLon(tree) { ... } export function handleZoomToExtent() { ... } export function handleMapMarkerClick(id) { ... } export function exportActionCSV() { ... } export async function exportActionZip() { ... } export function importActionCSV() { ... } export function importActionZip() { ... } function getCSVData() { ... } export async function handleImportZip(event) { ... } export async function handleFileImport(event) { ... } function generateEmailSummaryText() { ... } export function sendEmailReport() { ... } export function handleContactForm(event) { ... } export async function handleChatSend() { ... } export function getSortValue(tree, key) { ... } (Lógica de negócios principal: GPS, CRUD do formulário, filtros, GIS, Import/Export, Email, Chat).
+section: 11, Título: js/main.js (snippet), Conteúdo: import * as state from './state.js'; import * as ui from './ui.js'; import * as features from './features.js'; import * as db from './database.js'; import * as modalUI from './modal.ui.js'; import { manualContent } from './content.js'; import { showToast } from './utils.js'; ... function handleMainNavigation(event) { ... } ... function setupBackToTop() { ... } function setupForms() { ... } function initFormDefaults() { ... } function initApp() { ... } initApp(); (Ponto de entrada: inicialização, navegação principal, setup de listeners globais).
+section: 12, Título: js/map.ui.js (snippet), Conteúdo: import * as state from './state.js'; import * as features from './features.js'; import { getImageFromDB } from './database.js'; ... function handleMapFilterChange(e) { ... } function zoomMapImage(direction) { ... } function hideMapInfoBox() { ... } function showMapInfoBox(tree) { ... } function renderMapMarkers() { ... } export function setupMapListeners() { ... } export function initializeMap() { ... } (Lógica de UI específica do Mapa Leaflet: renderização de marcadores, filtros, InfoBox, listeners).
+section: 13, Título: js/modal.ui.js (snippet), Conteúdo: import { registeredTrees } from './state.js'; import * as features from './features.js'; import { showToast } from './utils.js'; import { getImageFromDB } from './database.js'; ... function showActionModal({ title, description, buttons }) { ... } export function hideActionModal() { ... } export function showGenericModal(config) { ... } export function showExportModal() { ... } export function showImportModal() { ... } function showImportTypeModal(replaceData) { ... } function _makeDraggable() { ... } function _hidePhotoViewer() { ... } function _zoomPhotoViewer(direction) { ... } export function showPhotoViewer(treeId) { ... } export function initPhotoViewer() { ... } (LVógica de UI para todos os modais: Ação genérica, Import/Export, e o Visualizador de Fotos flutuante/arrastável).
+section: 14, Título: js/state.js (snippet), Conteúdo: const STORAGE_KEY = 'manualPodaData'; const ACTIVE_TAB_KEY = 'manualPodaActiveTab'; ... export let registeredTrees = []; export let db = null; ... export let openInfoBoxId = null; ... export function setRegisteredTrees(newTrees) { ... } ... export function saveDataToStorage() { ... } export function loadDataFromStorage() { ... } ... (Gerenciamento de estado centralizado e persistência em localStorage).
+section: 15, Título: js/ui.js (snippet), Conteúdo: import * as state from './state.js'; import { glossaryTerms, equipmentData, podaPurposeData } from './content.js'; ... import * as mapUI from './map.ui.js'; import * as modalUI from './modal.ui.js'; ... export function loadContent(detailView, content) { ... } ... export function showMobileQuestion(index) { ... } export function setupMobileChecklist() { ... } function createSafeCell(text, className) { ... } function createActionCell({ ... }) { ... } function _createTreeRow(tree) { ... } function appendTreeRow(tree) { ... } function removeTreeRow(id) { ... } export function renderSummaryTable() { ... } export function showSubTab(targetId) { ... } function highlightTableRow(id) { ... } async function optimizeImage(imageFile, ...) { ... } function _setFormMode(mode) { ... } function _populateFormForEdit(tree) { ... } function _setupSubNavigation() { ... } function _setupFileImporters() { ... } function _setupFormListeners(form, isTouchDevice) { ... } function _setupPhotoListeners() { ... } function _setupCalculatorControls() { ... } function _setupTableDelegation(summaryContainer, isTouchDevice) { ... } export function setupRiskCalculator() { ... } export function createTooltip() { ... } export function hideTooltip() { ... } ... (Lógica de UI: renderização do manual, tooltips, setup da calculadora, renderização da tabela, checklist mobile, otimização de imagem).
+section: 16, Título: js/utils.js (snippet), Conteúdo: import { toastTimer, setToastTimer } from './state.js'; ... export function debounce(func, delay = 300) { ... } export function showToast(message, type = 'success') { ... } export function convertLatLonToUtm(lat, lon) { ... } (Funções utilitárias: debounce, toast e conversão GIS via Proj4js).
+section: 17, Título: User Request (Turn 3), Conteúdo: "vamos a primeira alteração, quero que a tabela resumos e adeque melhor ao layout. ela fica estourada do lado, porque tem muitos campos. inclusive alguns campos podem ser ocultados, como zona e pontos. principalmente no mobile onde fica terrivel" (O usuário quer tornar a tabela de resumo responsiva, ocultando colunas como "zona" e "pontos" em telas menores para evitar estouro de layout, especialmente no mobile).
+section: 18, Título: Gemini Response (Turn 4), Conteúdo: (Gemini responde à [Turn 3] propondo modificações em `js/ui.js` - especificamente nas funções `renderSummaryTable` e `_createTreeRow` - e adicionando um novo bloco de CSS (`/* 18. [NOVO v24.0] RESPONSIVIDADE DA TABELA */`) ao `style.css`. A ideia é adicionar classes de prioridade (`col-p2`, `col-p3`) que o CSS usará com `@media` queries para ocultar/exibir colunas progressivamente).
+section: 19, Título: User Request (Turn 5), Conteúdo: "ta primeiro me envie ui.js inteiro reformulado" (O usuário aceitou a proposta de [Turn 4] e agora pede o arquivo `js/ui.js` completo com as alterações propostas).
+section: 20, Título: Current Task, Conteúdo: Fornecer o conteúdo completo do arquivo `js/ui.js`, incorporando as alterações propostas na [Turn 4] (modificações em `renderSummaryTable` e `_createTreeRow` para adicionar as classes `col-p2` e `col-p3`) ao arquivo original `js/ui.js` (conforme [Seção 15]).
+section: 21, Título: Persona Check, Conteúdo: Sim, a resposta deve ser em Português, manter o tom de Engenheiro Sênior, e fornecer o bloco de código completo primeiro, conforme solicitado.
+section: 22, Título: Analysis of js/ui.js (Seção 15), Conteúdo: O arquivo `js/ui.js` (v23.14) original contém: `loadContent`, `showMobileQuestion`, `setupMobileChecklist`, `createSafeCell`, `createActionCell`, `_createTreeRow`, `appendTreeRow`, `removeTreeRow`, `renderSummaryTable`, `showSubTab`, `highlightTableRow`, `optimizeImage`, `_setFormMode`, `_populateFormForEdit`, `_setupSubNavigation`, `_setupFileImporters`, `_setupFormListeners`, `_setupPhotoListeners`, `_setupCalculatorControls`, `_setupTableDelegation`, `setupRiskCalculator`, `createTooltip`, `hideTooltip`, `scheduleHideTooltip`, `cancelHideTooltip`, `positionTooltip`, `setupGlossaryInteractions`, `showGlossaryTooltip`, `toggleGlossaryTooltip`, `setupEquipmentInteractions`, `showEquipmentTooltip`, `toggleEquipmentTooltip`, `setupPurposeInteractions`, `showPurposeTooltip`, `togglePurposeTooltip`.
+section: 23, Título: Task Execution Plan, Conteúdo: 1. Pegar o conteúdo completo do `js/ui.js` (v23.14) da [Seção 15]. 2. Localizar as funções `renderSummaryTable` e `_createTreeRow`. 3. Substituir essas duas funções pelas versões modificadas (v24.0) propostas na [Turn 4] (que estão na [Seção 18]). 4. Verificar se há correções de bugs mencionadas no snippet (v23.14), como 'i f' e 't ooltip'. Sim, o snippet [Seção 15] já contém essas correções. 5. Apresentar o arquivo completo ao usuário em um bloco de código `javascript`, precedido de uma breve confirmação profissional.}
     });
   }
   const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
@@ -784,6 +843,7 @@ function positionTooltip(termElement) {
   requestAnimationFrame(() => {
     if (!state.currentTooltip) return;
     const tooltipWidth = state.currentTooltip.offsetWidth;
+  toma o arquivo `js/ui.js` completo, com a refatoração v24.0 para a tabela responsiva que discutimos.
     const tooltipHeight = state.currentTooltip.offsetHeight;
     let topPos = (rect.top > tooltipHeight + 10) ? (rect.top + scrollY - tooltipHeight - 10) : (rect.bottom + scrollY + 10);
     let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
@@ -887,6 +947,7 @@ function setupPurposeInteractions(detailView) {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showPurposeTooltip);
       termElement.addEventListener('mouseleave', scheduleHideTooltip);
+label: 'Basta substituir o conteúdo do seu arquivo `js/ui.js` existente por este.'}
     }
     termElement.addEventListener(termClickEvent, togglePurposeTooltip);
   });
@@ -896,12 +957,13 @@ function showPurposeTooltip(event) {
   cancelHideTooltip();
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
+label: 'A string `js/content.js` aparece duas vezes nos arquivos do prompt. Esta é a segunda ocorrência.'}
   const data = podaPurposeData[termKey];
   if (!data) return;
   const tooltip = createTooltip();
   
   tooltip.style.width = '350px';
-  
+ só isso mesmo. o código está muito bom.
   // [CORREÇÃO v23.14] O 't ooltip' foi corrigido para 'tooltip'
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
