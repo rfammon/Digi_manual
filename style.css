@@ -1134,6 +1134,97 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 .modal-btn.cancel:hover { background-color: var(--gray-300); }
 
+/* -------------------------------------- */
+/* 16B. [NOVO v23.9] MODAL VISUALIZADOR DE FOTOS */
+/* -------------------------------------- */
+
+/* O .modal-dialog (fundo branco) */
+.photo-viewer-dialog {
+  /* O JS controlará left/top/transform para o 'drag' */
+  /* Tamanho inicial (será controlado pelo JS) */
+  width: 300px; 
+  max-width: 90vw;
+  /* Garante que o CSS centralize na abertura */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  /* Transição para abertura/fechamento (width é para o zoom) */
+  transition: opacity 0.2s, transform 0.2s, width 0.3s ease-in-out;
+}
+
+/* Garante que o .modal-dialog não fique preso no .modal-overlay */
+.modal-overlay.show .photo-viewer-dialog {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Título (Área de Arrastar) */
+.photo-viewer-dialog h3 {
+  padding-right: 30px; /* Espaço para o botão de fechar */
+  margin-bottom: var(--space-sm);
+}
+
+/* Botão de Fechar (X) */
+.photo-viewer-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.photo-viewer-close:hover {
+  color: var(--color-dark);
+}
+
+/* Container da Imagem */
+.photo-viewer-content {
+  position: relative;
+}
+.photo-viewer-content img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--border-radius-md);
+  background-color: var(--gray-100); /* Fundo para imagens transparentes */
+}
+
+/* Controles de Zoom (Copiado do .map-photo-zoom) */
+.photo-viewer-zoom-controls {
+  display: flex;
+  gap: 5px;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.photo-viewer-zoom-controls button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+}
+.photo-viewer-zoom-controls button:hover {
+  background-color: var(--gray-300);
+}
+
+/* Esconde zoom no mobile */
+@media (max-width: 768px) {
+  .photo-viewer-zoom-controls {
+    display: none;
+  }
+}
 
 /* -------------------------------------- */
 /* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
