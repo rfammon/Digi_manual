@@ -1,4 +1,4 @@
-// js/ui.js (v23.11 - Correção da chamada de inicialização)
+// js/ui.js (v23.13 - Correção de Bug de SyntaxError 'J')
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -683,7 +683,7 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
 
 /**
  * (v23.11 - CORRIGIDO) Função "maestro" que inicializa a Calculadora.
- */
+i */
 export function setupRiskCalculator() {
   
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -830,7 +830,8 @@ function showGlossaryTooltip(event) {
 }
 
 function toggleGlossaryTooltip(event) {
-J  event.preventDefault(); event.stopPropagation();
+  // [CORREÇÃO v23.13] O 'J' foi removido daqui
+  event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
@@ -872,7 +873,7 @@ function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+i f (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
     showEquipmentTooltip(event);
@@ -900,7 +901,7 @@ function showPurposeTooltip(event) {
   
   tooltip.style.width = '350px';
   
-  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
+t ooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
   tooltip.style.visibility = 'visible';
