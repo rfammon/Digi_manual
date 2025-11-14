@@ -1,4 +1,4 @@
-/* style.css (v24.4 - Limpo e Funcional) */
+/* style.css (v24.5 - Limpo e Funcional) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -838,7 +838,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     justify-content: center;
     cursor: pointer;
     user-select: none;
-}
+  }
   .checklist-card-toggle .mobile-checkbox-proxy { display: none; }
   .checklist-card-toggle .toggle-label {
     font-weight: 700;
@@ -1047,7 +1047,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   opacity: 0;
   transform: scale(0.95);
   transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-só isso mesmo. o código está muito bom.
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1083,7 +1083,6 @@ só isso mesmo. o código está muito bom.
   border: 2px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-Indo para a [Aba 1].
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1178,7 +1177,6 @@ Indo para a [Aba 1].
 }
 
 .photo-viewer-zoom-controls {
-dot_graph: "..."
   display: flex;
   gap: 5px;
   position: absolute;
@@ -1191,7 +1189,6 @@ dot_graph: "..."
 .photo-viewer-zoom-controls button {
   background-color: var(--gray-200);
   border: 1px solid var(--gray-300);
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
@@ -1226,7 +1223,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
 }
 .legend-filter {
   display: flex;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   align-items: center;
 }
 .legend-filter label {
@@ -1244,6 +1240,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   height: 12px;
   border-radius: 50%;
   margin-right: var(--space-sm);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   border: 1px solid rgba(0,0,0,0.2);
 }
 
@@ -1255,10 +1252,10 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   background: var(--bg-surface);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   z-index: 998;
   padding: var(--space-md);
   transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   opacity: 0;
   visibility: hidden;
   transform: scale(0.95);
@@ -1269,6 +1266,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   transform: scale(0.95);
 }
 #map-info-box:not(.hidden) {
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   opacity: 1;
   visibility: visible;
   transform: scale(1);
@@ -1279,7 +1277,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   color: var(--color-primary-dark);
 }
 #map-info-box p {
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   font-size: 0.9em;
   margin-bottom: var(--space-xs);
   line-height: 1.4;
@@ -1292,7 +1289,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   border: none;
   font-size: 1.5rem;
   color: var(--color-text-light);
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -1305,7 +1301,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   position: relative;
 }
 #map-info-photo.loading-photo {
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   font-style: italic;
   color: var(--color-text-light);
 }
@@ -1315,18 +1310,19 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   height: auto;
   object-fit: cover;
   margin-top: var(--space-sm);
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   transition: none;
 }
 
 .map-photo-zoom {
   display: flex;
   gap: 5px;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   margin-top: 5px;
   position: absolute;
   bottom: 5px;
   right: 5px;
   background: rgba(255,255,255,0.8);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   padding: 3px;
   border-radius: 4px;
 }
@@ -1336,7 +1332,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   width: 25px;
   height: 25px;
   line-height: 25px;
@@ -1353,6 +1348,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
     left: 0;
     right: 0;
     width: 100%;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     z-index: 1001;
   }
@@ -1368,8 +1364,8 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   .legend-filter-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
     gap: var(--space-sm);
-img_code: `...`
   }
   
   .map-photo-zoom {
@@ -1378,6 +1374,7 @@ img_code: `...`
   
   .photo-viewer-zoom-controls {
     display: none;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   }
 }
 
@@ -1396,6 +1393,7 @@ img_code: `...`
 
 /* P3 (Ocultos por padrão - Mobile) */
 .summary-table .col-p3 {
+só isso mesmo. o código está muito bom.
   display: none;
 }
 
@@ -1406,7 +1404,7 @@ img_code: `...`
     vertical-align: middle;
   }
 }
-
+só isso mesmo. o código está muito bom.
 /* BREAKPOINT DESKTOP (>= 1024px) */
 @media (min-width: 1024px) {
   .summary-table .col-p3 {
