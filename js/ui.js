@@ -1,4 +1,4 @@
-// js/ui.js (v23.14 - Correção de Erros de Sintaxe 'J', 'i f', 't ooltip')
+// js/ui.js (v23.14 - Correção de Erros de Sintaxe 'i f' e 't ooltip')
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -208,7 +208,7 @@ function _createTreeRow(tree) {
   row.appendChild(createSafeCell(tree.observacoes));
   row.appendChild(createActionCell({ className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom' }));
   row.appendChild(createActionCell({ className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit' }));
-row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
+  row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
   return row;
 }
 
@@ -648,19 +648,275 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
             if (features.handleDeleteTree(treeId)) removeTreeRow(treeId);
           }},
           { text: 'Cancelar', class: 'cancel' }
-section: <\ctrl46>B.2.16 Constantes, Propriedades e Métodos Estáticos de String<\ctrl46>, page: <\ctrl46>1046<\ctrl46>
-section: <\ctrl46>B.2.17 Propriedades da Instância de String<\ctrl46>, page: <\ctrl46>1046<\ctrl46>
-section: <\ctrl46>B.2.18 Métodos da Instância de String<\ctrl46>, page: <\ctrl46>1046<\ctrl46>
-section: <\ctrl46>B.2.19 Objeto Symbol<\ctrl46>, page: <\ctrl46>1047<\ctrl46>
-section: <\ctrl46>B.2.20 O objeto Error<\ctrl46>, page: <\ctrl46>1047<\ctrl46>
-section: <\ctrl46>B.2.21 O objeto JSON<\ctrl46>, page: <\ctrl46>1047<\ctrl46>
-section: <\ctrl46>B.2.22 O objeto Math<\ctrl46>, page: <\ctrl46>1048<\ctrl46>
-section: <\ctrl46>B.2.23 O objeto Date<\ctrl46>, page: <\ctrl46>1048<\ctrl46>
-section: <\ctrl46>B.2.24 O objeto RegExp<\ctrl46>, page: <\ctrl46>1049<\ctrl46>
-section: <\ctrl46>B.2.25 Arrays Tipados<\ctrl46>, page: <\ctrl46>1050<\ctrl46>
-section: <\ctrl46>B.2.26 O objeto Intl<\ctrl46>, page: <\ctrl46>1050<\ctrl46>
-section: <\ctrl46>B.2.27 O objeto Console<\ctrl46>, page: <\ctrl46>1050<\ctrl46>
-section: <\ctrl46>B.2.28 URL APIs<\ctrl46>, page: <\ctrl46>1050<\ctrl46>
-section: <\ctrl46>B.2.29 Timers<\ctrl46>, page: <\ctrl46>1051<\ctrl46>
-section: <\ctrl46>Índice<\ctrl46>, page: <\ctrl46>1053<\ctrl46>
-section: <\ctrl46>Colofão<\ctrl46>, page: <\ctrl46>1062<\ctrl46>
+        ]
+      });
+    }
+    
+    if (editButton) {
+      const treeData = features.handleEditTree(parseInt(editButton.dataset.id, 10));
+      if (treeData) {
+        _populateFormForEdit(treeData);
+        _setFormMode('edit');
+        showSubTab('tab-content-register');
+        if (isTouchDevice) setupMobileChecklist();
+        document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    if (zoomButton) {
+      features.handleZoomToPoint(parseInt(zoomButton.dataset.id, 10));
+    }
+    
+    if (sortButton) {
+      features.handleSort(sortButton.dataset.sortKey);
+      renderSummaryTable();
+    }
+
+    // [MODIFICADO v23.9] Ação de Foto
+    if (photoButton) {
+      e.preventDefault();
+      // Chama o novo visualizador de fotos (agora no modal.ui.js)
+      modalUI.showPhotoViewer(parseInt(photoButton.dataset.id, 10));
+    }
+  });
+}
+
+/**
+ * (v23.11 - CORRIGIDO) Função "maestro" que inicializa a Calculadora.
+ */
+export function setupRiskCalculator() {
+  
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  // 1. Setup de Componentes Base
+  _setupSubNavigation();
+  _setupFileImporters();
+  // [REMOVIDO v23.11] _setupPhotoViewerModal(); // Movido para main.js -> modalUI.init
+
+  // 2. Setup de Listeners
+  _setupFormListeners(
+    document.getElementById('risk-calculator-form'),
+    isTouchDevice
+  );
+  _setupPhotoListeners();
+  _setupCalculatorControls();
+
+  // 3. Setup de Módulos Externos
+  mapUI.setupMapListeners();
+
+  // 4. Setup da Tabela
+  _setupTableDelegation(
+    document.getElementById('summary-table-container'),
+    isTouchDevice
+  );
+
+  // 5. Setup Mobile
+  if (isTouchDevice) {
+    setupMobileChecklist();
+  }
+}
+
+// #####################################################################
+// ### FIM DA SEÇÃO DE REFATORAÇÃO ###
+// #####################################################################
+
+
+// === 5. LÓGICA DE TOOLTIPS (UI) ===
+// [MODIFICADO v23.10] - Lógica de PhotoPreview (handlePhotoPreviewClick) removida.
+
+/**
+ * Cria ou obtém o elemento de tooltip.
+ */
+export function createTooltip() {
+  let tooltip = document.getElementById('glossary-tooltip');
+  if (!tooltip) {
+    tooltip = document.createElement('div');
+    tooltip.id = 'glossary-tooltip';
+    document.body.appendChild(tooltip);
+  }
+  if (!tooltip.dataset.clickToCloseAdded) {
+    tooltip.addEventListener(popupCloseEvent, (e) => { e.stopPropagation(); hideTooltip(); });
+    tooltip.dataset.clickToCloseAdded = 'true';
+  }
+  state.setCurrentTooltip(tooltip);
+  return tooltip;
+}
+
+/**
+ * (v23.8) Esconde o tooltip ativo e reseta a largura.
+ */
+export function hideTooltip() {
+  if (state.currentTooltip) {
+    const img = state.currentTooltip.querySelector('img');
+    if (img && img.src.startsWith('blob:')) {
+      URL.revokeObjectURL(img.src);
+    }
+    state.currentTooltip.style.opacity = '0';
+    state.currentTooltip.style.visibility = 'hidden';
+    state.currentTooltip.style.width = ''; // Reseta a largura
+    delete state.currentTooltip.dataset.currentElement;
+    state.setCurrentTooltip(null);
+  }
+}
+
+/**
+ * (v23.7) Agenda o fechamento do tooltip (para mouseleave)
+ */
+function scheduleHideTooltip() {
+  clearTimeout(tooltipHideTimer);
+  tooltipHideTimer = setTimeout(hideTooltip, 200);
+}
+
+/**
+ * (v23.7) Cancela o fechamento do tooltip (para mouseenter)
+ */
+function cancelHideTooltip() {
+  clearTimeout(tooltipHideTimer);
+}
+
+/**
+ * Posiciona o tooltip em relação a um elemento.
+ */
+function positionTooltip(termElement) {
+  if (!state.currentTooltip) return;
+  const rect = termElement.getBoundingClientRect();
+  const scrollY = window.scrollY, scrollX = window.scrollX;
+  requestAnimationFrame(() => {
+    if (!state.currentTooltip) return;
+    const tooltipWidth = state.currentTooltip.offsetWidth;
+    const tooltipHeight = state.currentTooltip.offsetHeight;
+    let topPos = (rect.top > tooltipHeight + 10) ? (rect.top + scrollY - tooltipHeight - 10) : (rect.bottom + scrollY + 10);
+    let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
+    if (leftPos < scrollX + 10) leftPos = scrollX + 10;
+    if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) {
+      leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
+    }
+    state.currentTooltip.style.top = `${topPos}px`;
+    state.currentTooltip.style.left = `${leftPos}px`;
+  });
+}
+
+// [REMOVIDO v23.9] handlePhotoPreviewClick() e zoomTooltipImage()
+
+// --- Funções de Setup de Tooltip (MODIFICADAS v23.7) ---
+
+function setupGlossaryInteractions(detailView) {
+  const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');
+  glossaryTermsElements.forEach(termElement => {
+    if (!isTouchDevice) {
+      termElement.addEventListener('mouseenter', showGlossaryTooltip);
+      termElement.addEventListener('mouseleave', scheduleHideTooltip);
+    }
+    termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);
+  });
+}
+
+function showGlossaryTooltip(event) {
+  cancelHideTooltip(); 
+  const termElement = event.currentTarget;
+  const termKey = termElement.getAttribute('data-term-key');
+  const definition = glossaryTerms[termKey];
+  if (!definition) return;
+  const tooltip = createTooltip();
+  
+  // (v23.8) Define uma largura padrão para tooltips de TEXTO
+  tooltip.style.width = '350px'; 
+  
+  tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
+  positionTooltip(termElement);
+  tooltip.style.opacity = '1';
+  tooltip.style.visibility = 'visible';
+  tooltip.dataset.currentElement = termElement.textContent;
+}
+
+function toggleGlossaryTooltip(event) {
+  // [CORREÇÃO v23.13] O 'J' foi removido daqui
+  event.preventDefault(); event.stopPropagation();
+  const tooltip = document.getElementById('glossary-tooltip');
+  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+    hideTooltip();
+  } else {
+    showGlossaryTooltip(event);
+  }
+}
+
+function setupEquipmentInteractions(detailView) {
+  const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
+  equipmentTermsElements.forEach(termElement => {
+    if (!isTouchDevice) {
+      termElement.addEventListener('mouseenter', showEquipmentTooltip);
+      termElement.addEventListener('mouseleave', scheduleHideTooltip);
+    }
+    termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
+  });
+}
+
+function showEquipmentTooltip(event) {
+  cancelHideTooltip(); 
+  const termElement = event.currentTarget;
+  const termKey = termElement.getAttribute('data-term-key');
+  const data = equipmentData[termKey];
+  if (!data) return;
+  const tooltip = createTooltip();
+  
+  tooltip.style.width = '350px';
+  
+  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
+  positionTooltip(termElement);
+  tooltip.style.opacity = '1';
+  tooltip.style.visibility = 'visible';
+  tooltip.dataset.currentElement = termElement.textContent;
+}
+
+function toggleEquipmentTooltip(event) {
+  event.preventDefault(); event.stopPropagation();
+  const tooltip = document.getElementById('glossary-tooltip');
+  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
+// [CORREÇÃO v23.14] O 'i f' foi corrigido para 'if'
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+    hideTooltip();
+  } else {
+    showEquipmentTooltip(event);
+  }
+}
+
+function setupPurposeInteractions(detailView) {
+  const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
+  purposeTermsElements.forEach(termElement => {
+    if (!isTouchDevice) {
+      termElement.addEventListener('mouseenter', showPurposeTooltip);
+      termElement.addEventListener('mouseleave', scheduleHideTooltip);
+    }
+    termElement.addEventListener(termClickEvent, togglePurposeTooltip);
+  });
+}
+
+function showPurposeTooltip(event) {
+  cancelHideTooltip();
+  const termElement = event.currentTarget;
+  const termKey = termElement.getAttribute('data-term-key');
+  const data = podaPurposeData[termKey];
+  if (!data) return;
+  const tooltip = createTooltip();
+  
+  tooltip.style.width = '350px';
+  
+  // [CORREÇÃO v23.14] O 't ooltip' foi corrigido para 'tooltip'
+  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
+  positionTooltip(termElement);
+  tooltip.style.opacity = '1';
+  tooltip.style.visibility = 'visible';
+  tooltip.dataset.currentElement = termElement.textContent;
+}
+
+function togglePurposeTooltip(event) {
+  event.preventDefault(); event.stopPropagation();
+  const tooltip = document.getElementById('glossary-tooltip');
+  const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+    hideTooltip();
+  } else {
+    showPurposeTooltip(event);
+  }
+}
