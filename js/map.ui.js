@@ -1,4 +1,4 @@
-// js/map.ui.js (v23.0 - NOVO ARQUIVO REFATORADO)
+// js/map.ui.js (v23.6 - Correção de Listeners de Interação)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -85,8 +85,7 @@ function showMapInfoBox(tree) {
     color = '#2E7D32'; riskText = '🟢 Baixo Risco';
   }
 
-  // Usamos .innerHTML aqui porque os dados vêm do 'state' (que foi sanitizado
-  // ao entrar pelo form/csv) e controlamos o template.
+  // .innerHTML seguro (template controlado, dados do 'state')
   let infoHTML = `
     <button id="close-info-box">&times;</button>
     <strong>ID: ${tree.id}</strong>
@@ -132,7 +131,7 @@ function showMapInfoBox(tree) {
 }
 
 /**
- * [PRIVADO] Desenha os marcadores (árvores) no mapa.
+ * [PRIVADO] [MODIFICADO v23.6] Desenha os marcadores e anexa listeners de dblclick.
  */
 function renderMapMarkers() {
   if (!state.mapMarkerGroup) {
@@ -177,9 +176,17 @@ function renderMapMarkers() {
 
     circle.addTo(state.mapMarkerGroup);
 
+    // Listener de clique (para abrir InfoBox)
     circle.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
       showMapInfoBox(tree);
+    });
+
+    // [NOVO v23.6] Listener de clique duplo (para ir para a tabela)
+    circle.on('dblclick', (e) => {
+      L.DomEvent.stopPropagation(e);
+      // Chama a feature que navega para a tabela
+      features.handleMapMarkerClick(tree.id);
     });
   });
 
@@ -203,64 +210,4 @@ export function setupMapListeners() {
   const mapLegend = document.getElementById('map-legend-filter');
   const zoomBtn = document.getElementById('zoom-to-extent-btn');
 
-  if (mapLegend) {
-    // Remove listener antigo para evitar duplicatas (defensivo)
-    mapLegend.removeEventListener('change', handleMapFilterChange);
-    // Adiciona o novo listener
-    mapLegend.addEventListener('change', handleMapFilterChange);
-  }
-
-  if (zoomBtn) {
-    // Remove listener antigo
-    zoomBtn.removeEventListener('click', features.handleZoomToExtent);
-    // Adiciona o novo listener
-    zoomBtn.addEventListener('click', features.handleZoomToExtent);
-  }
-}
-
-/**
- * (PÚBLICO) Inicializa a instância do mapa Leaflet.
- * Chamado por ui.js em showSubTab.
- */
-export function initializeMap() {
-  const mapContainer = document.getElementById('map-container');
-  if (!mapContainer) return;
-
-  if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
-    mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas.</p>';
-    return;
-  }
-
-  // Reutiliza a instância se ela já existir (otimização)
-  if (state.mapInstance) {
-    state.mapInstance.invalidateSize(); // Corrige renderização em aba oculta
-  } else {
-    // Cria o mapa
-    const newMap = L.map('map-container').setView([-15.7801, -47.9292], 4); // Centro do Brasil
-    state.setMapInstance(newMap);
-
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Tiles &copy; Esri'
-    }).addTo(newMap);
-
-    // Cria o grupo de marcadores
-    const markerGroup = L.featureGroup().addTo(newMap);
-    state.setMapMarkerGroup(markerGroup);
-
-    // Adiciona listener para fechar o InfoBox
-    newMap.on('click', hideMapInfoBox);
-  }
-  
-  // (Re)Renderiza os marcadores e captura os bounds
-  const bounds = renderMapMarkers();
-
-  // Lógica de Zoom (Lê o estado definido pelo features.js)
-  if (state.zoomTargetCoords) {
-    state.mapInstance.setView(state.zoomTargetCoords, 18);
-    state.setZoomTargetCoords(null);
-  } else if (bounds && bounds.isValid()) {
-    // Se não há alvo, mas há pontos, aplica o zoom geral
-    features.handleZoomToExtent();
-  }
-}
+  if
