@@ -1,12 +1,13 @@
-// js/ui.js (v23.0 - REATORAÇÃO DE SEGURANÇA XSS)
+// js/ui.js (v23.1 - REFATORADO, SEM MAPA)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
-// (v22.2) Corrigido para 'content.js'
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
 import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js';
+// [NOVO v23.1] Importa o módulo de mapa
+import * as mapUI from './map.ui.js';
 
 // Helper local para o conteúdo do manual (que pode conter HTML)
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -21,8 +22,6 @@ const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
 /**
  * Carrega o HTML de um tópico do manual na view principal.
- * @param {HTMLElement} detailView - O elemento DOM <div id="detalhe-view">.
- * @param {object} content - O objeto de conteúdo (ex: manualContent['conceitos-basicos']).
  */
 export function loadContent(detailView, content) {
   if (!detailView) return;
@@ -156,15 +155,11 @@ export function setupMobileChecklist() {
 
 
 // #####################################################################
-// ### INÍCIO DA REFATORAÇÃO DE SEGURANÇA (v23.0) ###
+// ### INÍCIO DA SEÇÃO SEGURA (v23.0) ###
 // #####################################################################
 
 /**
- * (v23.0 - REATORAÇÃO DE SEGURANÇA)
- * Cria uma célula de tabela (<td>) com texto seguro.
- * @param {string | number} text - O conteúdo de texto para a célula.
- * @param {string} [className] - Uma classe CSS opcional para a célula.
- * @returns {HTMLTableCellElement} O elemento <td>.
+ * (v23.0) Cria uma célula de tabela (<td>) com texto seguro.
  */
 function createSafeCell(text, className) {
   const cell = document.createElement('td');
@@ -177,14 +172,7 @@ function createSafeCell(text, className) {
 }
 
 /**
- * (v23.0 - REATORAÇÃO DE SEGURANÇA)
- * Cria uma célula de tabela (<td>) com um botão de ação.
- * @param {object} config - Configuração do botão.
- * @param {string} config.className - A classe CSS para o botão.
- * @param {string} config.icon - O ícone/texto do botão.
- * @param {string} config.treeId - O ID da árvore (para data-id).
- * @param {string} [config.cellClassName] - A classe CSS para a célula (<td>).
- * @returns {HTMLTableCellElement} O elemento <td> contendo o botão.
+ * (v23.0) Cria uma célula de tabela (<td>) com um botão de ação.
  */
 function createActionCell({ className, icon, treeId, cellClassName }) {
   const cell = document.createElement('td');
@@ -205,8 +193,7 @@ function createActionCell({ className, icon, treeId, cellClassName }) {
 
 /**
  * (v23.0 - REATORAÇÃO DE SEGURANÇA)
- * Renderiza a tabela de resumo de árvores usando manipulação segura do DOM
- * para prevenir vulnerabilidades de XSS.
+ * Renderiza a tabela de resumo de árvores usando manipulação segura do DOM.
  */
 export function renderSummaryTable() {
   const container = document.getElementById('summary-table-container');
@@ -215,7 +202,7 @@ export function renderSummaryTable() {
 
   if (!container) return;
 
-  // --- 1. Atualiza Badge (Lógica existente) ---
+  // --- 1. Atualiza Badge ---
   if (summaryBadge) {
     if (state.registeredTrees.length > 0) {
       summaryBadge.textContent = `(${state.registeredTrees.length})`;
@@ -226,7 +213,7 @@ export function renderSummaryTable() {
     }
   }
 
-  // --- 2. Lógica de Placeholder/Botões (Lógica existente) ---
+  // --- 2. Lógica de Placeholder/Botões ---
   if (state.registeredTrees.length === 0) {
     container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
     if (importExportControls) {
@@ -243,8 +230,7 @@ export function renderSummaryTable() {
     document.getElementById('clear-all-btn')?.setAttribute('style', 'display:inline-flex');
   }
 
-  // --- 3. Limpa o container antes de construir ---
-  // (innerHTML = '' é seguro para limpar um container)
+  // --- 3. Limpa o container ---
   container.innerHTML = '';
 
   // --- 4. Criação Segura da Tabela ---
@@ -255,7 +241,6 @@ export function renderSummaryTable() {
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
 
-  // Helper para criar <th> com ordenação
   const getThClass = (key) => {
     let classes = 'sortable';
     if (state.sortState.key === key) {
@@ -268,7 +253,7 @@ export function renderSummaryTable() {
     { key: 'id', text: 'ID' },
     { key: 'data', text: 'Data' },
     { key: 'especie', text: 'Espécie' },
-    { key: null, text: 'Foto' }, // Não ordenável
+    { key: null, text: 'Foto' },
     { key: 'coordX', text: 'Coord. X' },
     { key: 'coordY', text: 'Coord. Y' },
     { key: 'utmZoneNum', text: 'Zona UTM' },
@@ -277,7 +262,7 @@ export function renderSummaryTable() {
     { key: 'avaliador', text: 'Avaliador' },
     { key: 'pontuacao', text: 'Pontos' },
     { key: 'risco', text: 'Risco' },
-    { key: null, text: 'Observações' }, // Não ordenável
+    { key: null, text: 'Observações' },
     { key: null, text: 'Zoom', className: 'col-zoom' },
     { key: null, text: 'Editar', className: 'col-edit' },
     { key: null, text: 'Excluir', className: 'col-delete' },
@@ -299,9 +284,8 @@ export function renderSummaryTable() {
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // --- 4b. Ordena os Dados (Lógica existente) ---
+  // --- 4b. Ordena os Dados ---
   const sortedData = [...state.registeredTrees].sort((a, b) => {
-    // (v19.6) features.getSortValue é necessário
     const valA = features.getSortValue(a, state.sortState.key);
     const valB = features.getSortValue(b, state.sortState.key);
     if (valA < valB) return state.sortState.direction === 'asc' ? -1 : 1;
@@ -316,19 +300,15 @@ export function renderSummaryTable() {
     const row = document.createElement('tr');
     row.dataset.treeId = tree.id;
 
-    // Formata a data
     const [y, m, d] = (tree.data || '---').split('-');
     const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
-    
-    // Formata Zona UTM
     const utmZone = `${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}`;
 
-    // --- Células de Dados (Seguras) ---
+    // Células de Dados (Seguras)
     row.appendChild(createSafeCell(tree.id));
     row.appendChild(createSafeCell(displayDate));
-    row.appendChild(createSafeCell(tree.especie)); // <-- DADO DO USUÁRIO SENDO SANITIZADO
-
-    // Célula de Foto (Botão)
+    row.appendChild(createSafeCell(tree.especie)); // <-- XSS PREVENIDO
+    
     const photoCell = document.createElement('td');
     photoCell.style.textAlign = 'center';
     if (tree.hasPhoto) {
@@ -336,7 +316,7 @@ export function renderSummaryTable() {
       photoButton.type = 'button';
       photoButton.className = 'photo-preview-btn';
       photoButton.dataset.id = tree.id;
-      photoButton.innerHTML = '📷'; // Ícone seguro
+      photoButton.innerHTML = '📷';
       photoCell.appendChild(photoButton);
     } else {
       photoCell.textContent = '—';
@@ -347,32 +327,21 @@ export function renderSummaryTable() {
     row.appendChild(createSafeCell(tree.coordY));
     row.appendChild(createSafeCell(utmZone));
     row.appendChild(createSafeCell(tree.dap));
-    row.appendChild(createSafeCell(tree.local)); // <-- DADO DO USUÁRIO SENDO SANITIZADO
-    row.appendChild(createSafeCell(tree.avaliador)); // <-- DADO DO USUÁRIO SENDO SANITIZADO
+    row.appendChild(createSafeCell(tree.local)); // <-- XSS PREVENIDO
+    row.appendChild(createSafeCell(tree.avaliador)); // <-- XSS PREVENIDO
     row.appendChild(createSafeCell(tree.pontuacao));
     row.appendChild(createSafeCell(tree.risco, tree.riscoClass));
-    row.appendChild(createSafeCell(tree.observacoes)); // <-- DADO DO USUÁRIO SENDO SANITIZADO
+    row.appendChild(createSafeCell(tree.observacoes)); // <-- XSS PREVENIDO
 
-    // --- Células de Ação (Seguras) ---
+    // Células de Ação (Seguras)
     row.appendChild(createActionCell({
-      className: 'zoom-tree-btn',
-      icon: '🔍',
-      treeId: tree.id,
-      cellClassName: 'col-zoom'
+      className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom'
     }));
-    
     row.appendChild(createActionCell({
-      className: 'edit-tree-btn',
-      icon: '✎',
-      treeId: tree.id,
-      cellClassName: 'col-edit'
+      className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit'
     }));
-    
     row.appendChild(createActionCell({
-      className: 'delete-tree-btn',
-      icon: '✖',
-      treeId: tree.id,
-      cellClassName: 'col-delete'
+      className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete'
     }));
 
     tbody.appendChild(row);
@@ -380,17 +349,18 @@ export function renderSummaryTable() {
 
   table.appendChild(tbody);
   
-  // --- 5. Adiciona a tabela completa ao container ---
+  // --- 5. Adiciona a tabela ao container ---
   container.appendChild(table);
 }
 
 // #####################################################################
-// ### FIM DA REFATORAÇÃO DE SEGURANÇA (v23.0) ###
+// ### FIM DA SEÇÃO SEGURA (v23.0) ###
 // #####################################################################
 
 
 /**
  * (v17.6) Mostra a sub-aba correta (Registrar, Resumo, Mapa).
+ * [v23.1] MODIFICADO: Chama mapUI.initializeMap()
  */
 export function showSubTab(targetId) {
   const subTabPanes = document.querySelectorAll('.sub-tab-content');
@@ -399,10 +369,11 @@ export function showSubTab(targetId) {
   const subNavButtons = document.querySelectorAll('.sub-nav-btn');
   subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
 
-  // LÓGICA DE MAPA: Inicializa/re-renderiza o mapa ao ativar a aba
+  // [MODIFICADO v23.1] LÓGICA DE MAPA: Chama o módulo de mapa
   if (targetId === 'tab-content-mapa') {
-    // Delay para garantir que o container está visível
-    setTimeout(() => { initMap(); }, 50);
+    setTimeout(() => {
+      mapUI.initializeMap(); // Chama a função do módulo de mapa
+    }, 50); // Delay para garantir que o container está visível
   }
 
   // (v18.0) Lógica de Destaque da Linha
@@ -416,16 +387,12 @@ export function showSubTab(targetId) {
  * (v19.8) Destaque da linha
  */
 function highlightTableRow(id) {
-  // (v19.8) Atraso para garantir que a aba trocou
   setTimeout(() => {
-    // (v23.0) Seletor corrigido para a nova tabela
     const row = document.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
     if (row) {
-      // Remove destaques antigos
       const oldHighlights = document.querySelectorAll('.summary-table tr.highlight');
       oldHighlights.forEach(r => r.classList.remove('highlight'));
 
-      // Adiciona novo destaque e scroll
       row.classList.add('highlight');
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -438,288 +405,26 @@ function highlightTableRow(id) {
   }, 100);
 }
 
-/**
- * (v21.7) Inicializa o mapa Leaflet com Legenda/Filtro Externos.
- */
-function initMap() {
-  const mapContainer = document.getElementById('map-container');
-  if (!mapContainer) return;
-
-  // (v19.7) Verificação de bibliotecas (agora globais)
-  if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
-    mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas. Verifique a pasta /libs/.</p>';
-    return;
-  }
-
-  if (state.mapInstance) {
-    state.mapInstance.remove();
-    state.setMapInstance(null);
-  }
-
-  let boundsArray = [];
-  let treesToRender = state.registeredTrees.map(tree => {
-    const coords = features.convertToLatLon(tree);
-    if (coords) {
-      tree.coordsLatLon = coords;
-      boundsArray.push(coords);
-      return tree;
-    }
-    return null;
-  }).filter(tree => tree !== null);
-
-  let mapCenter = [-15.7801, -47.9292]; // Centro do Brasil
-  let initialZoom = 4;
-
-  if (boundsArray.length > 0) {
-    mapCenter = boundsArray[0];
-    initialZoom = 16;
-  }
-
-  const newMap = L.map('map-container').setView(mapCenter, initialZoom);
-  state.setMapInstance(newMap);
-
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19,
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-  }).addTo(newMap);
-
-  // --- NOVA LÓGICA (v21.7): Grupo de Marcadores e InfoBox ---
-
-  // 1. Cria o grupo que conterá os marcadores (círculos)
-  const markerGroup = L.featureGroup().addTo(newMap);
-  state.setMapMarkerGroup(markerGroup); // Salva no estado global
-
-  // 2. [REMOVIDO] A legenda agora está no HTML estático.
-  
-  // 3. Adiciona listener para fechar o InfoBox ao clicar no mapa
-  newMap.on('click', hideMapInfoBox);
-  
-  // --- Fim da Nova Lógica ---
-
-  renderTreesOnMap(treesToRender);
-
-  if (state.zoomTargetCoords) {
-    newMap.setView(state.zoomTargetCoords, 18);
-    state.setZoomTargetCoords(null);
-  } else if (boundsArray.length > 0) {
-    features.handleZoomToExtent();
-  }
-}
-
-/**
- * (v21.7) Desenha as árvores no mapa (agora no markerGroup) e troca Popup por InfoBox.
- */
-function renderTreesOnMap(treesData) {
-  if (!state.mapMarkerGroup) {
-    console.error("mapMarkerGroup não está inicializado.");
-    return;
-  }
-
-  // Limpa marcadores antigos do GRUPO
-  state.mapMarkerGroup.clearLayers();
-  
-  // Esconde o InfoBox (caso esteja aberto de um ponto antigo)
-  hideMapInfoBox();
-
-  treesData.forEach(tree => {
-    const coords = tree.coordsLatLon;
-    let color, radius, riskText;
-
-    if (tree.risco === 'Alto Risco') {
-      color = '#C62828'; radius = 12; riskText = '🔴 Alto Risco';
-    } else if (tree.risco === 'Médio Risco') {
-      color = '#E65100'; radius = 8; riskText = '🟠 Médio Risco';
-    } else {
-      color = '#2E7D32'; radius = 5; riskText = '🟢 Baixo Risco';
-    }
-
-    const circle = L.circle(coords, {
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.6,
-      radius: radius,
-      weight: 1,
-      isTreeMarker: true,
-      riskLevel: tree.risco // <-- IMPORTANTE: Seta o risco no layer para o filtro
-    });
-    
-    // ADICIONA AO GRUPO, NÃO AO MAPA
-    circle.addTo(state.mapMarkerGroup);
-
-    // [MUDANÇA v21.7]: Troca o Popup pelo InfoBox.
-    circle.on('click', (e) => {
-      // Impede que o clique no círculo feche o InfoBox (propagando para o mapa)
-      L.DomEvent.stopPropagation(e);
-      showMapInfoBox(tree);
-    });
-  });
-  
-  // [CORREÇÃO v21.9] Aplica o filtro atual DEPOIS que os marcadores são renderizados
-  const currentFilter = document.querySelector('#map-legend-filter input[name="risk-filter"]:checked');
-  if (currentFilter) {
-    handleMapFilterChange({ target: currentFilter }); // Simula o evento de change
-  }
-}
-
-/**
- * [BUG 2 CORRIGIDO v21.9] Lida com a mudança do filtro da legenda.
- * A lógica agora usa opacidade (setStyle) em vez de remover/adicionar layers.
- */
-function handleMapFilterChange(e) {
-  const selectedRisk = e.target.value;
-  
-  if (!state.mapMarkerGroup) return;
-
-  state.mapMarkerGroup.eachLayer(layer => {
-    if (selectedRisk === 'Todos' || layer.options.riskLevel === selectedRisk) {
-      // Mostra o marcador
-      layer.setStyle({ opacity: 1, fillOpacity: 0.6 });
-    } else {
-      // Esconde o marcador
-      layer.setStyle({ opacity: 0, fillOpacity: 0 });
-    }
-  });
-  
-  hideMapInfoBox(); // Esconde o infobox ao filtrar
-}
-
-/**
- * [NOVO v21.7] Mostra o painel de informações do mapa (substitui o popup).
- * [ATUALIZADO v21.9] Adiciona botões de zoom.
- */
-function showMapInfoBox(tree) {
-  const infoBox = document.getElementById('map-info-box');
-  if (!infoBox) return;
-
-  // [CORREÇÃO v21.9] Reseta o zoom e o tamanho ao abrir
-  currentInfoBoxZoom = 0; // Reseta o nível de zoom
-  infoBox.style.width = ''; // Reseta para o tamanho padrão do CSS (280px)
-
-  let color, riskText;
-  if (tree.risco === 'Alto Risco') {
-    color = '#C62828'; riskText = '🔴 Alto Risco';
-  } else if (tree.risco === 'Médio Risco') {
-    color = '#E65100'; riskText = '🟠 Médio Risco';
-  } else {
-    color = '#2E7D32'; riskText = '🟢 Baixo Risco';
-  }
-
-  // (v23.0) .innerHTML seguro, pois os dados (tree.*) são sanitizados
-  // ANTES pela renderSummaryTable (se usássemos .textContent aqui, perderíamos a formatação <strong>)
-  // No entanto, para garantir a segurança caso esta função seja chamada de outro lugar,
-  // vamos sanitizar os dados de entrada aqui também, usando createSafeCell (mas apenas
-  // pegando o textContent dela).
-  //
-  // ATUALIZAÇÃO: Os dados do 'tree' vêm do 'state' e não são HTML.
-  // Apenas 'tree.especie', 'tree.local', 'tree.coordX', 'tree.coordY', 'tree.utmZoneNum', 'tree.utmZoneLetter'
-  // são inseridos. Estes são seguros para interpolar em um template.
-  
-  let infoHTML = `
-    <button id="close-info-box">&times;</button>
-    <strong>ID: ${tree.id}</strong>
-    <p><strong>Espécie:</strong> ${tree.especie}</p>
-    <p><strong>Risco:</strong> <span style="color:${color}; font-weight:bold;">${riskText}</span></p>
-    <p><strong>Local:</strong> ${tree.local}</p>
-    <p><strong>Coord. UTM:</strong> ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})</p>
-  `;
-  
-  // Se tiver foto, adiciona o container para ela
-  if (tree.hasPhoto) {
-    infoHTML += `<div id="map-info-photo" class="loading-photo">Carregando foto...</div>`;
-    
-    // [CORREÇÃO v21.9] Botões de zoom só são adicionados se NÃO for touch
-    if (!isTouchDevice) {
-      infoHTML += `
-        <div class="map-photo-zoom">
-          <button id="zoom-out-btn" title="Diminuir Zoom">-</button>
-          <button id="zoom-in-btn" title="Aumentar Zoom">+</button>
-        </div>
-      `;
-    }
-  }
-  
-  infoBox.innerHTML = infoHTML;
-  infoBox.classList.remove('hidden');
-
-  // Listener para o botão de fechar
-  document.getElementById('close-info-box').addEventListener('click', hideMapInfoBox);
-  
-  // Carrega a foto (se houver)
-  if (tree.hasPhoto) {
-    getImageFromDB(tree.id, (imageBlob) => {
-      const photoDiv = document.getElementById('map-info-photo');
-      if (photoDiv && imageBlob) {
-        const imgUrl = URL.createObjectURL(imageBlob);
-        photoDiv.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="manual-img" id="infobox-img">`;
-        photoDiv.classList.remove('loading-photo');
-        
-        // [CORREÇÃO BUG 4 v21.9]: Anexa listeners DEPOIS que a imagem existe
-        document.getElementById('zoom-out-btn')?.addEventListener('click', () => zoomMapImage(-1));
-        document.getElementById('zoom-in-btn')?.addEventListener('click', () => zoomMapImage(1));
-
-      } else if (photoDiv) {
-        photoDiv.innerHTML = `<p style="color:red; font-size: 0.9em;">Foto não encontrada.</p>`;
-        photoDiv.classList.remove('loading-photo');
-      }
-    });
-  }
-}
-
-/**
- * [NOVO v21.9] Controla o zoom da imagem no InfoBox
- */
-let currentInfoBoxZoom = 0; // Nível de zoom (0 = min, 1 = med, 2 = max)
-const ZOOM_LEVELS = [280, 400, 550]; // Define os Níveis de Zoom (Pequeno, Médio, Grande)
-
-function zoomMapImage(direction) {
-  const infoBox = document.getElementById('map-info-box');
-  if (!infoBox) return;
-
-  // Atualiza o nível de zoom
-  currentInfoBoxZoom += direction;
-
-  // Limita o zoom (0 = min, 2 = max)
-  if (currentInfoBoxZoom < 0) currentInfoBoxZoom = 0;
-  if (currentInfoBoxZoom >= ZOOM_LEVELS.length) currentInfoBoxZoom = ZOOM_LEVELS.length - 1;
-
-  const newWidth = ZOOM_LEVELS[currentInfoBoxZoom];
-  infoBox.style.width = `${newWidth}px`;
-}
+// ====================================================================
+// [REMOVIDO v23.1] Toda a lógica de mapa foi movida para js/map.ui.js
+// - initMap()
+// - renderTreesOnMap()
+// - handleMapFilterChange()
+// - showMapInfoBox()
+// - hideMapInfoBox()
+// - zoomMapImage()
+// - currentInfoBoxZoom
+// - ZOOM_LEVELS
+// ====================================================================
 
 
 /**
- * [NOVO v21.7] Esconde o painel de informações do mapa.
- * [ATUALIZADO v21.9] Reseta o zoom.
- */
-function hideMapInfoBox() {
-  const infoBox = document.getElementById('map-info-box');
-  if (infoBox) {
-    // Limpa a foto (se houver) para revogar o ObjectURL
-    const img = infoBox.querySelector('img');
-    if (img && img.src.startsWith('blob:')) {
-      URL.revokeObjectURL(img.src);
-    }
-    
-    infoBox.classList.add('hidden');
-    infoBox.innerHTML = ''; // Limpa o conteúdo
-    
-    // Reseta o zoom e o tamanho
-    currentInfoBoxZoom = 0;
-    infoBox.style.width = ''; // Remove o estilo inline
-  }
-}
-
-
-// === Lógica de Inicialização de Inputs de Arquivo (CRÍTICO PARA IMPORTAÇÃO) ===
-
-/**
- * (v20.0 - NOVO) Funções para garantir que os inputs de arquivo sejam limpos de listeners antigos.
+ * (v20.0) Garante que os inputs de arquivo sejam limpos de listeners antigos.
  */
 function setupFileImporters() {
   let zipImporter = document.getElementById('zip-importer');
   let csvImporter = document.getElementById('csv-importer');
 
-  // Clonagem necessária para o browser aceitar o .click() e remover listeners de 'change'
   if (zipImporter) {
     const newZip = zipImporter.cloneNode(true);
     zipImporter.parentNode.replaceChild(newZip, zipImporter);
@@ -732,7 +437,6 @@ function setupFileImporters() {
     csvImporter = newCsv;
   }
   
-  // RE-ANEXA OS LISTENERS AOS NOVOS ELEMENTOS
   if (zipImporter) {
     zipImporter.addEventListener('change', (e) => {
       e.replaceData = zipImporter.dataset.replaceData === 'true';
@@ -755,61 +459,43 @@ function setupFileImporters() {
 }
 
 /**
- * [CRÍTICO PARA PERFORMANCE v21.5]
- * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
+ * (v21.5) OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
  */
 async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.readAsDataURL(imageFile); // Lê o arquivo como URL de dados
+    reader.readAsDataURL(imageFile);
 
     reader.onload = (event) => {
       const img = new Image();
-      img.src = event.target.result; // Define a fonte da imagem para o URL de dados
+      img.src = event.target.result;
 
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
+        let { width, height } = img;
 
-        let width = img.width;
-        let height = img.height;
-
-        // Calcula novas dimensões se a largura exceder maxWidth
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
         }
-
         canvas.width = width;
         canvas.height = height;
-
-        // Desenha a imagem redimensionada no canvas
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Converte o canvas para um Blob JPEG com a qualidade especificada
         canvas.toBlob((blob) => {
           resolve(blob);
         }, 'image/jpeg', quality);
       };
-
-      img.onerror = (error) => {
-        console.error("Erro ao carregar imagem no canvas", error);
-        reject(error); // Lida com erros de carregamento da imagem
-      };
+      img.onerror = (error) => reject(error);
     };
-
-    reader.onerror = (error) => {
-      console.error("Erro ao ler arquivo de imagem", error);
-      reject(error); // Lida com erros de leitura do arquivo
-    };
+    reader.onerror = (error) => reject(error);
   });
 }
 
 
 /**
- * (v20.3) Função principal que inicializa todos os listeners da Calculadora.
- * (v21.7 - ADICIONA LISTENER DA LEGENDA)
- * (v23.0 - CORRIGE SELETOR DE TABELA)
+ * (v23.1 - MODIFICADO) Inicializa todos os listeners da Calculadora.
  */
 export function setupRiskCalculator() {
   
@@ -827,7 +513,6 @@ export function setupRiskCalculator() {
       }
     };
     subNav.addEventListener('click', subNavHandler);
-    // Ativa a primeira aba (Registrar)
     showSubTab('tab-content-register');
   }
   
@@ -837,32 +522,30 @@ export function setupRiskCalculator() {
 
   // --- Conexão de Botões e Inputs (Features) ---
   const form = document.getElementById('risk-calculator-form');
-  // (v23.0) A referência local 'summaryContainer' deve ser atualizada
-  // se clonarmos o nó, como feito abaixo.
   let summaryContainer = document.getElementById('summary-table-container');
   
-  // Elementos
   const importDataBtn = document.getElementById('import-data-btn');
   const exportDataBtn = document.getElementById('export-data-btn');
   const sendEmailBtn = document.getElementById('send-email-btn');
   const getGpsBtn = document.getElementById('get-gps-btn');
   const clearAllBtn = document.getElementById('clear-all-btn');
-  const zoomBtn = document.getElementById('zoom-to-extent-btn');
   const filterInput = document.getElementById('table-filter-input');
   const photoInput = document.getElementById('tree-photo-input');
   const removePhotoBtn = document.getElementById('remove-photo-btn');
   const resetBtn = document.getElementById('reset-risk-form-btn');
-  const mapLegend = document.getElementById('map-legend-filter');
 
+  // [REMOVIDO v23.1] mapLegend e zoomBtn
+  
   // Listeners de Botões (Modais)
   if (importDataBtn) importDataBtn.addEventListener('click', showImportModal);
   if (exportDataBtn) exportDataBtn.addEventListener('click', showExportModal);
   
   // Listeners restantes
-  if (zoomBtn) zoomBtn.addEventListener('click', features.handleZoomToExtent);
   if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
   if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
-  if (mapLegend) mapLegend.addEventListener('change', handleMapFilterChange);
+  
+  // [NOVO v23.1] Chama o setup de listeners do mapa
+  mapUI.setupMapListeners();
   
   // Confirmação de "Limpar Tudo" (Modal)
   if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
@@ -884,18 +567,15 @@ export function setupRiskCalculator() {
   
   // Listeners de Foto (v21.5 - OTIMIZAÇÃO DE IMAGEM)
   if (photoInput) {
-    photoInput.addEventListener('change', async (event) => { // <-- Tornou-se async
+    photoInput.addEventListener('change', async (event) => {
       const file = event.target.files[0];
       if (file) {
         features.clearPhotoPreview();
-        
-        // --- NOVA LÓGICA DE OTIMIZAÇÃO ---
         try {
           showToast("Otimizando foto...", "success");
-          const optimizedBlob = await optimizeImage(file, 800, 0.7); // 800px, 70%
-          state.setCurrentTreePhoto(optimizedBlob); // Armazena o Blob OTIMIZADO
+          const optimizedBlob = await optimizeImage(file, 800, 0.7);
+          state.setCurrentTreePhoto(optimizedBlob);
           
-          // Cria a pré-visualização a partir do Blob otimizado
           const preview = document.createElement('img');
           preview.id = 'photo-preview';
           preview.src = URL.createObjectURL(optimizedBlob);
@@ -917,16 +597,13 @@ export function setupRiskCalculator() {
 
   // Lógica do Formulário (Adicionar e Limpar)
   if (form) {
-    // Oculta o botão GPS em desktops
     if (getGpsBtn && !isTouchDevice) {
       const gpsContainer = getGpsBtn.closest('.gps-button-container');
       if(gpsContainer) gpsContainer.style.display = 'none';
     }
     
-    // (v19.7) Adicionar Árvore
     form.addEventListener('submit', (event) => {
       const submissionSuccessful = features.handleAddTreeSubmit(event);
-      
       if (submissionSuccessful) {
         renderSummaryTable(); // ATUALIZA A UI
         if (isTouchDevice) {
@@ -937,16 +614,13 @@ export function setupRiskCalculator() {
       }
     });
     
-    // Limpar Campos
     if (resetBtn) {
       resetBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        // Salva o nome do avaliador antes de limpar
         state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
         form.reset();
         features.clearPhotoPreview();
         
-        // Re-aplica os padrões após o reset
         try {
           document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
           document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
@@ -955,28 +629,19 @@ export function setupRiskCalculator() {
         if (isTouchDevice) {
           setupMobileChecklist();
         }
-
         const gpsStatus = document.getElementById('gps-status');
         if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
       });
     }
   }
   
-  // Renderiza a tabela inicial (AGORA SEGURA)
-  renderSummaryTable();
-  
-  // (v20.2 - CORREÇÃO CRÍTICA): Clonagem para limpeza de listeners
-  // (v23.0 - Otimização): Devemos clonar e reatribuir 'summaryContainer'
-  // ANTES de renderSummaryTable se a renderização anexasse listeners.
-  // Mas como estamos usando delegação de eventos, clonamos o container
-  // e anexamos o listener de delegação a ele.
-  
+  // (v23.0) Lógica de clonagem e delegação de eventos
   if (summaryContainer) {
-    const newSummaryContainer = summaryContainer.cloneNode(true); // Clona (vazio)
+    const newSummaryContainer = summaryContainer.cloneNode(true);
     summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
-    summaryContainer = newSummaryContainer; // Reatribui a referência local
+    summaryContainer = newSummaryContainer;
     
-    // Re-renderiza a tabela DENTRO do novo container clonado (agora seguro)
+    // Renderiza a tabela segura DENTRO do novo container
     renderSummaryTable();
 
     // Anexa o listener de DELEGAÇÃO DE EVENTOS ao novo container
@@ -1005,7 +670,6 @@ export function setupRiskCalculator() {
       if (editButton) {
         const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
         showSubTab('tab-content-register');
-        
         if (needsCarouselUpdate && isTouchDevice) {
           setupMobileChecklist();
         }
@@ -1013,6 +677,7 @@ export function setupRiskCalculator() {
       }
 
       if (zoomButton) {
+        // (v23.1) Esta feature agora aciona a lógica no ui.js -> map.ui.js
         features.handleZoomToPoint(parseInt(zoomButton.dataset.id, 10));
       }
       
@@ -1028,7 +693,6 @@ export function setupRiskCalculator() {
     });
   }
 
-
   if (isTouchDevice) {
     setupMobileChecklist();
   }
@@ -1036,6 +700,8 @@ export function setupRiskCalculator() {
 
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
+
+// (Mantida idêntica ao v23.0, pois não depende do mapa)
 
 export function createTooltip() {
   let tooltip = document.getElementById('glossary-tooltip');
@@ -1067,30 +733,21 @@ export function hideTooltip() {
 
 function positionTooltip(termElement) {
   if (!state.currentTooltip) return;
-
   const rect = termElement.getBoundingClientRect();
   const scrollY = window.scrollY, scrollX = window.scrollX;
   
   requestAnimationFrame(() => {
     if (!state.currentTooltip) return;
-    
     const tooltipWidth = state.currentTooltip.offsetWidth;
     const tooltipHeight = state.currentTooltip.offsetHeight;
-    
-    let topPos;
-    if (rect.top > tooltipHeight + 10) {
-      topPos = rect.top + scrollY - tooltipHeight - 10;
-    } else {
-      topPos = rect.bottom + scrollY + 10;
-    }
-    
+    let topPos = (rect.top > tooltipHeight + 10)
+      ? (rect.top + scrollY - tooltipHeight - 10)
+      : (rect.bottom + scrollY + 10);
     let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
-    
     if (leftPos < scrollX + 10) leftPos = scrollX + 10;
     if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) {
       leftPos = window.innerWidth + scrollX - tooltipWidth - 10;
     }
-    
     state.currentTooltip.style.top = `${topPos}px`;
     state.currentTooltip.style.left = `${leftPos}px`;
   });
@@ -1102,13 +759,9 @@ function handlePhotoPreviewClick(id, targetElement) {
       showToast("Foto não encontrada no banco de dados.", "error");
       return;
     }
-    
     const imgUrl = URL.createObjectURL(imageBlob);
     const tooltip = createTooltip();
-    
-    // .innerHTML seguro (apenas uma tag img)
     tooltip.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" style="max-width: 80vw; max-height: 70vh;">`;
-    
     positionTooltip(targetElement);
     tooltip.style.opacity = '1';
     tooltip.style.visibility = 'visible';
@@ -1116,12 +769,9 @@ function handlePhotoPreviewClick(id, targetElement) {
   });
 }
 
-// --- Funções de Setup de Tooltip (Chamadas por loadContent) ---
-
 function setupGlossaryInteractions(detailView) {
   const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');
   const debouncedHide = debounce(hideTooltip, 200);
-
   glossaryTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showGlossaryTooltip);
@@ -1137,8 +787,6 @@ function showGlossaryTooltip(event) {
   const definition = glossaryTerms[termKey];
   if (!definition) return;
   const tooltip = createTooltip();
-  
-  // .innerHTML seguro (dados do content.js)
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
@@ -1150,7 +798,6 @@ function toggleGlossaryTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
     tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
@@ -1162,7 +809,6 @@ function toggleGlossaryTooltip(event) {
 function setupEquipmentInteractions(detailView) {
   const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
   const debouncedHide = debounce(hideTooltip, 200);
-  
   equipmentTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showEquipmentTooltip);
@@ -1178,8 +824,6 @@ function showEquipmentTooltip(event) {
   const data = equipmentData[termKey];
   if (!data) return;
   const tooltip = createTooltip();
-  
-  // .innerHTML seguro (dados do content.js + helper imgTag)
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
@@ -1191,7 +835,6 @@ function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
     tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
@@ -1203,7 +846,6 @@ function toggleEquipmentTooltip(event) {
 function setupPurposeInteractions(detailView) {
   const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
   const debouncedHide = debounce(hideTooltip, 200);
-
   purposeTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showPurposeTooltip);
@@ -1219,8 +861,6 @@ function showPurposeTooltip(event) {
   const data = podaPurposeData[termKey];
   if (!data) return;
   const tooltip = createTooltip();
-  
-  // .innerHTML seguro (dados do content.js + helper imgTag)
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
@@ -1232,7 +872,6 @@ function togglePurposeTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
     tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
@@ -1243,9 +882,8 @@ function togglePurposeTooltip(event) {
 
 // === 5. LÓGICA DO MODAL CUSTOMIZADO ===
 
-/**
- * Exibe um modal de ação customizado.
- */
+// (Mantida idêntica ao v23.0, pois não depende do mapa)
+
 function showActionModal({ title, description, buttons }) {
   const modal = document.getElementById('action-modal');
   const titleEl = document.getElementById('modal-title');
@@ -1257,46 +895,35 @@ function showActionModal({ title, description, buttons }) {
     return;
   }
 
-  // Preenche o conteúdo
   titleEl.textContent = title;
   descEl.textContent = description;
-  
-  // Limpa botões antigos
   actionsEl.innerHTML = '';
 
-  // Cria novos botões
   buttons.forEach(btnConfig => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `modal-btn ${btnConfig.class || ''}`;
     button.textContent = btnConfig.text;
-    
     button.addEventListener('click', () => {
       if (btnConfig.action) {
-        btnConfig.action(); // Executa a ação (ex: exportCSV)
+        btnConfig.action();
       }
-      hideActionModal(); // Fecha o modal
+      hideActionModal();
     });
     actionsEl.appendChild(button);
   });
 
-  // Adiciona o listener para fechar ao clicar fora (no overlay)
   const self = modal;
   const closeOverlay = (e) => {
     if (e.target === self) {
       hideActionModal();
-      self.removeEventListener('click', closeOverlay); // Limpa o listener
+      self.removeEventListener('click', closeOverlay);
     }
   };
   modal.addEventListener('click', closeOverlay);
-
-  // Exibe o modal
   modal.classList.add('show');
 }
 
-/**
- * Esconde o modal de ação.
- */
 function hideActionModal() {
   const modal = document.getElementById('action-modal');
   if (modal) {
@@ -1304,33 +931,21 @@ function hideActionModal() {
   }
 }
 
-/**
- * (v19.9 - CORRIGIDO) Configura e exibe o modal de EXPORTAÇÃO.
- */
 function showExportModal() {
-  
   let buttons = [
-    {
-      text: 'Exportar Apenas .CSV (s/ fotos)',
-      class: 'secondary', // Amarelo
-      action: features.exportActionCSV
-    },
-    {
-      text: 'Cancelar',
-      class: 'cancel'
-    }
+    { text: 'Exportar Apenas .CSV (s/ fotos)', class: 'secondary', action: features.exportActionCSV },
+    { text: 'Cancelar', class: 'cancel' }
   ];
 
   if (typeof JSZip !== 'undefined') {
-    buttons.unshift({ // Adiciona no início
+    buttons.unshift({
       text: 'Exportar Pacote .ZIP (Completo)',
-      class: 'primary', // Verde
+      class: 'primary',
       action: features.exportActionZip
     });
   } else {
     console.warn("JSZip não carregado. Opção de exportar .ZIP desabilitada.");
   }
-
   showActionModal({
     title: '📥 Exportar Dados',
     description: 'Escolha o formato de exportação. O Pacote .ZIP inclui todos os dados e fotos (recomendado para backup).',
@@ -1338,73 +953,47 @@ function showExportModal() {
   });
 }
 
-/**
- * (v21.3) Configura e exibe o PRIMEIRO modal de IMPORTAÇÃO.
- */
 function showImportModal() {
-  
-  // Define os botões
   let buttons = [
-    {
-      text: 'Adicionar à Lista Atual',
-      class: 'secondary', // Amarelo (Destaque)
-      action: () => {
-        // Adiciona setTimeout(0) para garantir que o primeiro modal feche
-        // e o DOM se estabilize antes de abrir o segundo.
-        setTimeout(() => showImportTypeModal(false), 0);
-      }
-    }
+    { text: 'Adicionar à Lista Atual', class: 'secondary', action: () => {
+      setTimeout(() => showImportTypeModal(false), 0);
+    }}
   ];
   
-  // [CORREÇÃO BUG #2]: Só mostra "Substituir" se a lista NÃO estiver vazia.
   if (state.registeredTrees.length > 0) {
     buttons.push({
       text: 'Substituir Lista Atual',
-      class: 'primary', // Verde (Padrão)
+      class: 'primary',
       action: () => {
-        // Adiciona setTimeout(0)
         setTimeout(() => showImportTypeModal(true), 0);
       }
     });
   }
-  
   buttons.push({ text: 'Cancelar', class: 'cancel' });
 
   showActionModal({
     title: '📤 Importar Dados',
     description: 'Você deseja adicionar os dados à lista atual ou substituir a lista inteira? (Substituir apagará todos os dados atuais)',
-    buttons: buttons // Usa a lista dinâmica
+    buttons: buttons
   });
 }
 
-/**
- * (v20.4) Mostra o SEGUNDO modal de importação (escolha de tipo de arquivo)
- */
 function showImportTypeModal(replaceData) {
-  // Busca os inputs de arquivo (eles foram clonados e re-anexados em setupRiskCalculator)
   const csvInput = document.getElementById('csv-importer');
   const zipInput = document.getElementById('zip-importer');
 
   if (!csvInput || !zipInput) {
-    console.error("Inputs de importação não encontrados ou clonagem falhou.");
+    console.error("Inputs de importação não encontrados.");
     showToast("Erro de configuração. Recarregue a página.", "error");
     return;
   }
   
-  // Define o modo (append ou replace) no dataset dos inputs
   csvInput.dataset.replaceData = replaceData;
   zipInput.dataset.replaceData = replaceData;
   
   let buttons = [
-    {
-      text: 'Importar .CSV (s/ fotos)',
-      class: 'secondary',
-      action: () => csvInput.click()
-    },
-    {
-      text: 'Cancelar',
-      class: 'cancel'
-    }
+    { text: 'Importar .CSV (s/ fotos)', class: 'secondary', action: () => csvInput.click() },
+    { text: 'Cancelar', class: 'cancel' }
   ];
 
   if (typeof JSZip !== 'undefined') {
