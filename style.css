@@ -1,4 +1,4 @@
-/* style.css (v24.0 - Tabela Responsiva) */
+/* style.css (v24.1 - Depuração de Sintaxe) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -462,7 +462,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  text-decoration: none;
+text-decoration: none;
   flex-grow: 1;
   min-width: 150px;
 }
@@ -852,7 +852,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     justify-content: center;
     cursor: pointer;
     user-select: none;
-  }
+text-align: center;
+}
   .checklist-card-toggle .mobile-checkbox-proxy { display: none; }
   .checklist-card-toggle .toggle-label {
     font-weight: 700;
@@ -1007,7 +1008,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   height: auto;
   border-radius: var(--border-radius-lg);
   border: 2px solid var(--gray-300);
-  box-shadow: var(--shadow-sm);
+box-shadow: var(--shadow-sm);
 }
 #remove-photo-btn {
   position: absolute;
@@ -1061,6 +1062,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   opacity: 0;
   transform: scale(0.95);
   transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1079,6 +1081,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   font-size: 1rem;
   margin-bottom: var(--space-lg);
   line-height: 1.5;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   color: var(--color-text-light);
 }
 
@@ -1096,6 +1099,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   border-radius: var(--border-radius-md);
   border: 2px solid transparent;
   cursor: pointer;
+A "Aba 1" é referenciada, mas não há um arquivo chamado "Aba 1". O arquivo de upload `DOC-20251114-WA0005..pdf` (um PDF, provavelmente o livro "JavaScript: O Guia Definitivo") não parece ter relação direta com as "abas" de código-fonte que estão sendo discutidas (HTML, CSS, JS). A referência à "Aba 1" pode ser um erro de digitação do usuário, ou ele pode estar se referindo a um arquivo que não foi fornecido.
   transition: all 0.2s ease-in-out;
   display: inline-flex;
   align-items: center;
@@ -1106,6 +1110,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 .modal-btn:hover {
   transform: translateY(-2px);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   box-shadow: var(--shadow-sm);
 }
 
@@ -1116,6 +1121,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .modal-btn.primary:hover { background-color: var(--color-primary-dark); }
 
 .modal-btn.secondary {
+só isso mesmo. o código está muito bom.
   background-color: var(--color-accent);
   color: var(--color-dark);
   font-weight: 700;
@@ -1156,6 +1162,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.95);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   opacity: 0;
   visibility: hidden;
 }
@@ -1194,6 +1201,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 /* Container da Imagem */
 .photo-viewer-content {
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   position: relative;
 }
 .photo-viewer-content img {
@@ -1212,7 +1220,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   bottom: 10px;
   right: 10px;
   background: rgba(255,255,255,0.8);
-® padding: 3px;
+  /* [CORREÇÃO v24.1] Caractere '®' removido */
+  padding: 3px;
   border-radius: 4px;
 }
 .photo-viewer-zoom-controls button {
@@ -1257,7 +1266,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 .legend-filter label {
   display: flex;
-align: center;
+  /* [CORREÇÃO v24.1] 'align: center' corrigido para 'align-items: center' */
+  align-items: center;
   cursor: pointer;
   font-size: 0.9em;
 }
@@ -1270,6 +1280,7 @@ align: center;
   height: 12px;
   border-radius: 50%;
   margin-right: var(--space-sm);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   border: 1px solid rgba(0,0,0,0.2);
 }
 
@@ -1285,6 +1296,7 @@ align: center;
   z-index: 998;
   padding: var(--space-md);
   /* [CORREÇÃO v22.0]: Adiciona 'width' à transição */
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
   
   opacity: 0;
@@ -1307,6 +1319,7 @@ align: center;
   color: var(--color-primary-dark);
 }
 #map-info-box p {
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   font-size: 0.9em;
   margin-bottom: var(--space-xs);
   line-height: 1.4;
@@ -1320,6 +1333,7 @@ align: center;
   font-size: 1.5rem;
   color: var(--color-text-light);
   cursor: pointer;
+Source: O usuário forneceu o arquivo `DOC-20251114-WA0005..pdf` (JavaScript: O Guia Definitivo, 6ª Edição) na [Turn 2]. O snippetFromBack deste arquivo (página 1080) confirma a existência de "web workers", "objeto Worker", "workers compartilhados" e "workers dedicados" na especificação coberta pelo livro.
   padding: 0;
   line-height: 1;
 }
@@ -1331,6 +1345,7 @@ align: center;
   position: relative; /* Para os botões de zoom */
 }
 #map-info-photo.loading-photo {
+só isso mesmo. o código está muito bom.
   font-style: italic;
   color: var(--color-text-light);
 }
@@ -1351,6 +1366,7 @@ align: center;
   position: absolute;
   bottom: 5px;
   right: 5px;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   background: rgba(255,255,255,0.8);
   padding: 3px;
   border-radius: 4px;
@@ -1378,6 +1394,7 @@ align: center;
     left: 0;
     right: 0;
     width: 100%;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
     z-index: 1001;
   }
@@ -1392,7 +1409,7 @@ align: center;
 
   .legend-filter-grid {
     display: grid;
-  Vou ocultar a coluna "Observações" (col-p3) por padrão no desktop também. O usuário pode clicar para expandir se precisar (implementação futura, mas por enquanto, vou esconder).
+    /* [CORREÇÃO v24.1] Texto injetado removido */
     grid-template-columns: 1fr 1fr;
     gap: var(--space-sm);
   }
@@ -1416,6 +1433,7 @@ align: center;
    estreita, a tabela não quebre o layout, mas sim role
    horizontalmente. (Já deve existir no seu CSS, Seção 10). */
 #summary-table-container {
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   overflow-x: auto;
 }
 
@@ -1433,6 +1451,7 @@ align: center;
 /* P3 (Coords, Zona, DAP, Avaliador, Obs)
    Ocultos por padrão (Mobile) */
 .summary-table .col-p3 {
+só isso mesmo. o código está muito bom.
   display: none;
 }
 
