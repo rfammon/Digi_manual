@@ -1,4 +1,4 @@
-// js/ui.js (v24.2 - Depuração de Sintaxe)
+// js/ui.js (v24.3 - Depuração de Sintaxe)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -16,7 +16,6 @@ const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
-// [v23.7] Timer de tooltip centralizado
 let tooltipHideTimer = null;
 
 
@@ -30,7 +29,6 @@ let tooltipHideTimer = null;
 export function loadContent(detailView, content) {
   if (!detailView) return;
   if (content) {
-    // .innerHTML seguro (conteúdo do content.js)
     detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
     setupGlossaryInteractions(detailView);
     setupEquipmentInteractions(detailView);
@@ -74,7 +72,6 @@ export function showMobileQuestion(index) {
     return;
   }
   
-  // .innerHTML seguro (template controlado)
   card.innerHTML = `
     <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
     <span class="checklist-card-peso">(Peso: ${peso})</span>
@@ -112,7 +109,7 @@ export function setupMobileChecklist() {
   mobileChecklist.currentIndex = 0;
   mobileChecklist.totalQuestions = mobileChecklist.questions.length;
 
-  // --- Clonagem para limpeza de listeners ---
+  // Clonagem para limpeza de listeners
   const newCard = mobileChecklist.card.cloneNode(true);
   mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
   mobileChecklist.card = newCard;
@@ -143,12 +140,10 @@ export function setupMobileChecklist() {
 }
 
 
-// #####################################################################
-// ### SEÇÃO SEGURA E DE PERFORMANCE (v23.5 / MODIFICADA v24.0) ###
-// #####################################################################
+// === INÍCIO: Seção de Renderização da Tabela ===
 
 /**
- * (v23.0) Cria uma célula de tabela (<td>) com texto seguro.
+ * Cria uma célula de tabela (<td>) com texto seguro.
  */
 function createSafeCell(text, className) {
   const cell = document.createElement('td');
@@ -158,7 +153,7 @@ function createSafeCell(text, className) {
 }
 
 /**
- * (v23.0) Cria uma célula de tabela (<td>) com um botão de ação.
+ * Cria uma célula de tabela (<td>) com um botão de ação.
  */
 function createActionCell({ className, icon, treeId, cellClassName }) {
   const cell = document.createElement('td');
@@ -173,7 +168,7 @@ function createActionCell({ className, icon, treeId, cellClassName }) {
 }
 
 /**
- * (v23.3 - MODIFICADO PELA v24.0) Helper privado que constrói um <tr>.
+ * Helper privado que constrói um <tr> para uma árvore.
  * Adiciona classes de prioridade (col-p2, col-p3) às células <td>.
  */
 function _createTreeRow(tree) {
@@ -230,7 +225,7 @@ function _createTreeRow(tree) {
 }
 
 /**
- * (v23.3) Adiciona uma ÚNICA linha à tabela (Performance O(1)).
+ * Adiciona uma ÚNICA linha à tabela (Performance O(1)).
  */
 function appendTreeRow(tree) {
   const container = document.getElementById('summary-table-container');
@@ -244,7 +239,7 @@ function appendTreeRow(tree) {
   const tbody = container.querySelector('.summary-table tbody');
   if (tbody) {
     const row = _createTreeRow(tree);
-    tbody.appendChild(row); // Adição O(1)
+    tbody.appendChild(row);
   } else {
     renderSummaryTable(); // Fallback
   }
@@ -257,13 +252,13 @@ function appendTreeRow(tree) {
 }
 
 /**
- * (v23.3) Remove uma ÚNICA linha da tabela (Performance O(1)).
+ * Remove uma ÚNICA linha da tabela (Performance O(1)).
  */
 function removeTreeRow(id) {
   const container = document.getElementById('summary-table-container');
   if (!container) return;
   const row = container.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
-  if (row) row.remove(); // Remoção O(1)
+  if (row) row.remove();
   const tbody = container.querySelector('.summary-table tbody');
   const summaryBadge = document.getElementById('summary-badge');
   if (tbody && tbody.children.length === 0) {
@@ -276,7 +271,7 @@ function removeTreeRow(id) {
 }
 
 /**
- * (v23.3 - MODIFICADO PELA v24.0) Renderiza a tabela de resumo de árvores (O(N)).
+ * Renderiza a tabela de resumo de árvores (O(N)).
  * Adiciona classes de prioridade (col-p2, col-p3) para ocultação responsiva.
  */
 export function renderSummaryTable() {
@@ -314,21 +309,20 @@ export function renderSummaryTable() {
     return classes.trim();
   };
 
-  // [MODIFICADO v24.0] Adicionadas 'className' para prioridade responsiva
   const headers = [
     { key: 'id', text: 'ID' },
-    { key: 'data', text: 'Data', className: 'col-p2' }, // P2 (Tablet+)
+    { key: 'data', text: 'Data', className: 'col-p2' },
     { key: 'especie', text: 'Espécie' },
-    { key: null, text: 'Foto', className: 'col-p2' }, // P2 (Tablet+)
-    { key: 'coordX', text: 'Coord. X', className: 'col-p3' }, // P3 (Desktop)
-    { key: 'coordY', text: 'Coord. Y', className: 'col-p3' }, // P3 (Desktop)
-    { key: 'utmZoneNum', text: 'Zona UTM', className: 'col-p3' }, // P3 (Desktop)
-    { key: 'dap', text: 'DAP (cm)', className: 'col-p3' }, // P3 (Desktop)
-    { key: 'local', text: 'Local', className: 'col-p2' }, // P2 (Tablet+)
-    { key: 'avaliador', text: 'Avaliador', className: 'col-p3' }, // P3 (Desktop)
-    { key: 'pontuacao', text: 'Pontos', className: 'col-p2' }, // P2 (Tablet+)
+    { key: null, text: 'Foto', className: 'col-p2' },
+    { key: 'coordX', text: 'Coord. X', className: 'col-p3' },
+    { key: 'coordY', text: 'Coord. Y', className: 'col-p3' },
+    { key: 'utmZoneNum', text: 'Zona UTM', className: 'col-p3' },
+    { key: 'dap', text: 'DAP (cm)', className: 'col-p3' },
+    { key: 'local', text: 'Local', className: 'col-p2' },
+    { key: 'avaliador', text: 'Avaliador', className: 'col-p3' },
+    { key: 'pontuacao', text: 'Pontos', className: 'col-p2' },
     { key: 'risco', text: 'Risco' },
-    { key: null, text: 'Observações', className: 'col-p3' }, // P3 (Desktop)
+    { key: null, text: 'Observações', className: 'col-p3' },
     { key: null, text: 'Zoom', className: 'col-zoom' },
     { key: null, text: 'Editar', className: 'col-edit' },
     { key: null, text: 'Excluir', className: 'col-delete' },
@@ -366,11 +360,11 @@ export function renderSummaryTable() {
   container.appendChild(table);
 }
 
-// --- FIM DA SEÇÃO DE PERFORMANCE ---
+// === FIM: Seção de Renderização da Tabela ===
 
 
 /**
- * (v23.1) Mostra a sub-aba correta e chama o módulo de mapa.
+ * Mostra a sub-aba correta e chama o módulo de mapa.
  */
 export function showSubTab(targetId) {
   const subTabPanes = document.querySelectorAll('.sub-tab-content');
@@ -387,7 +381,7 @@ export function showSubTab(targetId) {
 }
 
 /**
- * (v19.8) Destaque da linha da tabela.
+ * Destaque da linha da tabela.
  */
 function highlightTableRow(id) {
   setTimeout(() => {
@@ -406,7 +400,7 @@ function highlightTableRow(id) {
 
 
 /**
- * (v21.5) OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
+ * OTIMIZAÇÃO DE IMAGEM: Redimensiona e comprime uma imagem (Blob).
  */
 async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve, reject) => {
@@ -434,12 +428,10 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
   });
 }
 
-// #####################################################################
-// ### SEÇÃO DE SETUP DA CALCULADORA (v23.5 / v23.11) ###
-// #####################################################################
+// === INÍCIO: Seção de Setup da Calculadora ===
 
 /**
- * (v23.5) Alterna o modo do formulário entre Adicionar e Editar.
+ * Alterna o modo do formulário entre Adicionar e Editar.
  */
 function _setFormMode(mode) {
   const btn = document.getElementById('add-tree-btn');
@@ -456,7 +448,7 @@ function _setFormMode(mode) {
 }
 
 /**
- * (v23.5) Preenche o formulário com dados da árvore para edição.
+ * Preenche o formulário com dados da árvore para edição.
  */
 function _populateFormForEdit(tree) {
   if (!tree) return;
@@ -498,7 +490,7 @@ function _populateFormForEdit(tree) {
 }
 
 /**
- * (v23.4) Anexa listeners de navegação das sub-abas.
+ * Anexa listeners de navegação das sub-abas.
  */
 function _setupSubNavigation() {
   const subNav = document.querySelector('.sub-nav');
@@ -516,7 +508,7 @@ function _setupSubNavigation() {
 }
 
 /**
- * (v23.4) Anexa listeners aos inputs de arquivo.
+ * Anexa listeners aos inputs de arquivo.
  */
 function _setupFileImporters() {
   let zipImporter = document.getElementById('zip-importer');
@@ -547,8 +539,7 @@ function _setupFileImporters() {
 }
 
 /**
- * (v23.5) Anexa listeners ao formulário principal (submit, reset, gps).
-A "Aba 1" é referenciada, mas não há um arquivo chamado "Aba 1". O arquivo de upload `DOC-20251114-WA0005..pdf` (um PDF, provavelmente o livro "JavaScript: O Guia Definitivo") não parece ter relação direta com as "abas" de código-fonte que estão sendo discutidas (HTML, CSS, JS). A referência à "Aba 1" pode ser um erro de digitação do usuário, ou ele pode estar se referindo a um arquivo que não foi fornecido.
+ * Anexa listeners ao formulário principal (submit, reset, gps).
  */
 function _setupFormListeners(form, isTouchDevice) {
   if (!form) return;
@@ -558,7 +549,6 @@ function _setupFormListeners(form, isTouchDevice) {
 
   if (getGpsBtn && !isTouchDevice) {
     getGpsBtn.closest('.gps-button-container')?.setAttribute('style', 'display:none');
-A "Aba 1" é referenciada, mas não há um arquivo chamado "Aba 1". O arquivo de upload `DOC-20251114-WA0005..pdf` (um PDF, provavelmente o livro "JavaScript: O Guia Definitivo") não parece ter relação direta com as "abas" de código-fonte que estão sendo discutidas (HTML, CSS, JS). A referência à "Aba 1" pode ser um erro de digitação do usuário, ou ele pode estar se referindo a um arquivo que não foi fornecido.
   }
   if (getGpsBtn) {
     getGpsBtn.addEventListener('click', features.handleGetGPS);
@@ -590,7 +580,6 @@ A "Aba 1" é referenciada, mas não há um arquivo chamado "Aba 1". O arquivo de
       } catch(err) { /* ignora */ }
       if (isTouchDevice) setupMobileChecklist();
       if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-      // [CORREÇÃO v24.1] Texto injetado removido
       state.setEditingTreeId(null);
       _setFormMode('add');
     });
@@ -598,7 +587,7 @@ A "Aba 1" é referenciada, mas não há um arquivo chamado "Aba 1". O arquivo de
 }
 
 /**
- * (v23.4) Anexa listeners aos controles de foto.
+ * Anexa listeners aos controles de foto.
  */
 function _setupPhotoListeners() {
   const photoInput = document.getElementById('tree-photo-input');
@@ -632,7 +621,7 @@ function _setupPhotoListeners() {
 }
 
 /**
- * (v23.4) Anexa listeners aos controles acima da tabela (Filtro, Importar, etc.).
+ * Anexa listeners aos controles acima da tabela (Filtro, Importar, etc.).
  */
 function _setupCalculatorControls() {
   const importDataBtn = document.getElementById('import-data-btn');
@@ -659,12 +648,10 @@ function _setupCalculatorControls() {
 }
 
 /**
- * (v23.9 - MODIFICADO) Anexa o listener de delegação de eventos da tabela.
+ * Anexa o listener de delegação de eventos da tabela.
  */
 function _setupTableDelegation(summaryContainer, isTouchDevice) {
   if (!summaryContainer) return;
-  
-  // (v23.5) Bug 2 Corrigido: Clonagem desnecessária removida.
   
   renderSummaryTable(); // Renderiza a tabela inicial (O(N))
 
@@ -710,17 +697,15 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
       renderSummaryTable();
     }
 
-    // [MODIFICADO v23.9] Ação de Foto
     if (photoButton) {
       e.preventDefault();
-      // Chama o novo visualizador de fotos (agora no modal.ui.js)
       modalUI.showPhotoViewer(parseInt(photoButton.dataset.id, 10));
     }
   });
 }
 
 /**
- * (v23.11 - CORRIGIDO) Função "maestro" que inicializa a Calculadora.
+ * Função "maestro" que inicializa a Calculadora.
  */
 export function setupRiskCalculator() {
   
@@ -729,7 +714,6 @@ export function setupRiskCalculator() {
   // 1. Setup de Componentes Base
   _setupSubNavigation();
   _setupFileImporters();
-  // [REMOVIDO v23.11] _setupPhotoViewerModal(); // Movido para main.js -> modalUI.init
 
   // 2. Setup de Listeners
   _setupFormListeners(
@@ -746,7 +730,6 @@ export function setupRiskCalculator() {
   _setupTableDelegation(
     document.getElementById('summary-table-container'),
     isTouchDevice
-só isso mesmo. o código está muito bom.
   );
 
   // 5. Setup Mobile
@@ -755,13 +738,10 @@ só isso mesmo. o código está muito bom.
   }
 }
 
-// #####################################################################
-// ### FIM DA SEÇÃO DE REFATORAÇÃO ###
-// #####################################################################
+// === FIM: Seção de Setup da Calculadora ===
 
 
 // === 5. LÓGICA DE TOOLTIPS (UI) ===
-// [MODIFICADO v23.10] - Lógica de PhotoPreview (handlePhotoPreviewClick) removida.
 
 /**
  * Cria ou obtém o elemento de tooltip.
@@ -782,7 +762,7 @@ export function createTooltip() {
 }
 
 /**
- * (v23.8) Esconde o tooltip ativo e reseta a largura.
+ * Esconde o tooltip ativo e reseta a largura.
  */
 export function hideTooltip() {
   if (state.currentTooltip) {
@@ -799,7 +779,7 @@ export function hideTooltip() {
 }
 
 /**
- * (v23.7) Agenda o fechamento do tooltip (para mouseleave)
+ * Agenda o fechamento do tooltip (para mouseleave)
  */
 function scheduleHideTooltip() {
   clearTimeout(tooltipHideTimer);
@@ -807,7 +787,7 @@ function scheduleHideTooltip() {
 }
 
 /**
- * (v23.7) Cancela o fechamento do tooltip (para mouseenter)
+ * Cancela o fechamento do tooltip (para mouseenter)
  */
 function cancelHideTooltip() {
   clearTimeout(tooltipHideTimer);
@@ -823,7 +803,6 @@ function positionTooltip(termElement) {
   requestAnimationFrame(() => {
     if (!state.currentTooltip) return;
     const tooltipWidth = state.currentTooltip.offsetWidth;
-    // [CORREÇÃO v24.1] O texto injetado foi removido daqui
     const tooltipHeight = state.currentTooltip.offsetHeight;
     let topPos = (rect.top > tooltipHeight + 10) ? (rect.top + scrollY - tooltipHeight - 10) : (rect.bottom + scrollY + 10);
     let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
@@ -835,10 +814,6 @@ function positionTooltip(termElement) {
     state.currentTooltip.style.left = `${leftPos}px`;
   });
 }
-
-// [REMOVIDO v23.9] handlePhotoPreviewClick() e zoomTooltipImage()
-
-// --- Funções de Setup de Tooltip (MODIFICADAS v23.7) ---
 
 function setupGlossaryInteractions(detailView) {
   const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');
@@ -859,7 +834,6 @@ function showGlossaryTooltip(event) {
   if (!definition) return;
   const tooltip = createTooltip();
   
-  // (v23.8) Define uma largura padrão para tooltips de TEXTO
   tooltip.style.width = '350px'; 
   
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
@@ -870,7 +844,6 @@ function showGlossaryTooltip(event) {
 }
 
 function toggleGlossaryTooltip(event) {
-  // [CORREÇÃO v23.13] O 'J' foi removido daqui
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
@@ -883,7 +856,6 @@ function toggleGlossaryTooltip(event) {
 
 function setupEquipmentInteractions(detailView) {
   const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-  // [CORREÇÃO v24.1] Texto injetado removido
   equipmentTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showEquipmentTooltip);
@@ -904,7 +876,6 @@ function showEquipmentTooltip(event) {
   tooltip.style.width = '350px';
   
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
-  // [CORREÇÃO v24.1] Artefato de source_id removido
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
   tooltip.style.visibility = 'visible';
@@ -915,7 +886,6 @@ function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-// [CORREÇÃO v23.14] O 'i f' foi corrigido para 'if'
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
@@ -925,7 +895,6 @@ function toggleEquipmentTooltip(event) {
 
 function setupPurposeInteractions(detailView) {
   const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-  // [CORREÇÃO v24.1] Texto injetado removido
   purposeTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showPurposeTooltip);
@@ -942,10 +911,8 @@ function showPurposeTooltip(event) {
   const data = podaPurposeData[termKey];
   if (!data) return;
   const tooltip = createTooltip();
-  // [CORREÇÃO v24.1] Texto injetado removido
   tooltip.style.width = '350px';
   
-  // [CORREÇÃO v23.14] O 't ooltip' foi corrigido para 'tooltip'
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
@@ -954,11 +921,9 @@ function showPurposeTooltip(event) {
 }
 
 function togglePurposeTooltip(event) {
-  // [CORREÇÃO v24.1] Artefatos de source_id removidos
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  // [CORREÇÃO v24.1] Texto injetado removido
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
