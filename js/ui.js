@@ -1,27 +1,31 @@
-// js/ui.js (v23.5 - Correção Crítica do Fluxo de Edição)
+// js/ui.js (v23.7 - Correção de Bug "Flicker" do Tooltip)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js';
+import { showToast, debounce } from './utils.js'; // Debounce ainda é usado para o Filtro da Tabela
 import { getImageFromDB } from './database.js';
 import * as features from './features.js';
 import * as mapUI from './map.ui.js';
 import * as modalUI from './modal.ui.js';
 
-// Helper local para o conteúdo do manual
-const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
+// === 2. ESTADO DO MÓDULO UI ===
 
-// Variáveis de escopo do módulo para detecção de toque
+const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
+// [NOVO v23.7] Timer de tooltip centralizado para evitar race conditions
+let tooltipHideTimer = null;
 
-// === 2. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
 
+// === 3. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
+
+/**
+ * Carrega o HTML de um tópico do manual na view principal.
+ */
 export function loadContent(detailView, content) {
-  // (Sem alterações. O código de loadContent() permanece o mesmo)
   if (!detailView) return;
   if (content) {
     detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
@@ -33,12 +37,15 @@ export function loadContent(detailView, content) {
   }
 }
 
-// === 3. LÓGICA DA CALCULADORA DE RISCO (UI) ===
+// === 4. LÓGICA DA CALCULADORA DE RISCO (UI) ===
 
 let mobileChecklist = { /* ... (objeto permanece o mesmo) ... */ };
 
+/**
+ * Mostra a pergunta do carrossel mobile no índice especificado.
+ */
 export function showMobileQuestion(index) {
-  // (Sem alterações. O código de showMobileQuestion() permanece o mesmo)
+  // (Lógica interna não modificada)
   const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
   const questionRow = questions[index];
   if (!questionRow) return;
@@ -64,8 +71,11 @@ export function showMobileQuestion(index) {
   mobileChecklist.currentIndex = index;
 }
 
+/**
+ * Inicializa o carrossel mobile.
+ */
 export function setupMobileChecklist() {
-  // (Sem alterações. O código de setupMobileChecklist() permanece o mesmo)
+  // (Lógica interna não modificada)
   mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
   if (!mobileChecklist.wrapper) return;
   mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
@@ -104,24 +114,16 @@ export function setupMobileChecklist() {
 
 
 // #####################################################################
-// ### INÍCIO DA SEÇÃO DE PERFORMANCE E SEGURANÇA (v23.5) ###
+// ### SEÇÃO SEGURA E DE PERFORMANCE (v23.3) ###
 // #####################################################################
 
-/**
- * (v23.0) Cria uma célula de tabela (<td>) com texto seguro.
- */
 function createSafeCell(text, className) {
   const cell = document.createElement('td');
   cell.textContent = text;
-  if (className) {
-    cell.className = className;
-  }
+  if (className) cell.className = className;
   return cell;
 }
 
-/**
- * (v23.0) Cria uma célula de tabela (<td>) com um botão de ação.
- */
 function createActionCell({ className, icon, treeId, cellClassName }) {
   const cell = document.createElement('td');
   const button = document.createElement('button');
@@ -134,21 +136,15 @@ function createActionCell({ className, icon, treeId, cellClassName }) {
   return cell;
 }
 
-/**
- * (v23.3) Helper privado que constrói um <tr> para uma árvore.
- */
 function _createTreeRow(tree) {
   const row = document.createElement('tr');
   row.dataset.treeId = tree.id;
-
   const [y, m, d] = (tree.data || '---').split('-');
   const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
   const utmZone = `${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}`;
-
   row.appendChild(createSafeCell(tree.id));
   row.appendChild(createSafeCell(displayDate));
   row.appendChild(createSafeCell(tree.especie));
-  
   const photoCell = document.createElement('td');
   photoCell.style.textAlign = 'center';
   if (tree.hasPhoto) {
@@ -162,7 +158,6 @@ function _createTreeRow(tree) {
     photoCell.textContent = '—';
   }
   row.appendChild(photoCell);
-
   row.appendChild(createSafeCell(tree.coordX));
   row.appendChild(createSafeCell(tree.coordY));
   row.appendChild(createSafeCell(utmZone));
@@ -175,32 +170,25 @@ function _createTreeRow(tree) {
   row.appendChild(createActionCell({ className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom' }));
   row.appendChild(createActionCell({ className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit' }));
   row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
-
   return row;
 }
 
-/**
- * (v23.3) Adiciona uma ÚNICA linha à tabela (Performance O(1)).
- */
 function appendTreeRow(tree) {
   const container = document.getElementById('summary-table-container');
   if (!container) return;
-
   const placeholder = document.getElementById('summary-placeholder');
   if (placeholder) {
     placeholder.remove();
-    renderSummaryTable(); // Renderiza a tabela completa pela primeira vez
+    renderSummaryTable();
     return;
   }
-
   const tbody = container.querySelector('.summary-table tbody');
   if (tbody) {
     const row = _createTreeRow(tree);
-    tbody.appendChild(row); // Adição O(1)
+    tbody.appendChild(row);
   } else {
-    renderSummaryTable(); // Fallback
+    renderSummaryTable();
   }
-  
   const summaryBadge = document.getElementById('summary-badge');
   if (summaryBadge) {
      const count = state.registeredTrees.length;
@@ -209,23 +197,15 @@ function appendTreeRow(tree) {
   }
 }
 
-/**
- * (v23.3) Remove uma ÚNICA linha da tabela (Performance O(1)).
- */
 function removeTreeRow(id) {
   const container = document.getElementById('summary-table-container');
   if (!container) return;
-
   const row = container.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
-  if (row) {
-    row.remove(); // Remoção O(1)
-  }
-
+  if (row) row.remove();
   const tbody = container.querySelector('.summary-table tbody');
   const summaryBadge = document.getElementById('summary-badge');
-  
   if (tbody && tbody.children.length === 0) {
-    renderSummaryTable(); // Recria para mostrar o placeholder
+    renderSummaryTable();
   } else if (summaryBadge) {
      const count = state.registeredTrees.length;
      summaryBadge.textContent = count > 0 ? `(${count})` : '';
@@ -233,21 +213,16 @@ function removeTreeRow(id) {
   }
 }
 
-/**
- * (v23.3) Renderiza a tabela de resumo de árvores (O(N)).
- */
 export function renderSummaryTable() {
   const container = document.getElementById('summary-table-container');
   const importExportControls = document.getElementById('import-export-controls');
   const summaryBadge = document.getElementById('summary-badge');
   if (!container) return;
-
   const count = state.registeredTrees.length;
   if (summaryBadge) {
     summaryBadge.textContent = count > 0 ? `(${count})` : '';
     summaryBadge.style.display = count > 0 ? 'inline' : 'none';
   }
-
   if (count === 0) {
     container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
     if (importExportControls) {
@@ -257,27 +232,21 @@ export function renderSummaryTable() {
     }
     return;
   }
-
   if (importExportControls) {
     document.getElementById('export-data-btn')?.setAttribute('style', 'display:inline-flex');
     document.getElementById('send-email-btn')?.setAttribute('style', 'display:inline-flex');
     document.getElementById('clear-all-btn')?.setAttribute('style', 'display:inline-flex');
   }
-
   container.innerHTML = '';
   const table = document.createElement('table');
   table.className = 'summary-table';
   const thead = document.createElement('thead');
   const headerRow = document.createElement('tr');
-
   const getThClass = (key) => {
     let classes = 'sortable';
-    if (state.sortState.key === key) {
-      classes += state.sortState.direction === 'asc' ? ' sort-asc' : ' sort-desc';
-    }
+    if (state.sortState.key === key) classes += state.sortState.direction === 'asc' ? ' sort-asc' : ' sort-desc';
     return classes;
   };
-
   const headers = [
     { key: 'id', text: 'ID' }, { key: 'data', text: 'Data' }, { key: 'especie', text: 'Espécie' },
     { key: null, text: 'Foto' }, { key: 'coordX', text: 'Coord. X' }, { key: 'coordY', text: 'Coord. Y' },
@@ -286,7 +255,6 @@ export function renderSummaryTable() {
     { key: null, text: 'Observações' }, { key: null, text: 'Zoom', className: 'col-zoom' },
     { key: null, text: 'Editar', className: 'col-edit' }, { key: null, text: 'Excluir', className: 'col-delete' },
   ];
-
   headers.forEach(header => {
     const th = document.createElement('th');
     th.textContent = header.text;
@@ -299,7 +267,6 @@ export function renderSummaryTable() {
   });
   thead.appendChild(headerRow);
   table.appendChild(thead);
-
   const sortedData = [...state.registeredTrees].sort((a, b) => {
     const valA = features.getSortValue(a, state.sortState.key);
     const valB = features.getSortValue(b, state.sortState.key);
@@ -307,20 +274,16 @@ export function renderSummaryTable() {
     if (valA > valB) return state.sortState.direction === 'asc' ? 1 : -1;
     return 0;
   });
-
   const tbody = document.createElement('tbody');
   sortedData.forEach(tree => {
     const row = _createTreeRow(tree);
     tbody.appendChild(row);
   });
   table.appendChild(tbody);
-  
   container.appendChild(table);
 }
 
-// #####################################################################
-// ### FIM DA SEÇÃO DE PERFORMANCE E SEGURANÇA ###
-// #####################################################################
+// --- FIM DA SEÇÃO DE PERFORMANCE ---
 
 
 /**
@@ -331,7 +294,6 @@ export function showSubTab(targetId) {
   subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
   const subNavButtons = document.querySelectorAll('.sub-nav-btn');
   subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
-
   if (targetId === 'tab-content-mapa') {
     setTimeout(() => { mapUI.initializeMap(); }, 50);
   }
@@ -395,36 +357,28 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
 
 /**
  * [NOVO v23.5] Alterna o modo do formulário entre Adicionar e Editar.
- * @param {'add' | 'edit'} mode 
  */
 function _setFormMode(mode) {
   const btn = document.getElementById('add-tree-btn');
   if (!btn) return;
-
   if (mode === 'edit') {
     btn.textContent = '💾 Salvar Alterações';
-    btn.style.backgroundColor = 'var(--color-accent)'; // Amarelo
+    btn.style.backgroundColor = 'var(--color-accent)';
     btn.style.color = 'var(--color-dark)';
   } else {
-    // Modo 'add'
     btn.textContent = '➕ Adicionar Árvore';
-    btn.style.backgroundColor = 'var(--color-primary-medium)'; // Verde
+    btn.style.backgroundColor = 'var(--color-primary-medium)';
     btn.style.color = 'white';
   }
 }
 
 /**
  * [NOVO v23.5] Preenche o formulário com dados da árvore para edição.
- * @param {object} tree O objeto da árvore.
  */
 function _populateFormForEdit(tree) {
   if (!tree) return;
-  
-  // 1. Limpa o formulário (sem acionar o listener de reset)
   document.getElementById('risk-calculator-form').reset();
   features.clearPhotoPreview();
-
-  // 2. Preenche campos de texto
   document.getElementById('risk-data').value = tree.data;
   document.getElementById('risk-especie').value = tree.especie;
   document.getElementById('risk-local').value = tree.local;
@@ -434,7 +388,6 @@ function _populateFormForEdit(tree) {
   document.getElementById('risk-avaliador').value = tree.avaliador;
   document.getElementById('risk-obs').value = tree.observacoes;
 
-  // 3. Preenche a foto (se houver)
   if (tree.hasPhoto) {
     getImageFromDB(tree.id, (imageBlob) => {
       if (imageBlob) {
@@ -445,7 +398,6 @@ function _populateFormForEdit(tree) {
         preview.src = URL.createObjectURL(imageBlob);
         previewContainer.prepend(preview);
         removePhotoBtn.style.display = 'block';
-        // Define a foto atual no state, caso o usuário a salve sem alterar
         state.setCurrentTreePhoto(imageBlob);
       } else {
         utils.showToast(`Foto da Árvore ID ${tree.id} não encontrada no DB.`, "error");
@@ -453,13 +405,11 @@ function _populateFormForEdit(tree) {
     });
   }
 
-  // 4. Preenche os checkboxes
   const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
   allCheckboxes.forEach((cb, index) => {
     cb.checked = (tree.riskFactors && tree.riskFactors[index] === 1) || false;
   });
   
-  // 5. Atualiza o status do GPS (lido pelo features.js)
   const gpsStatus = document.getElementById('gps-status');
   if (gpsStatus) {
     gpsStatus.textContent = `Zona (da árvore): ${state.lastUtmZone.num}${state.lastUtmZone.letter}`;
@@ -517,12 +467,9 @@ function _setupFileImporters() {
 
 /**
  * (v23.5 - MODIFICADO) Anexa listeners ao formulário principal (submit, reset, gps).
- * @param {HTMLFormElement} form 
- * @param {boolean} isTouchDevice 
  */
 function _setupFormListeners(form, isTouchDevice) {
   if (!form) return;
-
   const getGpsBtn = document.getElementById('get-gps-btn');
   const resetBtn = document.getElementById('reset-risk-form-btn');
   const gpsStatus = document.getElementById('gps-status');
@@ -536,43 +483,33 @@ function _setupFormListeners(form, isTouchDevice) {
 
   // [MODIFICADO v23.5] Listener de Submit (Adicionar ou Atualizar)
   form.addEventListener('submit', (event) => {
-    // features.handleAddTreeSubmit agora é "inteligente"
     const result = features.handleAddTreeSubmit(event); 
-    
     if (result && result.success) {
       if (result.mode === 'add') {
         appendTreeRow(result.tree); // O(1)
       } else if (result.mode === 'update') {
         renderSummaryTable(); // O(N) - Necessário para re-ordenar/atualizar
       }
-      
       if (isTouchDevice) setupMobileChecklist();
       if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-      
       _setFormMode('add'); // Reseta o botão
     }
-    // Se result.success for false, a 'feature' já mostrou o toast de erro.
   });
 
   // [MODIFICADO v23.5] Listener de Limpar Campos (Reset)
   if (resetBtn) {
     resetBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      // Salva o avaliador (lógica de UI)
       state.setLastEvaluatorName(document.getElementById('risk-avaliador').value || '');
-      
       form.reset();
       features.clearPhotoPreview();
-      
-      // Re-aplica padrões
       try {
         document.getElementById('risk-data').value = new Date().toISOString().split('T')[0];
         document.getElementById('risk-avaliador').value = state.lastEvaluatorName;
       } catch(err) { /* ignora */ }
-      
       if (isTouchDevice) setupMobileChecklist();
       if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-
+      
       // [NOVO v23.5] Cancela o modo de edição
       state.setEditingTreeId(null);
       _setFormMode('add');
@@ -586,7 +523,6 @@ function _setupFormListeners(form, isTouchDevice) {
 function _setupPhotoListeners() {
   const photoInput = document.getElementById('tree-photo-input');
   const removePhotoBtn = document.getElementById('remove-photo-btn');
-
   if (photoInput) {
     photoInput.addEventListener('change', async (event) => {
       const file = event.target.files[0];
@@ -624,21 +560,17 @@ function _setupCalculatorControls() {
   const sendEmailBtn = document.getElementById('send-email-btn');
   const clearAllBtn = document.getElementById('clear-all-btn');
   const filterInput = document.getElementById('table-filter-input');
-  
   if (importDataBtn) importDataBtn.addEventListener('click', modalUI.showImportModal);
   if (exportDataBtn) exportDataBtn.addEventListener('click', modalUI.showExportModal);
   if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
   if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
-
   if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
     modalUI.showGenericModal({
       title: '🗑️ Limpar Tabela',
       description: 'Tem certeza que deseja apagar TODOS os registros? Esta ação não pode ser desfeita.',
       buttons: [
         { text: 'Sim, Apagar Tudo', class: 'primary', action: () => {
-          if (features.handleClearAll()) {
-            renderSummaryTable(); // OK (O(N)
-          }
+          if (features.handleClearAll()) renderSummaryTable();
         }},
         { text: 'Cancelar', class: 'cancel' }
       ]
@@ -648,15 +580,14 @@ function _setupCalculatorControls() {
 
 /**
  * (v23.5 - MODIFICADO) Anexa o listener de delegação de eventos da tabela.
- * @param {HTMLElement} summaryContainer - O container original da tabela.
- * @param {boolean} isTouchDevice 
  */
 function _setupTableDelegation(summaryContainer, isTouchDevice) {
   if (!summaryContainer) return;
-
-  const newSummaryContainer = summaryContainer.cloneNode(true);
-  summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
-  summaryContainer = newSummaryContainer;
+  
+  // [MODIFICADO v23.5] Removemos a clonagem desnecessária (Bug 2)
+  // const newSummaryContainer = summaryContainer.cloneNode(true);
+  // summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
+  // summaryContainer = newSummaryContainer;
   
   renderSummaryTable(); // Renderiza a tabela inicial (O(N))
 
@@ -689,18 +620,12 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
     if (editButton) {
       const treeData = features.handleEditTree(parseInt(editButton.dataset.id, 10));
       if (treeData) {
-        // 1. Preenche o formulário
         _populateFormForEdit(treeData);
-        // 2. Muda o texto do botão
         _setFormMode('edit');
-        // 3. Muda para a aba de registro
         showSubTab('tab-content-register');
-        // 4. Atualiza o carrossel (se mobile)
         if (isTouchDevice) setupMobileChecklist();
-        // 5. Rola para o topo do formulário
         document.getElementById('risk-calculator-form').scrollIntoView({ behavior: 'smooth' });
       }
-      // (Não renderiza mais a tabela aqui)
     }
 
     // Ação de Zoom
@@ -723,7 +648,7 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
 }
 
 /**
- * (v23.4 - REFATORADO) Função "maestro" que inicializa a Calculadora.
+ * (v23.5 - MODIFICADO) Função "maestro" que inicializa a Calculadora.
  */
 export function setupRiskCalculator() {
   
@@ -761,9 +686,12 @@ export function setupRiskCalculator() {
 // #####################################################################
 
 
-// === 4. LÓGICA DE TOOLTIPS (UI) ===
-// (Sem alterações)
+// === 5. LÓGICA DE TOOLTIPS (UI) ===
+// [MODIFICADO v23.7] Correção do Bug de "Flicker"
 
+/**
+ * Cria ou obtém o elemento de tooltip.
+ */
 export function createTooltip() {
   let tooltip = document.getElementById('glossary-tooltip');
   if (!tooltip) {
@@ -778,6 +706,10 @@ export function createTooltip() {
   state.setCurrentTooltip(tooltip);
   return tooltip;
 }
+
+/**
+ * Esconde o tooltip ativo.
+ */
 export function hideTooltip() {
   if (state.currentTooltip) {
     const img = state.currentTooltip.querySelector('img');
@@ -790,6 +722,25 @@ export function hideTooltip() {
     state.setCurrentTooltip(null);
   }
 }
+
+/**
+ * [NOVO v23.7] Agenda o fechamento do tooltip (para mouseleave)
+ */
+function scheduleHideTooltip() {
+  clearTimeout(tooltipHideTimer); // Limpa qualquer agendamento anterior
+  tooltipHideTimer = setTimeout(hideTooltip, 200); // Agenda novo hide
+}
+
+/**
+ * [NOVO v23.7] Cancela o fechamento do tooltip (para mouseenter)
+ */
+function cancelHideTooltip() {
+  clearTimeout(tooltipHideTimer);
+}
+
+/**
+ * Posiciona o tooltip em relação a um elemento.
+ */
 function positionTooltip(termElement) {
   if (!state.currentTooltip) return;
   const rect = termElement.getBoundingClientRect();
@@ -808,7 +759,12 @@ function positionTooltip(termElement) {
     state.currentTooltip.style.left = `${leftPos}px`;
   });
 }
+
+/**
+ * Mostra o preview da foto (usando a infraestrutura do tooltip).
+ */
 function handlePhotoPreviewClick(id, targetElement) {
+  cancelHideTooltip(); // [NOVO v23.7]
   getImageFromDB(id, (imageBlob) => {
     if (!imageBlob) {
       showToast("Foto não encontrada no banco de dados.", "error");
@@ -823,18 +779,24 @@ function handlePhotoPreviewClick(id, targetElement) {
     tooltip.dataset.currentElement = `photo-${id}`;
   });
 }
+
+// --- Funções de Setup de Tooltip (MODIFICADAS v23.7) ---
+
 function setupGlossaryInteractions(detailView) {
   const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');
-  const debouncedHide = debounce(hideTooltip, 200);
+  // [REMOVIDO v23.7] const debouncedHide = debounce(hideTooltip, 200);
+  
   glossaryTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showGlossaryTooltip);
-      termElement.addEventListener('mouseleave', debouncedHide);
+      termElement.addEventListener('mouseleave', scheduleHideTooltip); // [MODIFICADO v23.7]
     }
     termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);
   });
 }
+
 function showGlossaryTooltip(event) {
+  cancelHideTooltip(); // [NOVO v23.7] Cancela qualquer 'hide' pendente
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const definition = glossaryTerms[termKey];
@@ -846,6 +808,7 @@ function showGlossaryTooltip(event) {
   tooltip.style.visibility = 'visible';
   tooltip.dataset.currentElement = termElement.textContent;
 }
+
 function toggleGlossaryTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
@@ -856,18 +819,22 @@ function toggleGlossaryTooltip(event) {
     showGlossaryTooltip(event);
   }
 }
+
 function setupEquipmentInteractions(detailView) {
   const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-  const debouncedHide = debounce(hideTooltip, 200);
+  // [REMOVIDO v23.7] const debouncedHide = debounce(hideTooltip, 200);
+  
   equipmentTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showEquipmentTooltip);
-      termElement.addEventListener('mouseleave', debouncedHide);
+      termElement.addEventListener('mouseleave', scheduleHideTooltip); // [MODIFICADO v23.7]
     }
     termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
   });
 }
+
 function showEquipmentTooltip(event) {
+  cancelHideTooltip(); // [NOVO v23.7] Cancela qualquer 'hide' pendente
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const data = equipmentData[termKey];
@@ -879,6 +846,7 @@ function showEquipmentTooltip(event) {
   tooltip.style.visibility = 'visible';
   tooltip.dataset.currentElement = termElement.textContent;
 }
+
 function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
@@ -889,18 +857,22 @@ function toggleEquipmentTooltip(event) {
     showEquipmentTooltip(event);
   }
 }
+
 function setupPurposeInteractions(detailView) {
   const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-  const debouncedHide = debounce(hideTooltip, 200);
+  // [REMOVIDO v23.7] const debouncedHide = debounce(hideTooltip, 200);
+
   purposeTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showPurposeTooltip);
-      termElement.addEventListener('mouseleave', debouncedHide);
+      termElement.addEventListener('mouseleave', scheduleHideTooltip); // [MODIFICADO v23.7]
     }
     termElement.addEventListener(termClickEvent, togglePurposeTooltip);
   });
 }
+
 function showPurposeTooltip(event) {
+  cancelHideTooltip(); // [NOVO v23.7] Cancela qualquer 'hide' pendente
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const data = podaPurposeData[termKey];
@@ -912,6 +884,7 @@ function showPurposeTooltip(event) {
   tooltip.style.visibility = 'visible';
   tooltip.dataset.currentElement = termElement.textContent;
 }
+
 function togglePurposeTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
