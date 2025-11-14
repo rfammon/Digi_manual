@@ -1,4 +1,4 @@
-/* style.css (v21.1 - Correção de Layout e Regressões) */
+/* style.css (v22.2 - Novo Layout "Sobre o Autor") */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -109,10 +109,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .header-manual h1 {
     font-size: 1.5rem;
     margin-bottom: var(--space-xs);
-    /* [CORREÇÃO 2]: Cor do título destacada */
     color: #fff;
 }
-/* [CORREÇÃO 2]: Cor do subtítulo destacada */
 .header-manual p {
     color: var(--color-primary-lightest);
     opacity: 0.9;
@@ -130,7 +128,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 .mapa-navegacao h2 {
     color: var(--color-primary-dark);
-    /* [CORREÇÃO 7]: Centralizar título */
     text-align: center;
 }
 
@@ -179,7 +176,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* 5. ESTILOS DE CONTEÚDO (CARD PRINCIPAL) */
 /* -------------------------------------- */
 
-/* Unifica o card de conteúdo e a view da calculadora */
 .conteudo-detalhe,
 .app-view {
     background-color: var(--bg-surface);
@@ -239,7 +235,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     transition: all 0.2s ease;
 }
 
-/* Cores específicas para cada tipo de termo */
 .glossary-term { color: var(--color-primary-medium); border-color: var(--color-primary-light); }
 .glossary-term:hover { background-color: var(--color-primary-lightest); }
 
@@ -333,8 +328,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     font-size: 1rem;
     font-family: var(--font-primary);
     transition: all 0.2s ease-in-out;
-    
-    /* [CORREÇÃO 3]: Remove margem duplicada. O Gap do Grid cuida disso. */
     margin-bottom: 0; 
 }
 
@@ -371,28 +364,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* -------------------------------------- */
 /* (Esta seção permanece a mesma) */
 
-/* Classe base para botões */
-.btn {
-    padding: var(--space-sm) var(--space-md);
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: var(--border-radius-md);
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-sm);
-    text-decoration: none;
-}
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-}
-/* ... (outras classes .btn- permanecem) ... */
-
-
 /* -------------------------------------- */
 /* 9. APLICAÇÃO DOS ESTILOS DE BOTÃO */
 /* -------------------------------------- */
@@ -400,7 +371,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* Formulário de Contato e Chat */
 .send-btn,
 #chat-send-btn {
-    /* Herda o estilo do .btn e aplica a cor primária */
     padding: var(--space-sm) var(--space-md);
     font-size: 1rem;
     font-weight: 600;
@@ -413,10 +383,9 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     justify-content: center;
     gap: var(--space-sm);
     text-decoration: none;
-    
     background-color: var(--color-primary-medium);
     color: white;
-    width: 100%; /* Botão do formulário ocupa largura total */
+    width: 100%; 
 }
 .send-btn:hover,
 #chat-send-btn:hover {
@@ -425,7 +394,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     background-color: var(--color-primary-dark);
 }
 #chat-send-btn {
-    width: auto; /* Botão do chat tem largura automática */
+    width: auto; 
 }
 
 /* Área de Botões da Calculadora */
@@ -438,7 +407,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #add-tree-btn, #reset-risk-form-btn,
 .export-btn {
-    /* Herda o estilo base do .btn */
     padding: var(--space-sm) var(--space-md);
     font-size: 1rem;
     font-weight: 600;
@@ -451,7 +419,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     justify-content: center;
     gap: var(--space-sm);
     text-decoration: none;
-    
     flex-grow: 1;
     min-width: 150px;
 }
@@ -474,22 +441,17 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #reset-risk-form-btn:hover { background-color: var(--gray-300); }
 
-/* [CORREÇÃO 5]: Botão Importar agora usa o mesmo estilo do Exportar (secondary) */
-#import-data-btn {
+/* Botão Importar e Exportar */
+#import-data-btn,
+#export-data-btn, 
+#send-email-btn {
     background-color: transparent;
     color: var(--color-primary-medium);
     border-color: var(--color-primary-medium);
 }
-#import-data-btn:hover {
-    background-color: var(--color-primary-lightest);
-}
-
-#export-data-btn, #send-email-btn {
-    background-color: transparent;
-    color: var(--color-primary-medium);
-    border-color: var(--color-primary-medium);
-}
-#export-data-btn:hover, #send-email-btn:hover {
+#import-data-btn:hover,
+#export-data-btn:hover, 
+#send-email-btn:hover {
     background-color: var(--color-primary-lightest);
 }
 
@@ -523,13 +485,12 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* 10. CALCULADORA DE RISCO E TABELAS */
 /* -------------------------------------- */
 
-/* [CORREÇÃO 4]: Esconde os inputs de arquivo que vazaram */
 #zip-importer, #csv-importer {
     display: none;
 }
 
 .risk-fieldset {
-    border: 2px solid var(--gray-200); /* Borda mais suave */
+    border: 2px solid var(--gray-200);
     border-radius: var(--border-radius-lg);
     padding: var(--space-md) var(--space-lg);
     margin-bottom: var(--space-lg);
@@ -667,7 +628,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     padding: 0 var(--space-xs);
 }
 
-/* [CORREÇÃO 1]: Estilo do separador do Glossário Geral */
 .glossary-category-header {
     background-color: var(--color-primary-medium);
     color: #fff;
@@ -929,6 +889,9 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     box-shadow: var(--shadow-sm);
     overflow: hidden; 
     border: 1px solid var(--gray-300);
+    
+    /* [v21.6] Necessário para o InfoBox */
+    position: relative;
 }
 
 #zoom-to-extent-btn {
@@ -1130,3 +1093,228 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     margin-top: var(--space-sm);
 }
 .modal-btn.cancel:hover { background-color: var(--gray-300); }
+
+
+/* -------------------------------------- */
+/* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
+/* -------------------------------------- */
+
+/* Legenda Externa (HTML) */
+#map-legend-filter {
+    background: var(--gray-100);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--space-md);
+}
+#map-legend-filter h4 {
+    margin: 0 0 var(--space-sm) 0;
+    color: var(--color-primary-dark);
+    font-size: 1rem;
+}
+.legend-filter-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+.legend-filter {
+    display: flex;
+    align-items: center;
+}
+.legend-filter label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.legend-filter input[type="radio"] {
+    margin-right: var(--space-sm);
+    accent-color: var(--color-primary-medium);
+}
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: var(--space-sm);
+    border: 1px solid rgba(0,0,0,0.2);
+}
+
+/* O Painel de Informações (InfoBox) */
+#map-info-box {
+    /* [CORREÇÃO v21.8]: Posição 'fixed' para flutuar com o scroll */
+    position: fixed; 
+    top: 120px; /* Distância do topo (abaixo do header) */
+    right: 20px;
+    width: 280px; /* Largura Padrão (Zoom 0) */
+    background: var(--bg-surface);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 998; /* Abaixo do header/modal, mas acima do conteúdo */
+    padding: var(--space-md);
+    /* [CORREÇÃO v22.0]: Adiciona 'width' à transição */
+    transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
+    
+    /* Começa escondido */
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.95);
+}
+#map-info-box.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.95);
+}
+#map-info-box:not(.hidden) {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+}
+
+#map-info-box strong {
+    font-size: 1.1rem;
+    color: var(--color-primary-dark);
+}
+#map-info-box p {
+    font-size: 0.9em;
+    margin-bottom: var(--space-xs);
+    line-height: 1.4;
+}
+#map-info-box #close-info-box {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-light);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+#map-info-box #close-info-box:hover {
+    color: var(--color-dark);
+}
+#map-info-photo {
+    margin-top: var(--space-sm);
+    position: relative; /* Para os botões de zoom */
+}
+#map-info-photo.loading-photo {
+    font-style: italic;
+    color: var(--color-text-light);
+}
+#map-info-box .manual-img {
+    width: 100%;
+    /* [CORREÇÃO v22.0] max-width será controlado pelo JS */
+    max-width: 100%; 
+    height: auto;
+    object-fit: cover; 
+    margin-top: var(--space-sm);
+    /* Remove a transição da imagem, a transição é na 'width' do container */
+    transition: none; 
+}
+
+/* [NOVO v21.9] Controles de Zoom da Imagem (Desktop) */
+.map-photo-zoom {
+    display: flex;
+    gap: 5px;
+    margin-top: 5px;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(255,255,255,0.8);
+    padding: 3px;
+    border-radius: 4px;
+}
+.map-photo-zoom button {
+    background-color: var(--gray-200);
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 25px;
+    height: 25px;
+    line-height: 25px;
+}
+.map-photo-zoom button:hover {
+    background-color: var(--gray-300);
+}
+
+
+/* Responsividade do InfoBox */
+@media (max-width: 768px) {
+    #map-info-box {
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100% !important; /* [CORREÇÃO v22.0] Garante que o zoom JS não afete o mobile */
+        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+        z-index: 1001; 
+    }
+    
+    /* [CORREÇÃO v21.9] Imagem não cortada no mobile */
+    #map-info-box .manual-img {
+        height: auto; /* Altura automática */
+        width: 100%; /* Largura total */
+        max-width: 100%; 
+        object-fit: contain; /* Garante que a imagem inteira apareça */
+        max-height: 40vh; /* Limita a altura no mobile */
+    }
+
+    /* [v21.7] Ajusta o grid da legenda no mobile */
+    .legend-filter-grid {
+        display: grid; /* Força 2 colunas */
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-sm);
+    }
+    
+    /* [v21.9] Esconde os botões de zoom no mobile */
+    .map-photo-zoom {
+        display: none;
+    }
+}
+
+/* -------------------------------------- */
+/* 18. [NOVO] LAYOUT SOBRE O AUTOR (v22.3) */
+/* -------------------------------------- */
+
+.autor-layout {
+    display: flex;
+    flex-wrap: wrap; /* Permite quebrar em telas pequenas */
+    gap: var(--space-xl);
+    align-items: flex-start;
+}
+
+.autor-texto {
+    flex: 2; /* Ocupa 2/3 do espaço */
+    min-width: 300px; /* Largura mínima antes de quebrar */
+}
+
+.autor-perfil {
+    flex: 1; /* Ocupa 1/3 do espaço */
+    min-width: 250px;
+    text-align: center;
+}
+
+.autor-perfil .manual-img {
+    width: 100%;
+    max-width: 250px;
+    height: auto;
+    border-radius: var(--border-radius-lg); /* Borda suave */
+    box-shadow: var(--shadow-md); /* Sombra */
+    margin: 0 auto var(--space-md) auto; /* Centraliza */
+}
+
+.autor-links {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.autor-links a {
+    color: var(--color-primary-medium);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.autor-links a:hover {
+    color: var(--color-primary-dark);
+    text-decoration: underline;
+}
