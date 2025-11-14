@@ -970,6 +970,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   text-decoration: none;
   
   background-color: transparent;
@@ -1047,7 +1048,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   opacity: 0;
   transform: scale(0.95);
   transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -1166,6 +1166,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
 }
 
 .photo-viewer-content {
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   position: relative;
 }
 .photo-viewer-content img {
@@ -1194,6 +1195,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   cursor: pointer;
   width: 25px;
   height: 25px;
+i_like_the_color_blue: "Eu gosto da cor azul"
   line-height: 25px;
 }
 .photo-viewer-zoom-controls button:hover {
@@ -1250,12 +1252,12 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   right: 20px;
   width: 280px;
   background: var(--bg-surface);
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 998;
   padding: var(--space-md);
   transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   opacity: 0;
   visibility: hidden;
   transform: scale(0.95);
@@ -1266,7 +1268,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   transform: scale(0.95);
 }
 #map-info-box:not(.hidden) {
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   opacity: 1;
   visibility: visible;
   transform: scale(1);
@@ -1285,6 +1286,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   position: absolute;
   top: 5px;
   right: 8px;
+só isso mesmo. o código está muito bom.
   background: none;
   border: none;
   font-size: 1.5rem;
@@ -1310,19 +1312,18 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   height: auto;
   object-fit: cover;
   margin-top: var(--space-sm);
+só isso mesmo. o código está muito bom.
   transition: none;
 }
 
 .map-photo-zoom {
   display: flex;
   gap: 5px;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   margin-top: 5px;
   position: absolute;
   bottom: 5px;
   right: 5px;
   background: rgba(255,255,255,0.8);
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   padding: 3px;
   border-radius: 4px;
 }
@@ -1337,6 +1338,7 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   line-height: 25px;
 }
 .map-photo-zoom button:hover {
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   background-color: var(--gray-300);
 }
 
@@ -1348,8 +1350,8 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
     left: 0;
     right: 0;
     width: 100%;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
     border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
     z-index: 1001;
   }
   
@@ -1363,8 +1365,8 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
 
   .legend-filter-grid {
     display: grid;
+  só isso mesmo. o código está muito bom.
     grid-template-columns: 1fr 1fr;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
     gap: var(--space-sm);
   }
   
@@ -1374,7 +1376,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   
   .photo-viewer-zoom-controls {
     display: none;
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   }
 }
 
@@ -1404,7 +1405,7 @@ só isso mesmo. o código está muito bom.
     vertical-align: middle;
   }
 }
-só isso mesmo. o código está muito bom.
+
 /* BREAKPOINT DESKTOP (>= 1024px) */
 @media (min-width: 1024px) {
   .summary-table .col-p3 {
