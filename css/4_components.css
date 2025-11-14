@@ -1,0 +1,754 @@
+/* css/4_components.css */
+
+/* -------------------------------------- */
+/* 4. COMPONENTES: ÍNDICE (MAPA MENTAL) */
+/* -------------------------------------- */
+
+.mapa-navegacao h2 {
+  color: var(--color-primary-dark);
+  text-align: center;
+}
+
+.topicos-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.topico-btn {
+  padding: var(--space-md) var(--space-sm);
+  background-color: var(--bg-surface);
+  color: var(--color-primary-medium);
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.topico-btn:hover {
+  background-color: var(--color-primary-lightest);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+.topico-btn.active {
+  background-color: var(--color-accent);
+  color: var(--color-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-accent-dark);
+}
+
+
+/* -------------------------------------- */
+/* 6. COMPONENTES: GLOSSÁRIO INTERATIVO (TOOLTIP) */
+/* -------------------------------------- */
+
+.glossary-term,
+.equipment-term,
+.purpose-term {
+  font-weight: 600;
+  cursor: help;
+  border-bottom: 2px dotted;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.glossary-term { color: var(--color-primary-medium); border-color: var(--color-primary-light); }
+.glossary-term:hover { background-color: var(--color-primary-lightest); }
+
+.equipment-term { color: var(--color-accent-dark); border-color: var(--color-accent); }
+.equipment-term:hover { background-color: #FFF8E1; }
+
+.purpose-term { color: var(--color-danger); border-color: var(--color-danger-light); }
+.purpose-term:hover { background-color: var(--color-danger-light); }
+
+
+#glossary-tooltip {
+  position: absolute;
+  background-color: var(--color-dark);
+  color: #fff;
+  border-radius: var(--border-radius-md);
+  padding: var(--space-sm) var(--space-md);
+  max-width: 90vw;
+  /* [MODIFICADO v22.1] 'width' agora é controlado pelo JS (para zoom da foto) */
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  /* [MODIFICADO v22.1] Adiciona 'width' à transição */
+  transition: opacity 0.2s, visibility 0.2s, width 0.3s ease-in-out;
+  opacity: 0;
+  visibility: hidden;
+  text-align: left;
+  font-size: 0.9em;
+}
+
+#glossary-tooltip strong {
+  color: var(--color-accent);
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-size: 1.1em;
+}
+
+#glossary-tooltip p {
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+#glossary-tooltip .manual-img {
+  margin: var(--space-sm) 0;
+  /* [NOVO v22.1] Garante que a imagem se ajuste ao container */
+  width: 100%; 
+  height: auto;
+  display: block;
+}
+
+/* [MODIFICADO v23.9] Apenas tooltips de texto/imagem, não o modal de fotos */
+#tooltip-photo-container {
+  position: relative;
+  padding: 0;
+}
+#glossary-tooltip[data-current-element^="photo-"] {
+  padding: var(--space-sm);
+}
+#tooltip-photo-container .manual-img {
+  margin: 0; 
+  border-radius: var(--border-radius-md);
+}
+.tooltip-photo-zoom {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.tooltip-photo-zoom button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+  color: var(--color-dark);
+}
+.tooltip-photo-zoom button:hover {
+  background-color: var(--gray-300);
+}
+
+
+/* -------------------------------------- */
+/* 8. COMPONENTES: BOTÕES (PADRONIZAÇÃO GERAL) */
+/* -------------------------------------- */
+/* (Esta seção permanece a mesma) */
+/* NOTA: A seção 8 do seu CSS original estava vazia, então pulamos para a 9 */
+
+
+/* -------------------------------------- */
+/* 9. COMPONENTES: APLICAÇÃO DOS ESTILOS DE BOTÃO */
+/* -------------------------------------- */
+
+/* Formulário de Contato e Chat */
+.send-btn,
+#chat-send-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  background-color: var(--color-primary-medium);
+  color: white;
+  width: 100%;
+}
+.send-btn:hover,
+#chat-send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-primary-dark);
+}
+#chat-send-btn {
+  width: auto;
+}
+
+/* Área de Botões da Calculadora */
+.risk-buttons-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+#add-tree-btn, #reset-risk-form-btn,
+.export-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  flex-grow: 1;
+  min-width: 150px;
+}
+#add-tree-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+#reset-risk-form-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.export-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+
+/* Aplica as classes de cor */
+#add-tree-btn {
+  background-color: var(--color-primary-medium);
+  color: white;
+}
+#add-tree-btn:hover { background-color: var(--color-primary-dark); }
+
+#reset-risk-form-btn {
+  background-color: var(--gray-200);
+  color: var(--color-text-light);
+  border-color: var(--gray-300);
+}
+#reset-risk-form-btn:hover { background-color: var(--gray-300); }
+
+/* Botão Importar e Exportar */
+#import-data-btn,
+#export-data-btn,
+#send-email-btn {
+  background-color: transparent;
+  color: var(--color-primary-medium);
+  border-color: var(--color-primary-medium);
+}
+#import-data-btn:hover,
+#export-data-btn:hover,
+#send-email-btn:hover {
+  background-color: var(--color-primary-lightest);
+}
+
+#clear-all-btn {
+  background-color: var(--color-danger);
+  color: white;
+}
+#clear-all-btn:hover { background-color: var(--color-danger-dark); }
+
+/* Botão de GPS */
+#get-gps-btn {
+  background-color: var(--color-primary-dark);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: var(--space-sm) var(--space-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+#get-gps-btn:hover { background-color: var(--color-primary-medium); }
+#get-gps-btn:disabled { background-color: var(--color-primary-medium); cursor: not-allowed; }
+
+/* Botões da Tabela (Editar, Deletar, Zoom) */
+.edit-tree-btn,
+.delete-tree-btn,
+.zoom-tree-btn,
+.photo-preview-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: var(--space-sm);
+  line-height: 1;
+  width: 100%;
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.2s;
+}
+.delete-tree-btn { color: var(--color-danger); }
+.delete-tree-btn:hover { color: var(--color-danger-dark); background-color: var(--color-danger-light); }
+.edit-tree-btn { color: #1565C0; }
+.edit-tree-btn:hover { color: #1976D2; background-color: #BBDEFB; }
+.zoom-tree-btn { color: var(--color-primary-dark); }
+.zoom-tree-btn:hover { color: var(--color-primary-medium); background-color: var(--color-primary-lightest); }
+.photo-preview-btn { color: var(--color-accent-dark); }
+.photo-preview-btn:hover { background-color: #FFF8E1; }
+
+/* Botão de Upload de Foto */
+.photo-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  
+  background-color: transparent;
+  color: var(--color-primary-medium);
+  border: 2px solid var(--color-primary-medium);
+}
+.photo-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  background-color: var(--color-primary-lightest);
+  color: var(--color-primary-dark);
+}
+
+/* -------------------------------------- */
+/* 11. COMPONENTES: ABAS SECUNDÁRIAS (Calculadora) */
+/* -------------------------------------- */
+
+.sub-nav {
+  display: flex;
+  gap: 5px;
+  margin-bottom: var(--space-lg);
+  border-bottom: 3px solid var(--gray-300);
+}
+
+.sub-nav-btn {
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid transparent;
+  border-bottom: none;
+  background-color: var(--gray-100);
+  color: var(--color-text-light);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  transition: all 0.2s ease;
+  position: relative;
+  top: 3px;
+}
+
+.sub-nav-btn:hover { background-color: var(--gray-200); }
+.sub-nav-btn.active {
+  background-color: var(--bg-surface);
+  color: var(--color-primary-dark);
+  border-color: var(--gray-300);
+  border-bottom: 3px solid var(--bg-surface);
+}
+
+.badge {
+  background-color: var(--color-accent);
+  color: var(--color-dark);
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 0.85em;
+  margin-left: 5px;
+  font-weight: 700;
+  display: none;
+}
+
+.sub-nav-btn.active .badge {
+  background-color: var(--color-primary-medium);
+  color: #fff;
+}
+
+.sub-tab-content { display: none; }
+.sub-tab-content.active { display: block; }
+
+
+/* -------------------------------------- */
+/* 12. COMPONENTES: TOAST, SPINNER, VOLTAR AO TOPO */
+/* -------------------------------------- */
+
+#toast-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-dark);
+  color: white;
+  font-weight: 600;
+  z-index: 2000;
+  box-shadow: var(--shadow-lg);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s, visibility 0.3s, bottom 0.3s;
+}
+#toast-notification.show { visibility: visible; opacity: 1; bottom: 30px; }
+#toast-notification.success { background-color: var(--color-primary-medium); }
+#toast-notification.error { background-color: var(--color-danger); }
+
+/* Spinner */
+.spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  vertical-align: middle;
+}
+#get-gps-btn:disabled .spinner { display: inline-block; }
+#zip-status .spinner {
+  display: inline-block;
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: var(--color-primary-medium);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Back to Top */
+#back-to-top-btn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999;
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  line-height: 50px;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+  opacity: 0;
+  visibility: hidden;
+}
+#back-to-top-btn:hover { background-color: var(--color-primary-medium); transform: scale(1.1); }
+#back-to-top-btn.show { display: block; opacity: 1; visibility: visible; }
+
+
+/* -------------------------------------- */
+/* 16. COMPONENTES: MODAL DE IMPORT/EXPORT */
+/* -------------------------------------- */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 1999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+}
+
+.modal-dialog {
+  background-color: var(--bg-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-lg) var(--space-xl);
+  width: 100%;
+  max-width: 500px;
+  z-index: 2000;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-overlay.show { opacity: 1; visibility: visible; }
+.modal-overlay.show .modal-dialog { opacity: 1; transform: scale(1); }
+
+.modal-dialog h3 {
+  color: var(--color-primary-dark);
+  margin-top: 0;
+  margin-bottom: var(--space-md);
+  font-size: 1.4rem;
+}
+
+.modal-dialog p {
+  font-size: 1rem;
+  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+  color: var(--color-text-light);
+}
+
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Botões do Modal (Estilizados) */
+.modal-btn {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  width: 100%;
+}
+.modal-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.modal-btn.primary {
+  background-color: var(--color-primary-medium);
+  color: white;
+}
+.modal-btn.primary:hover { background-color: var(--color-primary-dark); }
+
+.modal-btn.secondary {
+  background-color: var(--color-accent);
+  color: var(--color-dark);
+  font-weight: 700;
+}
+.modal-btn.secondary:hover { background-color: var(--color-accent-dark); }
+
+.modal-btn.cancel {
+  background-color: var(--gray-200);
+  color: var(--color-text-light);
+  border-color: var(--gray-300);
+  margin-top: var(--space-sm);
+}
+.modal-btn.cancel:hover { background-color: var(--gray-300); }
+
+
+/* -------------------------------------- */
+/* 16B. COMPONENTES: DIÁLOGO DE FOTOS FLUTUANTE */
+/* -------------------------------------- */
+
+.photo-viewer-dialog {
+  /* Tamanho inicial (controlado pelo JS) */
+  width: 300px; 
+  max-width: 90vw;
+  
+  /* [MODIFICADO v23.12] Remove a lógica de centralização do modal */
+  /* transform: translate(-50%, -50%) scale(0.95); */
+  
+  /* [NOVO v23.12] Define a posição e a aparência de "flutuação" */
+  position: fixed;
+  z-index: 1001; /* Acima de todo o conteúdo, exceto outros modais */
+  display: none; /* Controlado pelo JS */
+  box-shadow: var(--shadow-lg); /* Mantém a sombra (pedido de UX) */
+
+  /* Transição para abertura/fechamento (width é para o zoom) */
+  transition: opacity 0.2s, transform 0.2s, width 0.3s ease-in-out;
+  
+  /* Garante que o CSS centralize na abertura (JS irá definir isso) */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* [NOVO v23.12] Estado 'show' para o diálogo flutuante */
+.photo-viewer-dialog.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Título (Área de Arrastar) */
+.photo-viewer-dialog h3 {
+  padding-right: 30px; /* Espaço para o botão de fechar */
+  margin-bottom: var(--space-sm);
+  cursor: move; /* [NOVO v23.12] Define o cursor 'move' */
+}
+
+/* Botão de Fechar (X) */
+.photo-viewer-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.photo-viewer-close:hover {
+  color: var(--color-dark);
+}
+
+/* Container da Imagem */
+.photo-viewer-content {
+  position: relative;
+}
+.photo-viewer-content img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--border-radius-md);
+  background-color: var(--gray-100); /* Fundo para imagens transparentes */
+}
+
+/* Controles de Zoom (Copiado do .map-photo-zoom) */
+.photo-viewer-zoom-controls {
+  display: flex;
+  gap: 5px;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.photo-viewer-zoom-controls button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+}
+.photo-viewer-zoom-controls button:hover {
+  background-color: var(--gray-300);
+}
+
+
+/* -------------------------------------- */
+/* 17. COMPONENTES: INFOBOX DO MAPA */
+/* -------------------------------------- */
+
+/* O Painel de Informações (InfoBox) */
+/* (Nota: A legenda do filtro foi movida para sections.css) */
+#map-info-box {
+  position: fixed;
+  top: 120px;
+  right: 20px;
+  width: 280px; /* Largura Padrão (Zoom 0) */
+  background: var(--bg-surface);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 998;
+  padding: var(--space-md);
+  /* [CORREÇÃO v22.0]: Adiciona 'width' à transição */
+  transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
+  
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+}
+#map-info-box.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.95);
+}
+#map-info-box:not(.hidden) {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+#map-info-box strong {
+  font-size: 1.1rem;
+  color: var(--color-primary-dark);
+}
+#map-info-box p {
+  font-size: 0.9em;
+  margin-bottom: var(--space-xs);
+  line-height: 1.4;
+}
+#map-info-box #close-info-box {
+  position: absolute;
+  top: 5px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+#map-info-box #close-info-box:hover {
+  color: var(--color-dark);
+}
+#map-info-photo {
+  margin-top: var(--space-sm);
+  position: relative; /* Para os botões de zoom */
+}
+#map-info-photo.loading-photo {
+  font-style: italic;
+  color: var(--color-text-light);
+}
+#map-info-box .manual-img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+  margin-top: var(--space-sm);
+  transition: none;
+}
+
+/* [NOVO v21.9] Controles de Zoom da Imagem (Desktop) */
+.map-photo-zoom {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: rgba(255,255,255,0.8);
+  padding: 3px;
+  border-radius: 4px;
+}
+.map-photo-zoom button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+  line-height: 25px;
+}
+.map-photo-zoom button:hover {
+  background-color: var(--gray-300);
+}

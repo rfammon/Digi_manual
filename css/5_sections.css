@@ -1,0 +1,370 @@
+/* css/5_sections.css */
+
+/* -------------------------------------- */
+/* 5. SEÇÕES: CONTEÚDO (VIEW DO MANUAL) */
+/* -------------------------------------- */
+
+#detalhe-view h3 {
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-md);
+  border-bottom: 3px solid var(--color-accent);
+  padding-bottom: var(--space-sm);
+  font-size: 1.4rem;
+}
+
+#detalhe-view p {
+  margin-bottom: var(--space-md);
+  font-size: 1em;
+}
+
+#detalhe-view ul,
+#detalhe-view ol {
+  padding-left: 25px;
+  margin-bottom: var(--space-md);
+}
+
+#detalhe-view li {
+  margin-bottom: var(--space-sm);
+  font-size: 1em;
+}
+
+/* -------------------------------------- */
+/* 7. SEÇÕES: FORMULÁRIOS (CHAT & CONTATO) */
+/* -------------------------------------- */
+
+#fale-conosco,
+#gemini-chat {
+  padding: var(--space-lg);
+  background-color: var(--bg-surface);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  border-top: 5px solid var(--color-primary-medium);
+  margin-top: var(--space-lg);
+}
+
+#gemini-chat {
+  background-color: var(--color-primary-lightest);
+  border-top-color: var(--color-primary-medium);
+}
+
+#fale-conosco h2,
+#gemini-chat h2 {
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-md);
+  font-size: 1.4rem;
+}
+
+.contact-form label,
+.chat-container label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Inputs e Textareas Padronizados (Base para todos os forms) */
+.contact-form input[type="text"],
+.contact-form input[type="email"],
+.contact-form textarea,
+#chat-input,
+.form-grid input[type="text"],
+.form-grid input[type="number"],
+.form-grid input[type="date"],
+.risk-fieldset textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  font-family: var(--font-primary);
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 0;
+}
+
+.contact-form input[type="text"]:focus,
+.contact-form input[type="email"]:focus,
+.contact-form textarea:focus,
+#chat-input:focus,
+.form-grid input[type="text"]:focus,
+.form-grid input[type="number"]:focus,
+.form-grid input[type="date"]:focus,
+.risk-fieldset textarea:focus {
+  outline: none;
+  border-color: var(--color-primary-medium);
+  box-shadow: 0 0 0 3px var(--color-primary-lightest);
+}
+
+/* Chat específico */
+#chat-response-box {
+  background-color: var(--bg-surface);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  min-height: 100px;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.chat-input-area {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* -------------------------------------- */
+/* 10. SEÇÕES: CALCULADORA DE RISCO E TABELAS */
+/* -------------------------------------- */
+
+#zip-importer, #csv-importer {
+  display: none;
+}
+
+.risk-fieldset {
+  border: 2px solid var(--gray-200);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-lg);
+  background: var(--bg-surface-alt);
+}
+
+.risk-fieldset legend {
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  padding: 0 var(--space-sm);
+  font-size: 1.2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.form-grid label,
+.risk-fieldset > div > label {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: var(--color-text);
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+/* Tabelas */
+.risk-table, .summary-table, .glossary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-md);
+  font-size: 0.9em;
+}
+.risk-table th, .risk-table td,
+.summary-table th, .summary-table td,
+.glossary-table th, .glossary-table td {
+  border: 1px solid var(--gray-300);
+  padding: var(--space-sm) var(--space-md);
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* Cabeçalhos de Tabela */
+.risk-table th, .glossary-table th {
+  background-color: var(--gray-100);
+}
+.summary-table th {
+  background-color: var(--color-primary-medium);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.risk-table td:nth-child(3) {
+  width: 30px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.1em;
+  color: var(--color-primary-dark);
+}
+.risk-table td:nth-child(4) { width: 50px; text-align: center; }
+
+.risk-checkbox {
+  width: 1.5rem; /* Alvo maior */
+  height: 1.5rem;
+  cursor: pointer;
+  accent-color: var(--color-primary-medium);
+}
+
+/* Tabela de Resumo */
+#summary-table-container {
+  margin-top: var(--space-md);
+  overflow-x: auto;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+}
+.summary-table { margin-top: 0; }
+.summary-table th:first-child, .summary-table td:first-child { border-left: none; }
+.summary-table th:last-child, .summary-table td:last-child { border-right: none; }
+
+
+.summary-table .risk-col-high {
+  font-weight: 700;
+  color: var(--color-danger);
+}
+.summary-table .risk-col-medium {
+  font-weight: 700;
+  color: var(--color-accent-dark);
+}
+.summary-table .risk-col-low {
+  color: var(--color-primary-medium);
+}
+
+#summary-placeholder {
+  font-style: italic;
+  color: var(--color-text-light);
+  padding: var(--space-md);
+  background: var(--gray-100);
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+}
+
+.summary-table th.col-edit, .summary-table td.col-edit,
+.summary-table th.col-delete, .summary-table td.col-delete,
+.summary-table th.col-zoom, .summary-table td.col-zoom {
+  text-align: center;
+  width: 30px;
+  white-space: nowrap;
+  padding: 0 var(--space-xs);
+}
+
+.glossary-category-header {
+  background-color: var(--color-primary-medium);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1em;
+  text-align: center !important;
+}
+
+
+/* -------------------------------------- */
+/* 14. SEÇÕES: MAPA WEBGIS */
+/* -------------------------------------- */
+#map-container {
+  height: 60vh;
+  width: 100%;
+  border-radius: var(--border-radius-lg);
+  margin-top: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  border: 1px solid var(--gray-300);
+  
+  position: relative;
+}
+
+#zoom-to-extent-btn {
+  flex-grow: 0;
+  min-width: 200px;
+  background-color: var(--color-primary-dark);
+  color: white;
+  align-self: end;
+  height: 42px;
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+}
+#zoom-to-extent-btn:hover { background-color: var(--color-primary-medium); }
+
+
+/* -------------------------------------- */
+/* 15. SEÇÕES: FILTRO, FOTO E SELEÇÃO */
+/* -------------------------------------- */
+
+.table-filter-container { margin-bottom: var(--space-md); }
+#table-filter-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--gray-300);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+}
+#table-filter-input:focus {
+  outline: none;
+  border-color: var(--color-primary-medium);
+  box-shadow: 0 0 0 3px var(--color-primary-lightest);
+}
+
+.summary-table tr.highlight {
+  background-color: var(--color-primary-lightest);
+  transition: background-color 0.3s ease-out;
+}
+
+/* Input de Foto */
+.photo-upload-container { margin-top: var(--space-md); }
+
+#photo-preview-container {
+  margin-top: var(--space-md);
+  position: relative;
+  max-width: 300px;
+}
+#photo-preview {
+  width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-lg);
+  border: 2px solid var(--gray-300);
+  box-shadow: var(--shadow-sm);
+}
+#remove-photo-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 30px;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  display: none;
+}
+
+/* -------------------------------------- */
+/* 17. SEÇÕES: LEGENDA DO MAPA */
+/* -------------------------------------- */
+
+/* Legenda Externa (HTML) */
+#map-legend-filter {
+  background: var(--gray-100);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--space-md);
+}
+#map-legend-filter h4 {
+  margin: 0 0 var(--space-sm) 0;
+  color: var(--color-primary-dark);
+  font-size: 1rem;
+}
+.legend-filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+.legend-filter {
+  display: flex;
+  align-items: center;
+}
+.legend-filter label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.legend-filter input[type="radio"] {
+  margin-right: var(--space-sm);
+  accent-color: var(--color-primary-medium);
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: var(--space-sm);
+  border: 1px solid rgba(0,0,0,0.2);
+}
