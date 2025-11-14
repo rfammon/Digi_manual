@@ -1,4 +1,4 @@
-// js/map.ui.js (v23.6 - Correção de Listeners de Interação)
+// js/map.ui.js (v23.6 - Completo - Correção de Listeners de Interação)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -210,4 +210,83 @@ export function setupMapListeners() {
   const mapLegend = document.getElementById('map-legend-filter');
   const zoomBtn = document.getElementById('zoom-to-extent-btn');
 
-  if
+  if (mapLegend) {
+    // Remove listener antigo para evitar duplicatas (defensivo)
+    mapLegend.removeEventListener('change', handleMapFilterChange);
+    // Adiciona o novo listener
+    mapLegend.addEventListener('change', handleMapFilterChange);
+  }
+
+  if (zoomBtn) {
+    // Remove listener antigo
+    zoomBtn.removeEventListener('click', features.handleZoomToExtent);
+    // Adiciona o novo listener
+    zoomBtn.addEventListener('click', features.handleZoomToExtent);
+  }
+}
+
+/**
+ * (PÚBLICO) [MODIFICADO v23.6] Inicializa o mapa e abre o InfoBox se necessário.
+ */
+export function initializeMap() {
+  const mapContainer = document.getElementById('map-container');
+  if (!mapContainer) return;
+
+  if (typeof L === 'undefined' || typeof proj4 === 'undefined') {
+    mapContainer.innerHTML = '<p style="color:red; font-weight:bold;">ERRO DE MAPA: As bibliotecas Leaflet e Proj4js não foram carregadas.</p>';
+    return;
+  }
+
+  // Reutiliza a instância se ela já existir (otimização)
+  if (state.mapInstance) {
+    state.mapInstance.invalidateSize(); // Corrige renderização em aba oculta
+  } else {
+    // Cria o mapa
+    const newMap = L.map('map-container').setView([-15.7801, -47.9292], 4); // Centro do Brasil
+    state.setMapInstance(newMap);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri'
+    }).addTo(newMap);
+
+    // Cria o grupo de marcadores
+    const markerGroup = L.featureGroup().addTo(newMap);
+    state.setMapMarkerGroup(markerGroup);
+
+    // Adiciona listener para fechar o InfoBox
+    newMap.on('click', hideMapInfoBox);
+  }
+  
+  // (Re)Renderiza os marcadores e captura os bounds
+  const bounds = renderMapMarkers();
+
+  // [MODIFICADO v23.6] Lógica de Zoom e Abertura de InfoBox
+  if (state.zoomTargetCoords) {
+    // 1. Aplica o zoom
+    state.mapInstance.setView(state.zoomTargetCoords, 18);
+    state.setZoomTargetCoords(null); // Limpa o estado de zoom
+    
+    // 2. [NOVO v23.6] Verifica se um InfoBox precisa ser aberto
+    if (state.openInfoBoxId !== null) {
+      const treeIdToOpen = state.openInfoBoxId;
+      const tree = state.registeredTrees.find(t => t.id === treeIdToOpen);
+      
+      if (tree) {
+        // Atraso para permitir que a animação de zoom do mapa termine
+        setTimeout(() => {
+          // Verifica se o mapa ainda está na aba correta (segurança)
+          if (document.getElementById('tab-content-mapa')?.classList.contains('active')) {
+             showMapInfoBox(tree);
+          }
+        }, 300); // 300ms é uma boa estimativa para a animação de zoom
+      }
+      // Limpa o estado de abertura do InfoBox
+      state.setOpenInfoBoxId(null);
+    }
+    
+  } else if (bounds && bounds.isValid()) {
+    // Se não há alvo, mas há pontos, aplica o zoom geral
+    features.handleZoomToExtent();
+  }
+}
