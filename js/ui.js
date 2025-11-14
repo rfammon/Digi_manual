@@ -1,4 +1,4 @@
-// js/ui.js (v22.4 - FINAL - Correção de Filtro, Escopo e Zoom)
+// js/ui.js (v22.1 - FINAL - Correção de Filtro, Escopo e Zoom)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -458,13 +458,14 @@ function handleMapFilterChange(e) {
 }
 
 /**
- * [ATUALIZADO v22.3] Mostra o painel de informações com Defeitos e Observações.
+ * [NOVO v21.7] Mostra o painel de informações do mapa (substitui o popup).
+ * [ATUALIZADO v21.9] Adiciona botões de zoom.
  */
 function showMapInfoBox(tree) {
     const infoBox = document.getElementById('map-info-box');
     if (!infoBox) return;
 
-    // [CORREÇÃO v22.1] Reseta o zoom e o tamanho ao abrir
+    // [CORREÇÃO v21.9] Reseta o zoom e o tamanho ao abrir
     currentInfoBoxZoom = 0; // Reseta o nível de zoom
     infoBox.style.width = ''; // Reseta para o tamanho padrão do CSS (280px)
 
@@ -477,40 +478,6 @@ function showMapInfoBox(tree) {
         color = '#2E7D32'; riskText = '🟢 Baixo Risco';
     }
 
-    // --- [NOVO v22.3] Gera a lista de defeitos ---
-    let defectsHTML = '';
-    if (tree.riskFactors && tree.riskFactors.length > 0) {
-        const defects = [];
-        tree.riskFactors.forEach((value, index) => {
-            if (value === 1 && riskQuestions[index]) {
-                defects.push(riskQuestions[index]);
-            }
-        });
-
-        if (defects.length > 0) {
-            defectsHTML = `
-                <div class="infobox-section">
-                    <strong>Defeitos Encontrados:</strong>
-                    <ul class="infobox-defect-list">
-                        ${defects.map(defect => `<li>${defect}</li>`).join('')}
-                    </ul>
-                </div>
-            `;
-        }
-    }
-    
-    // --- [NOVO v22.3] Gera a Observação ---
-    let obsHTML = '';
-    if (tree.observacoes && tree.observacoes !== 'N/A') {
-        obsHTML = `
-            <div class="infobox-section">
-                <strong>Observações:</strong>
-                <p class="infobox-obs">${tree.observacoes}</p>
-            </div>
-        `;
-    }
-
-
     let infoHTML = `
         <button id="close-info-box">&times;</button>
         <strong>ID: ${tree.id}</strong>
@@ -518,9 +485,6 @@ function showMapInfoBox(tree) {
         <p><strong>Risco:</strong> <span style="color:${color}; font-weight:bold;">${riskText}</span></p>
         <p><strong>Local:</strong> ${tree.local}</p>
         <p><strong>Coord. UTM:</strong> ${tree.coordX}, ${tree.coordY} (${tree.utmZoneNum || '?'}${tree.utmZoneLetter || '?'})</p>
-        
-        ${defectsHTML}
-        ${obsHTML}
     `;
     
     // Se tiver foto, adiciona o container para ela
@@ -566,7 +530,7 @@ function showMapInfoBox(tree) {
 }
 
 /**
- * [BUG 3 CORRIGIDO v22.1] Controla o zoom da imagem no InfoBox
+ * [NOVO v21.9] Controla o zoom da imagem no InfoBox
  */
 let currentInfoBoxZoom = 0; // Nível de zoom (0 = min, 1 = med, 2 = max)
 const ZOOM_LEVELS = [280, 400, 550]; // Define os Níveis de Zoom (Pequeno, Médio, Grande)
@@ -712,8 +676,8 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
  */
 export function setupRiskCalculator() {
         
-    // [CORREÇÃO BUG 1/4 v21.9]: Mover isTouchDevice para o TOPO do módulo (linha 16)
-    // const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); 
+    // [CORREÇÃO BUG 1/4 v21.9]: Mover isTouchDevice para o TOPO do setup
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
@@ -932,8 +896,8 @@ export function setupRiskCalculator() {
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
 
-// [BUG 1 e 4 CORRIGIDO v21.9]: As consts foram movidas para o topo do módulo (linha 16).
-// const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+// [BUG 1 e 4 CORRIGIDO v21.9]: As consts foram movidas para o topo desta seção.
+// const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); // Movido para o topo do módulo
 // const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 // const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 

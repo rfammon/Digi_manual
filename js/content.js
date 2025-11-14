@@ -1,5 +1,4 @@
-// js/content.js (v20.0 - OTIMIZADO)
-// O HTML da Calculadora foi REMOVIDO e movido para o index.html.
+// js/content.js (v22.3 - Nova Estrutura "Sobre o Autor")
 
 // Helper local, usado apenas neste arquivo
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -122,7 +121,7 @@ export const podaPurposeData = {
     }
 };
 
-// === 4. CONTEÚDO HTML DO MANUAL (v19.3) ===
+// === 4. CONTEÚDO HTML DO MANUAL ===
 export const manualContent = {
     'conceitos-basicos': {
         titulo: '💡 Definições, Termos e Técnicas',
@@ -229,7 +228,7 @@ export const manualContent = {
                 <li>Cortes rentes. ${imgTag('corte-rente-lesao.jpg', 'Lesão por corte rente')}</li>
             </ul>
             ${imgTag('poda-drastica-vs-correta.jpg', 'Comparação visual: Poda Drástica vs Correta')}
-            <h3>Supressão (Corte de ÁrvORE)</h3>
+            <h3>Supressão (Corte de Árvore)</h3>
             <p>Corte direcional deixando a <strong>"dobradiça" de 10%</strong> do diâmetro.</p>
             <h4>Segurança Crítica: Rota de Fuga</h4>
             ${imgTag('rota-fuga-45graus.jpg', 'Diagrama das rotas de fuga')}
@@ -341,42 +340,40 @@ export const manualContent = {
             </table>
         `
     },
+    
+    // [NOVA VERSÃO v22.3 - Layout de Duas Colunas]
     'sobre-autor': {
         titulo: '👨‍💻 Sobre o Autor',
         html: `
-            <div id="sobre-o-autor">    
-                <div class="autor-container">
-                    <div class="autor-texto">
-                        <p>
-                            <strong>Rafael de Andrade Ammon</strong> é Engenheiro Florestal (UFRRJ),
-                            com MBA em Gestão de Projetos (USP/ESALQ) em curso. A sua carreira
-                            foca-se na conservação ambiental, restauração florestal e
-                            sustentabilidade corporativa.
-                        </p>
-                        <p>
-                            Atualmente, atua como Fiscal Operacional em áreas verdes industriais
-                            na RPBC (pela Vinil Engenharia). Possui experiência em projetos
-                            de grande escala, como o Inventário Florestal Nacional (RJ) e a
-                            restauração do COMPERJ, tendo trabalhado em empresas como EGIS
-                            e CTA Meio Ambiente.
-                        </p>
-                        <p>
-                            É certificado em Google Project Management e pela ABRAPLAN,
-                            com competências em Geoprocessamento (QGIS) e Power BI.
-                            Fluente em inglês.
-                        </p>
-                        <p class="autor-links">
-                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
-                            <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
-                        </p>
-                    </div>
+            <div class="autor-layout">
+                <div class="autor-texto">
+                    <p>
+                        <strong>Rafael de Andrade Ammon</strong> é Engenheiro Florestal (UFRRJ),
+                        com MBA em Gestão de Projetos (USP/ESALQ) em curso. A sua carreira
+                        foca-se na conservação ambiental, restauração florestal e
+                        sustentabilidade corporativa.
+                    </p>
+                    <p>
+                        Atualmente, atua como Fiscal Operacional em áreas verdes industriais
+                        na RPBC (pela Vinil Engenharia). Possui experiência em projetos
+                        de grande escala, como o Inventário Florestal Nacional (RJ) e a
+                        restauração do COMPERJ, tendo trabalhado em empresas como EGIS
+                        e CTA Meio Ambiente.
+                    </p>
+                    <p>
+                        É certificado em Google Project Management e pela ABRAPLAN,
+                        com competências em Geoprocessamento (QGIS) e Power BI.
+                        Fluente em inglês.
+                    </p>
+                </div>
+                <div class="autor-perfil">
+                    <img src="img/autor.jpg" alt="Foto de Rafael de Andrade Ammon" class="manual-img">
+                    <p class="autor-links">
+                        <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
+                        <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
+                    </p>
                 </div>
             </div>
         `
     }
-    
-    // NOTA DE ARQUITETURA:
-    // A ENTRADA 'calculadora-risco' FOI REMOVIDA.
-    // O HTML estático agora vive no index.html.
-    // A lógica de navegação está no js/main.js.
 };

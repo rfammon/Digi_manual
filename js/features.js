@@ -1,5 +1,4 @@
-// js/features.js (v20.3 - CORRIGIDO)
-// Este arquivo NÃO DEVE importar 'ui.js'
+// js/features.js (v21.9 - Lógica de Filtro REMOVIDA)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -376,7 +375,17 @@ export function handleZoomToExtent() {
         utils.showToast("O mapa não está inicializado.", "error");
         return;
     }
+    
+    // [NOVO v21.7] Usa o featureGroup para o zoom, se disponível
+    if (state.mapMarkerGroup) {
+         const bounds = state.mapMarkerGroup.getBounds();
+         if (bounds.isValid()) {
+            state.mapInstance.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+            return; // Impede a execução da lógica antiga
+         }
+    }
 
+    // Lógica antiga (Fallback se o grupo não tiver bounds)
     let boundsArray = [];
     state.registeredTrees.forEach(tree => {
         const coords = convertToLatLon(tree); 
@@ -399,6 +408,9 @@ export function handleMapMarkerClick(id) {
         summaryTabButton.click(); 
     }
 }
+
+// [REMOVIDO v21.8]: A função 'filterMapMarkers' foi removida daqui.
+
 
 // === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO (v19.8) ===
 
@@ -560,8 +572,7 @@ function getCSVData() {
 
 // 
 // [ERRO CRÍTICO 2 - CORRIGIDO]
-// A função duplicada 'async function handleExportZip() { ... }'
-// que estava aqui (linhas 438-490) foi REMOVIDA.
+// A função duplicada 'async function handleExportZip() { ... }' foi REMOVIDA.
 //
 
 export async function handleImportZip(event) {
