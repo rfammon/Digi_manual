@@ -1,4 +1,4 @@
-// js/ui.js (v22.3 - InfoBox com Defeitos e Obs)
+// js/ui.js (v22.4 - FINAL - Correção de Filtro, Escopo e Zoom)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -464,7 +464,7 @@ function showMapInfoBox(tree) {
     const infoBox = document.getElementById('map-info-box');
     if (!infoBox) return;
 
-    // [CORREÇÃO v21.9] Reseta o zoom e o tamanho ao abrir
+    // [CORREÇÃO v22.1] Reseta o zoom e o tamanho ao abrir
     currentInfoBoxZoom = 0; // Reseta o nível de zoom
     infoBox.style.width = ''; // Reseta para o tamanho padrão do CSS (280px)
 
@@ -566,7 +566,7 @@ function showMapInfoBox(tree) {
 }
 
 /**
- * [NOVO v21.9] Controla o zoom da imagem no InfoBox
+ * [BUG 3 CORRIGIDO v22.1] Controla o zoom da imagem no InfoBox
  */
 let currentInfoBoxZoom = 0; // Nível de zoom (0 = min, 1 = med, 2 = max)
 const ZOOM_LEVELS = [280, 400, 550]; // Define os Níveis de Zoom (Pequeno, Médio, Grande)
@@ -712,8 +712,8 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
  */
 export function setupRiskCalculator() {
         
-    // [CORREÇÃO BUG 1/4 v21.9]: Mover isTouchDevice para o TOPO do setup
-    // const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); // Movido para o topo do módulo
+    // [CORREÇÃO BUG 1/4 v21.9]: Mover isTouchDevice para o TOPO do módulo (linha 16)
+    // const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); 
 
     // --- Conexão de Abas (Registrar, Resumo, Mapa) ---
     const subNav = document.querySelector('.sub-nav');
