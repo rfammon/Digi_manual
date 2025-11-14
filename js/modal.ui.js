@@ -1,15 +1,14 @@
-// js/modal.ui.js (v23.11 - Lógica do Photo Viewer movida para cá)
+// js/modal.ui.js (v23.12 - Correção de Bug de Inicialização)
 
 // === 1. IMPORTAÇÕES ===
 import { registeredTrees } from './state.js';
 import * as features from './features.js';
 import { showToast } from './utils.js';
-import { getImageFromDB } from './database.js'; // [v23.10]
+import { getImageFromDB } from './database.js';
 
 // === 2. ESTADO DO MÓDULO ===
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-// [v23.10] Estado do Visualizador de Fotos
 const photoViewer = {
   modal: null,
   dialog: null,
@@ -26,7 +25,6 @@ const photoViewer = {
 
 /**
  * [PRIVADO] Exibe o container do modal de ação customizado.
- * Esta é a função base para todos os modais.
  */
 function showActionModal({ title, description, buttons }) {
   const modal = document.getElementById('action-modal');
@@ -35,32 +33,26 @@ function showActionModal({ title, description, buttons }) {
   const actionsEl = modal.querySelector('.modal-actions');
 
   if (!modal || !titleEl || !descEl || !actionsEl) {
-    console.error("Elementos do modal não encontrados.");
+    console.error("Elementos do modal de ação não encontrados.");
     return;
   }
 
-  // Preenche o conteúdo
   titleEl.textContent = title;
   descEl.textContent = description;
-  actionsEl.innerHTML = ''; // Limpa botões antigos
+  actionsEl.innerHTML = '';
 
-  // Cria novos botões
   buttons.forEach(btnConfig => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `modal-btn ${btnConfig.class || ''}`;
     button.textContent = btnConfig.text;
-    
     button.addEventListener('click', () => {
-      if (btnConfig.action) {
-        btnConfig.action(); // Executa a ação
-      }
-      hideActionModal(); // Fecha o modal
+      if (btnConfig.action) btnConfig.action();
+      hideActionModal();
     });
     actionsEl.appendChild(button);
   });
 
-  // Listener para fechar ao clicar fora (no overlay)
   const self = modal;
   const closeOverlay = (e) => {
     if (e.target === self) {
@@ -69,8 +61,6 @@ function showActionModal({ title, description, buttons }) {
     }
   };
   modal.addEventListener('click', closeOverlay);
-
-  // Exibe o modal
   modal.classList.add('show');
 }
 
@@ -99,19 +89,12 @@ export function showGenericModal(config) {
  */
 export function showExportModal() {
   let buttons = [
-    {
-      text: 'Exportar Apenas .CSV (s/ fotos)',
-      class: 'secondary',
-      action: features.exportActionCSV
-    },
-    {
-      text: 'Cancelar',
-      class: 'cancel'
-    }
+    { text: 'Exportar Apenas .CSV (s/ fotos)', class: 'secondary', action: features.exportActionCSV },
+    { text: 'Cancelar', class: 'cancel' }
   ];
 
   if (typeof JSZip !== 'undefined') {
-    buttons.unshift({ // Adiciona no início
+    buttons.unshift({
       text: 'Exportar Pacote .ZIP (Completo)',
       class: 'primary',
       action: features.exportActionZip
@@ -132,17 +115,11 @@ export function showExportModal() {
  */
 export function showImportModal() {
   let buttons = [
-    {
-      text: 'Adicionar à Lista Atual',
-      class: 'secondary',
-      action: () => {
-        // Atraso para garantir que o primeiro modal feche antes de abrir o segundo.
-        setTimeout(() => showImportTypeModal(false), 0);
-      }
-    }
+    { text: 'Adicionar à Lista Atual', class: 'secondary', action: () => {
+      setTimeout(() => showImportTypeModal(false), 0);
+    }}
   ];
   
-  // Só mostra "Substituir" se a lista NÃO estiver vazia.
   if (registeredTrees.length > 0) {
     buttons.push({
       text: 'Substituir Lista Atual',
@@ -163,7 +140,6 @@ export function showImportModal() {
 
 /**
  * [PRIVADO] Mostra o SEGUNDO modal de importação (Tipo de Arquivo).
- * @param {boolean} replaceData - Se a importação deve substituir os dados existentes.
  */
 function showImportTypeModal(replaceData) {
   const csvInput = document.getElementById('csv-importer');
@@ -175,20 +151,12 @@ function showImportTypeModal(replaceData) {
     return;
   }
   
-  // Define o modo (append ou replace) no dataset dos inputs
   csvInput.dataset.replaceData = replaceData;
   zipInput.dataset.replaceData = replaceData;
   
   let buttons = [
-    {
-      text: 'Importar .CSV (s/ fotos)',
-      class: 'secondary',
-      action: () => csvInput.click()
-    },
-    {
-      text: 'Cancelar',
-      class: 'cancel'
-    }
+    { text: 'Importar .CSV (s/ fotos)', class: 'secondary', action: () => csvInput.click() },
+    { text: 'Cancelar', class: 'cancel' }
   ];
 
   if (typeof JSZip !== 'undefined') {
@@ -218,6 +186,7 @@ function showImportTypeModal(replaceData) {
  */
 function _makeDraggable() {
   const { dialog, title } = photoViewer;
+  // [MODIFICADO v23.12] Verificação de robustez
   if (isTouchDevice || !dialog || !title) return;
 
   title.style.cursor = 'move';
@@ -270,14 +239,12 @@ function _hidePhotoViewer() {
 
   modal.classList.remove('show');
   
-  // Limpa o conteúdo e revoga o blob
   const img = content.querySelector('img');
   if (img && img.src.startsWith('blob:')) {
       URL.revokeObjectURL(img.src);
   }
   content.innerHTML = '';
   
-  // Reseta o CSS de arrasto/zoom para a centralização padrão
   dialog.style.width = '';
   dialog.style.top = '';
   dialog.style.left = '';
@@ -293,7 +260,6 @@ function _zoomPhotoViewer(direction) {
   if (!dialog || isTouchDevice) return;
 
   photoViewer.zoomLevel += direction;
-  // Limita
   if (photoViewer.zoomLevel < 0) photoViewer.zoomLevel = 0;
   if (photoViewer.zoomLevel >= zoomLevels.length) photoViewer.zoomLevel = zoomLevels.length - 1;
 
@@ -307,7 +273,7 @@ function _zoomPhotoViewer(direction) {
  */
 export function showPhotoViewer(treeId) {
   const { modal, dialog, title, content, zoomLevels } = photoViewer;
-  if (!modal) return;
+  if (!modal) return; // Se o modal não foi inicializado, falha silenciosamente
 
   const tree = registeredTrees.find(t => t.id === treeId);
   if (!tree || !tree.hasPhoto) {
@@ -323,17 +289,11 @@ export function showPhotoViewer(treeId) {
 
     const imgUrl = URL.createObjectURL(imageBlob);
     
-    // Reseta o zoom e define o tamanho padrão
     photoViewer.zoomLevel = 0;
     dialog.style.width = `${zoomLevels[0]}px`;
-
-    // Define o título
     title.textContent = `Foto: ID ${tree.id} (${tree.especie})`;
 
-    // Define o conteúdo (imagem e botões)
-    let photoHTML = `
-      <img src="${imgUrl}" alt="Foto ID ${tree.id}" class="photo-viewer-img">
-    `;
+    let photoHTML = `<img src="${imgUrl}" alt="Foto ID ${tree.id}" class="photo-viewer-img">`;
     if (!isTouchDevice) {
       photoHTML += `
         <div class="photo-viewer-zoom-controls">
@@ -344,17 +304,15 @@ export function showPhotoViewer(treeId) {
     }
     content.innerHTML = photoHTML;
 
-    // Anexa listeners aos novos botões de zoom
     document.getElementById('pv-zoom-out-btn')?.addEventListener('click', () => _zoomPhotoViewer(-1));
     document.getElementById('pv-zoom-in-btn')?.addEventListener('click', () => _zoomPhotoViewer(1));
     
-    // Mostra o modal
     modal.classList.add('show');
   });
 }
 
 /**
- * (PÚBLICO) [NOVO v23.10] Inicializa os listeners do modal de foto.
+ * (PÚBLICO) [MODIFICADO v23.12] Inicializa os listeners do modal de foto.
  * Chamado uma vez pelo main.js.
  */
 export function initPhotoViewer() {
@@ -364,9 +322,11 @@ export function initPhotoViewer() {
   photoViewer.content = document.getElementById('photo-viewer-content');
   photoViewer.closeBtn = document.getElementById('photo-viewer-close');
 
-  if (!photoViewer.modal) {
-    console.error("O HTML do #photo-viewer-modal não foi encontrado no index.html");
-    return;
+  // [CORREÇÃO v23.12] Adiciona "Guard Clauses" para prevenir crash
+  // se o HTML não tiver sido atualizado no index.html
+  if (!photoViewer.modal || !photoViewer.dialog || !photoViewer.title || !photoViewer.content || !photoViewer.closeBtn) {
+    console.warn("Componente Photo Viewer não inicializado. O HTML (index.html) parece estar desatualizado.");
+    return; // Não anexa listeners a elementos nulos
   }
 
   photoViewer.closeBtn.addEventListener('click', _hidePhotoViewer);
