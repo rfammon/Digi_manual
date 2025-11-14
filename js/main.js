@@ -1,4 +1,4 @@
-// js/ui.js (v23.9 - Refatoração do Visualizador de Fotos e Correção do Flicker)
+// js/ui.js (v23.10 - Lógica do Photo Viewer removida)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -16,34 +16,17 @@ const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
-// [v23.7] Timer de tooltip centralizado para evitar race conditions
+// [v23.7] Timer de tooltip centralizado
 let tooltipHideTimer = null;
 
-// [NOVO v23.9] Estado do Visualizador de Fotos
-const photoViewer = {
-  modal: null,
-  dialog: null,
-  title: null,
-  content: null,
-  closeBtn: null,
-  isDragging: false,
-  offset: { x: 0, y: 0 },
-  zoomLevel: 0,
-  zoomLevels: [300, 450, 600] // Padrão (P), Médio (M), Grande (G)
-};
+// [REMOVIDO v23.10] Estado do Photo Viewer (movido para modal.ui.js)
 
 
 // === 3. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
 
-/**
- * Carrega o HTML de um tópico do manual na view principal.
- * @param {HTMLElement} detailView - O elemento DOM.
- * @param {object} content - O objeto de conteúdo.
- */
 export function loadContent(detailView, content) {
   if (!detailView) return;
   if (content) {
-    // .innerHTML seguro (conteúdo do content.js)
     detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
     setupGlossaryInteractions(detailView);
     setupEquipmentInteractions(detailView);
@@ -66,28 +49,16 @@ let mobileChecklist = {
   counter: null
 };
 
-/**
- * Mostra a pergunta do carrossel mobile no índice especificado.
- * @param {number} index - O índice da pergunta.
- */
 export function showMobileQuestion(index) {
   const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
   const questionRow = questions[index];
   if (!questionRow) return;
-  if (!questionRow.cells || questionRow.cells.length < 4) {
-    console.error("showMobileQuestion: A linha da tabela (tr) está malformada.", questionRow);
-    return;
-  }
+  if (!questionRow.cells || questionRow.cells.length < 4) return;
   const num = questionRow.cells[0].textContent;
   const pergunta = questionRow.cells[1].textContent;
   const peso = questionRow.cells[2].textContent;
   const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
-  if (!realCheckbox) {
-    console.error("showMobileQuestion: Checkbox não encontrado na linha.", questionRow);
-    return;
-  }
-  
-  // .innerHTML seguro (template controlado)
+  if (!realCheckbox) return;
   card.innerHTML = `
     <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
     <span class="checklist-card-peso">(Peso: ${peso})</span>
@@ -104,28 +75,17 @@ export function showMobileQuestion(index) {
   mobileChecklist.currentIndex = index;
 }
 
-/**
- * Inicializa o carrossel mobile.
- */
 export function setupMobileChecklist() {
   mobileChecklist.wrapper = document.querySelector('.mobile-checklist-wrapper');
   if (!mobileChecklist.wrapper) return;
-
   mobileChecklist.card = mobileChecklist.wrapper.querySelector('.mobile-checklist-card');
   mobileChecklist.navPrev = mobileChecklist.wrapper.querySelector('#checklist-prev');
   mobileChecklist.navNext = mobileChecklist.wrapper.querySelector('#checklist-next');
   mobileChecklist.counter = mobileChecklist.wrapper.querySelector('.checklist-counter');
   mobileChecklist.questions = document.querySelectorAll('#risk-calculator-form .risk-table tbody tr');
-
-  if (mobileChecklist.questions.length === 0 || !mobileChecklist.card || !mobileChecklist.navPrev) {
-    console.warn("setupMobileChecklist: Elementos do carrossel não encontrados.");
-    return;
-  }
-
+  if (mobileChecklist.questions.length === 0 || !mobileChecklist.card || !mobileChecklist.navPrev) return;
   mobileChecklist.currentIndex = 0;
   mobileChecklist.totalQuestions = mobileChecklist.questions.length;
-
-  // --- Clonagem para limpeza de listeners ---
   const newCard = mobileChecklist.card.cloneNode(true);
   mobileChecklist.card.parentNode.replaceChild(newCard, mobileChecklist.card);
   mobileChecklist.card = newCard;
@@ -135,8 +95,6 @@ export function setupMobileChecklist() {
   const newNavNext = mobileChecklist.navNext.cloneNode(true);
   mobileChecklist.navNext.parentNode.replaceChild(newNavNext, mobileChecklist.navNext);
   mobileChecklist.navNext = newNavNext;
-
-  // Listeners
   mobileChecklist.card.addEventListener('change', (e) => {
     const proxyCheckbox = e.target.closest('.mobile-checkbox-proxy');
     if (proxyCheckbox) {
@@ -151,7 +109,6 @@ export function setupMobileChecklist() {
   mobileChecklist.navNext.addEventListener('click', () => {
     if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) showMobileQuestion(mobileChecklist.currentIndex + 1);
   });
-
   showMobileQuestion(0);
 }
 
@@ -160,9 +117,6 @@ export function setupMobileChecklist() {
 // ### SEÇÃO SEGURA E DE PERFORMANCE (v23.5) ###
 // #####################################################################
 
-/**
- * (v23.0) Cria uma célula de tabela (<td>) com texto seguro.
- */
 function createSafeCell(text, className) {
   const cell = document.createElement('td');
   cell.textContent = text;
@@ -170,9 +124,6 @@ function createSafeCell(text, className) {
   return cell;
 }
 
-/**
- * (v23.0) Cria uma célula de tabela (<td>) com um botão de ação.
- */
 function createActionCell({ className, icon, treeId, cellClassName }) {
   const cell = document.createElement('td');
   const button = document.createElement('button');
@@ -185,9 +136,6 @@ function createActionCell({ className, icon, treeId, cellClassName }) {
   return cell;
 }
 
-/**
- * (v23.3) Helper privado que constrói um <tr> para uma árvore.
- */
 function _createTreeRow(tree) {
   const row = document.createElement('tr');
   row.dataset.treeId = tree.id;
@@ -225,24 +173,21 @@ function _createTreeRow(tree) {
   return row;
 }
 
-/**
- * (v23.3) Adiciona uma ÚNICA linha à tabela (Performance O(1)).
- */
 function appendTreeRow(tree) {
   const container = document.getElementById('summary-table-container');
   if (!container) return;
   const placeholder = document.getElementById('summary-placeholder');
   if (placeholder) {
     placeholder.remove();
-    renderSummaryTable(); // Renderiza a tabela completa pela primeira vez
+    renderSummaryTable();
     return;
   }
   const tbody = container.querySelector('.summary-table tbody');
   if (tbody) {
     const row = _createTreeRow(tree);
-    tbody.appendChild(row); // Adição O(1)
+    tbody.appendChild(row);
   } else {
-    renderSummaryTable(); // Fallback
+    renderSummaryTable();
   }
   const summaryBadge = document.getElementById('summary-badge');
   if (summaryBadge) {
@@ -252,18 +197,15 @@ function appendTreeRow(tree) {
   }
 }
 
-/**
- * (v23.3) Remove uma ÚNICA linha da tabela (Performance O(1)).
- */
 function removeTreeRow(id) {
   const container = document.getElementById('summary-table-container');
   if (!container) return;
   const row = container.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
-  if (row) row.remove(); // Remoção O(1)
+  if (row) row.remove();
   const tbody = container.querySelector('.summary-table tbody');
   const summaryBadge = document.getElementById('summary-badge');
   if (tbody && tbody.children.length === 0) {
-    renderSummaryTable(); // Recria para mostrar o placeholder
+    renderSummaryTable();
   } else if (summaryBadge) {
      const count = state.registeredTrees.length;
      summaryBadge.textContent = count > 0 ? `(${count})` : '';
@@ -271,9 +213,6 @@ function removeTreeRow(id) {
   }
 }
 
-/**
- * (v23.3) Renderiza a tabela de resumo de árvores (O(N)).
- */
 export function renderSummaryTable() {
   const container = document.getElementById('summary-table-container');
   const importExportControls = document.getElementById('import-export-controls');
@@ -413,7 +352,7 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
 }
 
 // #####################################################################
-// ### INÍCIO DA SEÇÃO DE REFATORAÇÃO (v23.9) ###
+// ### INÍCIO DA SEÇÃO DE REFATORAÇÃO (v23.5) ###
 // #####################################################################
 
 /**
@@ -634,88 +573,6 @@ function _setupCalculatorControls() {
 }
 
 /**
- * [NOVO v23.9] Torna o diálogo de foto arrastável (desktop).
- */
-function _makeDraggable() {
-  const { dialog, title } = photoViewer;
-  if (isTouchDevice || !dialog || !title) return;
-
-  title.style.cursor = 'move';
-
-  const onMouseDown = (e) => {
-    // 1. Inicia o arrasto
-    photoViewer.isDragging = true;
-    
-    // 2. Pega a posição atual (centralizada pelo CSS)
-    const rect = dialog.getBoundingClientRect();
-    
-    // 3. Trava a posição atual em pixels, removendo o 'transform'
-    dialog.style.position = 'fixed';
-    dialog.style.top = `${rect.top}px`;
-    dialog.style.left = `${rect.left}px`;
-    dialog.style.transform = ''; // Remove o translate(-50%, -50%)
-    
-    // 4. Calcula o offset do clique *dentro* do diálogo
-    photoViewer.offset.x = e.clientX - rect.left;
-    photoViewer.offset.y = e.clientY - rect.top;
-
-    // 5. Anexa listeners globais
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  };
-
-  const onMouseMove = (e) => {
-    if (!photoViewer.isDragging) return;
-    e.preventDefault();
-    
-    // Calcula nova posição baseada no offset
-    let newX = e.clientX - photoViewer.offset.x;
-    let newY = e.clientY - photoViewer.offset.y;
-
-    // Limita ao viewport
-    newX = Math.max(0, Math.min(newX, window.innerWidth - dialog.offsetWidth));
-    newY = Math.max(0, Math.min(newY, window.innerHeight - dialog.offsetHeight));
-
-    dialog.style.left = `${newX}px`;
-    dialog.style.top = `${newY}px`;
-  };
-
-  const onMouseUp = () => {
-    photoViewer.isDragging = false;
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  };
-
-  title.addEventListener('mousedown', onMouseDown);
-}
-
-/**
- * [NOVO v23.9] Inicializa os listeners do novo modal de foto.
- */
-function _setupPhotoViewerModal() {
-  photoViewer.modal = document.getElementById('photo-viewer-modal');
-  photoViewer.dialog = document.getElementById('photo-viewer-dialog');
-  photoViewer.title = document.getElementById('photo-viewer-title');
-  photoViewer.content = document.getElementById('photo-viewer-content');
-  photoViewer.closeBtn = document.getElementById('photo-viewer-close');
-
-  if (!photoViewer.modal) {
-    console.error("O HTML do #photo-viewer-modal não foi encontrado no index.html");
-    return;
-  }
-
-  photoViewer.closeBtn.addEventListener('click', _hidePhotoViewer);
-  
-  photoViewer.modal.addEventListener('click', (e) => {
-    if (e.target === photoViewer.modal) { // Fecha ao clicar no overlay (fundo)
-      _hidePhotoViewer();
-    }
-  });
-
-  _makeDraggable(); // Ativa o "arrastar" (só desktop)
-}
-
-/**
  * (v23.9 - MODIFICADO) Anexa o listener de delegação de eventos da tabela.
  */
 function _setupTableDelegation(summaryContainer, isTouchDevice) {
@@ -770,8 +627,8 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
     // [MODIFICADO v23.9] Ação de Foto
     if (photoButton) {
       e.preventDefault();
-      // Chama o novo visualizador de fotos
-      _showPhotoViewer(parseInt(photoButton.dataset.id, 10));
+      // Chama o novo visualizador de fotos (agora no modal.ui.js)
+      modalUI.showPhotoViewer(parseInt(photoButton.dataset.id, 10));
     }
   });
 }
@@ -786,7 +643,7 @@ export function setupRiskCalculator() {
   // 1. Setup de Componentes Base
   _setupSubNavigation();
   _setupFileImporters();
-  _setupPhotoViewerModal(); // [NOVO v23.9]
+  // [REMOVIDO v23.10] _setupPhotoViewerModal(); // Movido para main.js -> modalUI.init
 
   // 2. Setup de Listeners
   _setupFormListeners(
@@ -812,7 +669,7 @@ export function setupRiskCalculator() {
 }
 
 // #####################################################################
-// ### FIM DA SEÇÃO DE REFATORAÇÃO (v23.9) ###
+// ### FIM DA SEÇÃO DE REFATORAÇÃO ###
 // #####################################################################
 
 
@@ -915,6 +772,7 @@ function showGlossaryTooltip(event) {
   if (!definition) return;
   const tooltip = createTooltip();
   
+  // [MODIFICADO v23.8] Define uma largura padrão para tooltips de TEXTO
   tooltip.style.width = '350px'; 
   
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
