@@ -1,9 +1,9 @@
-// js/ui.js (v23.7 - Correção de Bug "Flicker" do Tooltip)
+// js/ui.js (v23.8 - Correção de Bug "Flicker" e Overflow/Zoom do Tooltip de Foto)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
-import { showToast, debounce } from './utils.js'; // Debounce ainda é usado para o Filtro da Tabela
+import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js';
 import * as mapUI from './map.ui.js';
@@ -16,8 +16,12 @@ const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 
 const termClickEvent = isTouchDevice ? 'touchend' : 'click';
 const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
-// [NOVO v23.7] Timer de tooltip centralizado para evitar race conditions
+// [v23.7] Timer de tooltip centralizado para evitar race conditions
 let tooltipHideTimer = null;
+
+// [NOVO v23.8] Níveis de Zoom do Tooltip de Foto (semelhante ao map.ui.js)
+let currentTooltipZoom = 0;
+const TOOLTIP_ZOOM_LEVELS = [300, 450, 600]; // Padrão (Pequeno), Médio, Grande
 
 
 // === 3. RENDERIZAÇÃO DE CONTEÚDO (MANUAL) ===
@@ -114,7 +118,7 @@ export function setupMobileChecklist() {
 
 
 // #####################################################################
-// ### SEÇÃO SEGURA E DE PERFORMANCE (v23.3) ###
+// ### SEÇÃO SEGURA E DE PERFORMANCE (v23.5) ###
 // #####################################################################
 
 function createSafeCell(text, className) {
@@ -356,7 +360,7 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
 // #####################################################################
 
 /**
- * [NOVO v23.5] Alterna o modo do formulário entre Adicionar e Editar.
+ * (v23.5) Alterna o modo do formulário entre Adicionar e Editar.
  */
 function _setFormMode(mode) {
   const btn = document.getElementById('add-tree-btn');
@@ -373,7 +377,7 @@ function _setFormMode(mode) {
 }
 
 /**
- * [NOVO v23.5] Preenche o formulário com dados da árvore para edição.
+ * (v23.5) Preenche o formulário com dados da árvore para edição.
  */
 function _populateFormForEdit(tree) {
   if (!tree) return;
@@ -404,12 +408,10 @@ function _populateFormForEdit(tree) {
       }
     });
   }
-
   const allCheckboxes = document.querySelectorAll('#risk-calculator-form .risk-checkbox');
   allCheckboxes.forEach((cb, index) => {
     cb.checked = (tree.riskFactors && tree.riskFactors[index] === 1) || false;
   });
-  
   const gpsStatus = document.getElementById('gps-status');
   if (gpsStatus) {
     gpsStatus.textContent = `Zona (da árvore): ${state.lastUtmZone.num}${state.lastUtmZone.letter}`;
@@ -466,7 +468,7 @@ function _setupFileImporters() {
 }
 
 /**
- * (v23.5 - MODIFICADO) Anexa listeners ao formulário principal (submit, reset, gps).
+ * (v23.5) Anexa listeners ao formulário principal (submit, reset, gps).
  */
 function _setupFormListeners(form, isTouchDevice) {
   if (!form) return;
@@ -481,22 +483,20 @@ function _setupFormListeners(form, isTouchDevice) {
     getGpsBtn.addEventListener('click', features.handleGetGPS);
   }
 
-  // [MODIFICADO v23.5] Listener de Submit (Adicionar ou Atualizar)
   form.addEventListener('submit', (event) => {
     const result = features.handleAddTreeSubmit(event); 
     if (result && result.success) {
       if (result.mode === 'add') {
-        appendTreeRow(result.tree); // O(1)
+        appendTreeRow(result.tree);
       } else if (result.mode === 'update') {
-        renderSummaryTable(); // O(N) - Necessário para re-ordenar/atualizar
+        renderSummaryTable();
       }
       if (isTouchDevice) setupMobileChecklist();
       if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-      _setFormMode('add'); // Reseta o botão
+      _setFormMode('add');
     }
   });
 
-  // [MODIFICADO v23.5] Listener de Limpar Campos (Reset)
   if (resetBtn) {
     resetBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -509,8 +509,6 @@ function _setupFormListeners(form, isTouchDevice) {
       } catch(err) { /* ignora */ }
       if (isTouchDevice) setupMobileChecklist();
       if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
-      
-      // [NOVO v23.5] Cancela o modo de edição
       state.setEditingTreeId(null);
       _setFormMode('add');
     });
@@ -579,15 +577,12 @@ function _setupCalculatorControls() {
 }
 
 /**
- * (v23.5 - MODIFICADO) Anexa o listener de delegação de eventos da tabela.
+ * (v23.5) Anexa o listener de delegação de eventos da tabela.
  */
 function _setupTableDelegation(summaryContainer, isTouchDevice) {
   if (!summaryContainer) return;
   
-  // [MODIFICADO v23.5] Removemos a clonagem desnecessária (Bug 2)
-  // const newSummaryContainer = summaryContainer.cloneNode(true);
-  // summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
-  // summaryContainer = newSummaryContainer;
+  // (v23.5) Bug 2 Corrigido: Clonagem desnecessária removida.
   
   renderSummaryTable(); // Renderiza a tabela inicial (O(N))
 
@@ -599,7 +594,6 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
     const sortButton = e.target.closest('th.sortable');
     const photoButton = e.target.closest('.photo-preview-btn');
 
-    // Ação de Excluir (O(1))
     if (deleteButton) {
       const treeId = parseInt(deleteButton.dataset.id, 10);
       modalUI.showGenericModal({
@@ -616,7 +610,6 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
       });
     }
     
-    // [MODIFICADO v23.5] Ação de Editar
     if (editButton) {
       const treeData = features.handleEditTree(parseInt(editButton.dataset.id, 10));
       if (treeData) {
@@ -628,18 +621,15 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
       }
     }
 
-    // Ação de Zoom
     if (zoomButton) {
       features.handleZoomToPoint(parseInt(zoomButton.dataset.id, 10));
     }
     
-    // Ação de Ordenar (O(N))
     if (sortButton) {
       features.handleSort(sortButton.dataset.sortKey);
-      renderSummaryTable(); // OK (O(N) é necessário)
+      renderSummaryTable();
     }
 
-    // Ação de Foto
     if (photoButton) {
       e.preventDefault();
       handlePhotoPreviewClick(parseInt(photoButton.dataset.id, 10), photoButton);
@@ -648,34 +638,24 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
 }
 
 /**
- * (v23.5 - MODIFICADO) Função "maestro" que inicializa a Calculadora.
+ * (v23.5) Função "maestro" que inicializa a Calculadora.
  */
 export function setupRiskCalculator() {
   
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-  // 1. Setup de Componentes Base
   _setupSubNavigation();
   _setupFileImporters();
-
-  // 2. Setup de Listeners
   _setupFormListeners(
     document.getElementById('risk-calculator-form'),
     isTouchDevice
   );
   _setupPhotoListeners();
   _setupCalculatorControls();
-
-  // 3. Setup de Módulos Externos
   mapUI.setupMapListeners();
-
-  // 4. Setup da Tabela
   _setupTableDelegation(
     document.getElementById('summary-table-container'),
     isTouchDevice
   );
-
-  // 5. Setup Mobile
   if (isTouchDevice) {
     setupMobileChecklist();
   }
@@ -687,7 +667,7 @@ export function setupRiskCalculator() {
 
 
 // === 5. LÓGICA DE TOOLTIPS (UI) ===
-// [MODIFICADO v23.7] Correção do Bug de "Flicker"
+// [MODIFICADO v23.8] Correção do Bug de Overflow/Zoom da Foto da Tabela
 
 /**
  * Cria ou obtém o elemento de tooltip.
@@ -708,7 +688,7 @@ export function createTooltip() {
 }
 
 /**
- * Esconde o tooltip ativo.
+ * [MODIFICADO v23.8] Esconde o tooltip ativo e reseta a largura.
  */
 export function hideTooltip() {
   if (state.currentTooltip) {
@@ -718,21 +698,22 @@ export function hideTooltip() {
     }
     state.currentTooltip.style.opacity = '0';
     state.currentTooltip.style.visibility = 'hidden';
+    state.currentTooltip.style.width = ''; // [NOVO v23.8] Reseta a largura
     delete state.currentTooltip.dataset.currentElement;
     state.setCurrentTooltip(null);
   }
 }
 
 /**
- * [NOVO v23.7] Agenda o fechamento do tooltip (para mouseleave)
+ * [v23.7] Agenda o fechamento do tooltip (para mouseleave)
  */
 function scheduleHideTooltip() {
-  clearTimeout(tooltipHideTimer); // Limpa qualquer agendamento anterior
-  tooltipHideTimer = setTimeout(hideTooltip, 200); // Agenda novo hide
+  clearTimeout(tooltipHideTimer);
+  tooltipHideTimer = setTimeout(hideTooltip, 200);
 }
 
 /**
- * [NOVO v23.7] Cancela o fechamento do tooltip (para mouseenter)
+ * [v23.7] Cancela o fechamento do tooltip (para mouseenter)
  */
 function cancelHideTooltip() {
   clearTimeout(tooltipHideTimer);
@@ -761,18 +742,61 @@ function positionTooltip(termElement) {
 }
 
 /**
- * Mostra o preview da foto (usando a infraestrutura do tooltip).
+ * [NOVO v23.8] Controla o zoom da imagem no Tooltip (copiado do map.ui.js)
+ */
+function zoomTooltipImage(direction) {
+  const tooltip = document.getElementById('glossary-tooltip');
+  if (!tooltip) return;
+
+  currentTooltipZoom += direction;
+  if (currentTooltipZoom < 0) currentTooltipZoom = 0;
+  if (currentTooltipZoom >= TOOLTIP_ZOOM_LEVELS.length) currentTooltipZoom = TOOLTIP_ZOOM_LEVELS.length - 1;
+
+  const newWidth = TOOLTIP_ZOOM_LEVELS[currentTooltipZoom];
+  tooltip.style.width = `${newWidth}px`;
+}
+
+/**
+ * [MODIFICADO v23.8] Mostra o preview da foto com controles de zoom.
  */
 function handlePhotoPreviewClick(id, targetElement) {
-  cancelHideTooltip(); // [NOVO v23.7]
+  cancelHideTooltip(); // Cancela qualquer hide pendente
+  
   getImageFromDB(id, (imageBlob) => {
     if (!imageBlob) {
       showToast("Foto não encontrada no banco de dados.", "error");
       return;
     }
+    
     const imgUrl = URL.createObjectURL(imageBlob);
     const tooltip = createTooltip();
-    tooltip.innerHTML = `<img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" style="max-width: 80vw; max-height: 70vh;">`;
+    
+    // [NOVO v23.8] Reseta o zoom e define o tamanho padrão
+    currentTooltipZoom = 0;
+    tooltip.style.width = `${TOOLTIP_ZOOM_LEVELS[0]}px`;
+
+    // [MODIFICADO v23.8] Corrige o overflow (width: 100%) e adiciona container de botões
+    let photoHTML = `
+      <div id="tooltip-photo-container">
+        <img src="${imgUrl}" alt="Foto ID ${id}" class="manual-img" id="tooltip-img" style="width: 100%; height: auto; display: block;">
+    `;
+    
+    if (!isTouchDevice) {
+      photoHTML += `
+        <div class="tooltip-photo-zoom">
+          <button id="tt-zoom-out-btn" title="Diminuir Zoom">-</button>
+          <button id="tt-zoom-in-btn" title="Aumentar Zoom">+</button>
+        </div>
+      `;
+    }
+    photoHTML += '</div>';
+    
+    tooltip.innerHTML = photoHTML;
+
+    // [NOVO v23.8] Anexa listeners aos novos botões de zoom
+    document.getElementById('tt-zoom-out-btn')?.addEventListener('click', () => zoomTooltipImage(-1));
+    document.getElementById('tt-zoom-in-btn')?.addEventListener('click', () => zoomTooltipImage(1));
+    
     positionTooltip(targetElement);
     tooltip.style.opacity = '1';
     tooltip.style.visibility = 'visible';
@@ -784,24 +808,26 @@ function handlePhotoPreviewClick(id, targetElement) {
 
 function setupGlossaryInteractions(detailView) {
   const glossaryTermsElements = detailView.querySelectorAll('.glossary-term');
-  // [REMOVIDO v23.7] const debouncedHide = debounce(hideTooltip, 200);
-  
   glossaryTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showGlossaryTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip); // [MODIFICADO v23.7]
+      termElement.addEventListener('mouseleave', scheduleHideTooltip);
     }
     termElement.addEventListener(termClickEvent, toggleGlossaryTooltip);
   });
 }
 
 function showGlossaryTooltip(event) {
-  cancelHideTooltip(); // [NOVO v23.7] Cancela qualquer 'hide' pendente
+  cancelHideTooltip(); // [v23.7]
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const definition = glossaryTerms[termKey];
   if (!definition) return;
   const tooltip = createTooltip();
+  
+  // [MODIFICADO v23.8] Define uma largura padrão para tooltips de TEXTO
+  tooltip.style.width = '350px'; 
+  
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong>: ${definition}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
@@ -822,24 +848,26 @@ function toggleGlossaryTooltip(event) {
 
 function setupEquipmentInteractions(detailView) {
   const equipmentTermsElements = detailView.querySelectorAll('.equipment-term');
-  // [REMOVIDO v23.7] const debouncedHide = debounce(hideTooltip, 200);
-  
   equipmentTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showEquipmentTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip); // [MODIFICADO v23.7]
+      termElement.addEventListener('mouseleave', scheduleHideTooltip);
     }
     termElement.addEventListener(termClickEvent, toggleEquipmentTooltip);
   });
 }
 
 function showEquipmentTooltip(event) {
-  cancelHideTooltip(); // [NOVO v23.7] Cancela qualquer 'hide' pendente
+  cancelHideTooltip(); // [v23.7]
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const data = equipmentData[termKey];
   if (!data) return;
   const tooltip = createTooltip();
+  
+  // [MODIFICADO v23.8] Define uma largura padrão para tooltips de EQUIPAMENTO
+  tooltip.style.width = '350px';
+  
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
@@ -860,24 +888,26 @@ function toggleEquipmentTooltip(event) {
 
 function setupPurposeInteractions(detailView) {
   const purposeTermsElements = detailView.querySelectorAll('.purpose-term');
-  // [REMOVIDO v23.7] const debouncedHide = debounce(hideTooltip, 200);
-
   purposeTermsElements.forEach(termElement => {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showPurposeTooltip);
-      termElement.addEventListener('mouseleave', scheduleHideTooltip); // [MODIFICADO v23.7]
+      termElement.addEventListener('mouseleave', scheduleHideTooltip);
     }
     termElement.addEventListener(termClickEvent, togglePurposeTooltip);
   });
 }
 
 function showPurposeTooltip(event) {
-  cancelHideTooltip(); // [NOVO v23.7] Cancela qualquer 'hide' pendente
+  cancelHideTooltip(); // [v23.7]
   const termElement = event.currentTarget;
   const termKey = termElement.getAttribute('data-term-key');
   const data = podaPurposeData[termKey];
   if (!data) return;
   const tooltip = createTooltip();
+  
+  // [MODIFICADO v23.8] Define uma largura padrão para tooltips de PROPÓSITO
+  tooltip.style.width = '350px';
+  
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
