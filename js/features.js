@@ -1,4 +1,4 @@
-// js/features.js (v23.5 - Correção Crítica do Fluxo de Edição)
+// js/features.js (v23.6 - Correção de Interação Tabela-Mapa)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -6,7 +6,7 @@ import * as utils from './utils.js';
 import * as db from './database.js';
 
 // === 2. LÓGICA DE GEOLOCALIZAÇÃO (GPS) ===
-// (Sem alterações. O código de handleGetGPS() permanece o mesmo)
+// (Sem alterações. O código de handleGetGPS() permanece o mesmo da v23.5)
 export async function handleGetGPS() {
   const gpsStatus = document.getElementById('gps-status');
   const coordXField = document.getElementById('risk-coord-x');
@@ -76,41 +76,30 @@ export async function handleGetGPS() {
 
 
 // === 3. LÓGICA DO FORMULÁRIO DE RISCO (CRUD) ===
+// (Sem alterações. O código de clearPhotoPreview, handleAddTreeSubmit,
+// handleDeleteTree, e handleEditTree permanece o mesmo da v23.5)
 
 export function clearPhotoPreview() {
   const previewContainer = document.getElementById('photo-preview-container');
   const removePhotoBtn = document.getElementById('remove-photo-btn');
   const oldPreview = document.getElementById('photo-preview');
-
   if (oldPreview) {
     URL.revokeObjectURL(oldPreview.src);
     previewContainer.removeChild(oldPreview);
   }
-  if (removePhotoBtn) {
-    removePhotoBtn.style.display = 'none';
-  }
+  if (removePhotoBtn) removePhotoBtn.style.display = 'none';
   state.setCurrentTreePhoto(null);
-  
   const photoInput = document.getElementById('tree-photo-input');
-  if (photoInput) {
-    photoInput.value = null;
-  }
+  if (photoInput) photoInput.value = null;
 }
 
-/**
- * [REFATORADO v23.5] Processa Adicionar (Create) ou Atualizar (Update).
- * @param {Event} event O evento de submit do formulário.
- * @returns {object | null} { success: boolean, mode: 'add'|'update', tree: object }
- */
 export function handleAddTreeSubmit(event) {
   event.preventDefault();
   const form = event.target;
   let totalScore = 0;
-
-  // 1. Validação e Pontuação (Comum a Add e Update)
+  
   const checkboxes = form.querySelectorAll('.risk-checkbox:checked');
   checkboxes.forEach(cb => { totalScore += parseInt(cb.dataset.weight, 10); });
-  
   const allCheckboxes = form.querySelectorAll('.risk-checkbox');
   const checkedRiskFactors = Array.from(allCheckboxes).map(cb => cb.checked ? 1 : 0);
   
@@ -125,7 +114,6 @@ export function handleAddTreeSubmit(event) {
     return { success: false }; // Falha
   }
 
-  // 2. Coleta dados comuns do formulário
   const treeData = {
     data: document.getElementById('risk-data').value || new Date().toISOString().split('T')[0],
     especie: especie,
@@ -144,69 +132,44 @@ export function handleAddTreeSubmit(event) {
     hasPhoto: (state.currentTreePhoto !== null)
   };
 
-  // 3. Salva o nome do avaliador (lógica de UI)
   state.setLastEvaluatorName(treeData.avaliador);
   
   let resultTree;
   let mode;
 
-  // 4. Decide se é ADIÇÃO (Create) ou ATUALIZAÇÃO (Update)
   if (state.editingTreeId === null) {
     // --- MODO ADICIONAR (CREATE) ---
     mode = 'add';
     const newTreeId = state.registeredTrees.length > 0 ? Math.max(...state.registeredTrees.map(t => t.id)) + 1 : 1;
     resultTree = { ...treeData, id: newTreeId };
-
-    if (resultTree.hasPhoto) {
-      db.saveImageToDB(resultTree.id, state.currentTreePhoto);
-    }
+    if (resultTree.hasPhoto) db.saveImageToDB(resultTree.id, state.currentTreePhoto);
     state.registeredTrees.push(resultTree);
     utils.showToast(`✔️ Árvore "${resultTree.especie}" (ID ${resultTree.id}) adicionada!`, 'success');
-
   } else {
     // --- MODO ATUALIZAR (UPDATE) ---
     mode = 'update';
     const treeIndex = state.registeredTrees.findIndex(t => t.id === state.editingTreeId);
     if (treeIndex === -1) {
-      console.error("Erro de Edição: ID da árvore não encontrado no estado.", state.editingTreeId);
+      console.error("Erro de Edição: ID da árvore não encontrado.", state.editingTreeId);
       utils.showToast("Erro ao salvar. Árvore não encontrada.", "error");
       return { success: false };
     }
-    
-    // Preserva o ID original
     resultTree = { ...treeData, id: state.editingTreeId };
-    
     const originalTree = state.registeredTrees[treeIndex];
-
-    // Lógica da Foto (Complexa):
-    // 1. Foto foi adicionada (original não tinha, nova tem)
     if (resultTree.hasPhoto && !originalTree.hasPhoto) {
       db.saveImageToDB(resultTree.id, state.currentTreePhoto);
-    // 2. Foto foi removida (original tinha, nova não tem)
     } else if (!resultTree.hasPhoto && originalTree.hasPhoto) {
       db.deleteImageFromDB(resultTree.id);
-    // 3. Foto foi substituída (ambas têm, mas o blob é diferente)
     } else if (resultTree.hasPhoto && originalTree.hasPhoto) {
-       // (currentTreePhoto é um Blob, não podemos compará-los diretamente sem ler)
-       // A forma mais simples (embora não a mais otimizada) é salvar novamente (put).
-       // O 'put' do IndexedDB substitui o registro com o mesmo ID.
        db.saveImageToDB(resultTree.id, state.currentTreePhoto);
     }
-    // 4. Foto não mudou (ambas não têm, ou ambas têm e não foi tocada)
-    // (neste caso, currentTreePhoto seria nulo ou igual, nenhuma ação de DB)
-
-    // Atualiza o array no estado
     state.registeredTrees[treeIndex] = resultTree;
     utils.showToast(`💾 Árvore "${resultTree.especie}" (ID ${resultTree.id}) atualizada!`, 'success');
   }
 
-  // 5. Salva, Limpa e Retorna
   state.saveDataToStorage();
-  
-  // Limpa o estado de edição
   state.setEditingTreeId(null);
   
-  // Limpa o formulário (DOM)
   form.reset();
   clearPhotoPreview();
   try {
@@ -218,14 +181,11 @@ export function handleAddTreeSubmit(event) {
   return { success: true, mode: mode, tree: resultTree }; // Sucesso
 }
 
-
 export function handleDeleteTree(id) {
   const treeToDelete = state.registeredTrees.find(tree => tree.id === id);
-  
   if (treeToDelete && treeToDelete.hasPhoto) {
     db.deleteImageFromDB(id);
   }
-  
   const newTrees = state.registeredTrees.filter(tree => tree.id !== id);
   state.setRegisteredTrees(newTrees);
   state.saveDataToStorage();
@@ -233,34 +193,17 @@ export function handleDeleteTree(id) {
   return true;
 }
 
-/**
- * [REFATORADO v23.5] Apenas define o estado de edição e retorna os dados da árvore.
- * Não manipula mais o DOM nem o state.registeredTrees.
- * @param {number} id O ID da árvore a ser editada.
- * @returns {object | null} O objeto da árvore para preencher o formulário.
- */
 export function handleEditTree(id) {
   const treeToEdit = state.registeredTrees.find(tree => tree.id === id);
-  
   if (!treeToEdit) {
     utils.showToast(`Erro: Árvore ID ${id} não encontrada.`, "error");
     return null;
   }
-
-  // 1. Define o estado de edição
   state.setEditingTreeId(id);
-  
-  // 2. Define a Zona UTM (ainda é lógico, pois afeta o GPS)
   state.setLastUtmZone(treeToEdit.utmZoneNum || 0, treeToEdit.utmZoneLetter || 'Z');
-  
-  // 3. Retorna os dados para a UI preencher
   return treeToEdit;
 }
 
-// (O restante do features.js - handleClearAll, handleTableFilter,
-// handleSort, handleZoomToPoint, convertToLatLon, handleZoomToExtent,
-// handleMapMarkerClick, export/import, helpers de email/chat
-// permanecem exatamente os mesmos da v23.3)
 export function handleClearAll() {
   state.registeredTrees.forEach(tree => {
     if (tree.hasPhoto) {
@@ -289,19 +232,42 @@ export function handleSort(sortKey) {
     state.setSortState(sortKey, 'asc');
   }
 }
+
+// === 4. LÓGICA DE INTERAÇÃO (MAPA E TABELA) ===
+
+/**
+ * [MODIFICADO v23.6] Define o estado para o zoom E para abrir o popup.
+ * @param {number} id O ID da árvore para dar zoom.
+ */
 export function handleZoomToPoint(id) {
   const tree = state.registeredTrees.find(t => t.id === id);
-  if (!tree) { utils.showToast("Árvore não encontrada.", "error"); return; }
+  if (!tree) {
+    utils.showToast("Árvore não encontrada.", "error");
+    return;
+  }
+
   const coords = convertToLatLon(tree);
+  
   if (coords) {
+    // 1. Define o alvo do zoom
     state.setZoomTargetCoords(coords);
+    // 2. Define o alvo do highlight (para se o usuário voltar para a tabela)
     state.setHighlightTargetId(id);
-    document.querySelector('.sub-nav-btn[data-target="tab-content-mapa"]')?.click();
+    // 3. [NOVO v23.6] Define o ID do InfoBox que o mapa deve abrir
+    state.setOpenInfoBoxId(id);
+    
+    // 4. Clica na aba do mapa
+    const mapTabButton = document.querySelector('.sub-nav-btn[data-target="tab-content-mapa"]');
+    if (mapTabButton) {
+      mapTabButton.click();
+    }
   } else {
     utils.showToast(`Coordenadas inválidas para a Árvore ID ${id}. Verifique a Zona UTM Padrão.`, "error");
   }
 }
+
 export function convertToLatLon(tree) {
+  // (Sem alterações. O código de convertToLatLon() permanece o mesmo)
   if (typeof proj4 === 'undefined') {
     console.error("Proj4js não carregado.");
     utils.showToast("Erro: Biblioteca Proj4js não carregada.", "error");
@@ -336,7 +302,9 @@ export function convertToLatLon(tree) {
   console.warn(`Ponto (ID ${tree.id}) ignorado: Coordenadas inválidas.`, tree);
   return null;
 }
+
 export function handleZoomToExtent() {
+  // (Sem alterações. O código de handleZoomToExtent() permanece o mesmo)
   if (!state.mapInstance) { utils.showToast("O mapa não está inicializado.", "error"); return; }
   if (state.mapMarkerGroup) {
     const bounds = state.mapMarkerGroup.getBounds();
@@ -356,10 +324,16 @@ export function handleZoomToExtent() {
     utils.showToast("Não há coordenadas válidas. Verifique a Zona UTM Padrão.", "error");
   }
 }
+
 export function handleMapMarkerClick(id) {
+  // (Sem alterações. O código de handleMapMarkerClick() permanece o mesmo)
   state.setHighlightTargetId(id);
   document.querySelector('.sub-nav-btn[data-target="tab-content-summary"]')?.click();
 }
+
+
+// === 5. LÓGICA DE IMPORTAÇÃO/EXPORTAÇÃO ===
+// (Sem alterações. O código de export/import permanece o mesmo da v23.5)
 export function exportActionCSV() {
   const csvContent = getCSVData();
   if (!csvContent) { utils.showToast("Nenhuma árvore cadastrada para exportar.", 'error'); return; }
@@ -562,6 +536,25 @@ export async function handleFileImport(event) {
   } finally {
     event.target.value = null;
   }
+}
+
+// === 6. LÓGICA DE FEATURES COMPLEMENTARES (CHAT, CONTATO, EMAIL) ===
+// (Sem alterações. O código de email/chat permanece o mesmo da v23.5)
+function generateEmailSummaryText() {
+  if (state.registeredTrees.length === 0) return "Nenhuma árvore cadastrada.";
+  let textBody = "Segue o relatório resumido das árvores avaliadas:\n\n";
+  textBody += "ID\t|\tData\t\t|\tEspécie (Nome/Tag)\t|\tLocal\t\t|\tClassificação de Risco\t|\tObservações\n";
+  textBody += "----------------------------------------------------------------------------------------------------------------------------------------------------------\n";
+  state.registeredTrees.forEach(tree => {
+    const [y, m, d] = (tree.data || '---').split('-');
+    const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
+    const cleanEspecie = (tree.especie || 'N/A').padEnd(20, ' ').substring(0, 20);
+    const cleanLocal = (tree.local || 'N/A').padEnd(15, ' ').substring(0, 15);
+    const cleanObs = (tree.observacoes || 'N/A').replace(/[\n\t]/g, ' ').substring(0, 30);
+    textBody += `${tree.id}\t|\t${displayDate}\t|\t${cleanEspecie}\t|\t${cleanLocal}\t|\t${tree.risco}\t|\t${cleanObs}\n`;
+  });
+  textBody += "\n\nInstrução Importante:\nPara o relatório completo, use 'Exportar Dados' e anexe o arquivo .CSV ou .ZIP.\n";
+  return textBody;
 }
 export function sendEmailReport() {
   const targetEmail = "";
