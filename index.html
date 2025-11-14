@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-R">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manual de Poda e Corte Interativo - Guia Rápido</title>
     
-    <link rel="stylesheet" href="style.css?v=21.3"> 
+    <link rel="stylesheet" href="style.css?v=22.1"> 
     
     <link rel="stylesheet" href="libs/leaflet.css" />
 </head>
@@ -287,6 +287,14 @@
             <p id="modal-description">Descrição padrão.</p>
             <div class="modal-actions">
                 </div>
+        </div>
+    </div>
+    
+    <div class="modal-dialog photo-viewer-dialog" id="photo-viewer-dialog" style="display: none; z-index: 1001;">
+      <h3 id="photo-viewer-title">Foto da Árvore</h3>
+      <button type="button" class="photo-viewer-close" id="photo-viewer-close" title="Fechar">&times;</button>
+      
+      <div class="photo-viewer-content" id="photo-viewer-content">
         </div>
     </div>
     
