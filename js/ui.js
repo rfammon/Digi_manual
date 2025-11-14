@@ -1,4 +1,4 @@
-// js/ui.js (v23.13 - Correção de Bug de SyntaxError 'J')
+// js/ui.js (v23.14 - Correção de Erros de Sintaxe 'i f' e 't ooltip')
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -683,7 +683,7 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
 
 /**
  * (v23.11 - CORRIGIDO) Função "maestro" que inicializa a Calculadora.
-i */
+ */
 export function setupRiskCalculator() {
   
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -830,7 +830,7 @@ function showGlossaryTooltip(event) {
 }
 
 function toggleGlossaryTooltip(event) {
-  // [CORREÇÃO v23.13] O 'J' foi removido daqui
+  // [CORREÇÃO v23.13] O 'J' foi removido daqui
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
@@ -873,7 +873,8 @@ function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-i f (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
+  // [CORREÇÃO v23.14] O 'i f' foi corrigido para 'if'
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
     showEquipmentTooltip(event);
@@ -901,11 +902,12 @@ function showPurposeTooltip(event) {
   
   tooltip.style.width = '350px';
   
-t ooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
+  // [CORREÇÃO v23.14] O 't ooltip' foi corrigido para 'tooltip'
+  tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
   tooltip.style.visibility = 'visible';
-  tooltip.dataset.currentElement = termElement.textContent;
+_  tooltip.dataset.currentElement = termElement.textContent;
 }
 
 function togglePurposeTooltip(event) {
