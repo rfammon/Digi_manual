@@ -2,7 +2,8 @@
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
-import { glossaryTerms, equipmentData, podaPurposeData } from './content.js';
+// [NOVO v22.3] Importa a lista de perguntas
+import { glossaryTerms, equipmentData, podaPurposeData, riskQuestions } from './content.js'; 
 import { showToast, debounce } from './utils.js'; 
 import { getImageFromDB } from './database.js';
 import * as features from './features.js'; 
