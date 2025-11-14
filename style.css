@@ -284,6 +284,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 
 /* [NOVO v22.1] Estilos para o container da foto e botões de zoom no Tooltip */
+/* (Refatorado no v23.9 para o novo modal de foto) */
 #tooltip-photo-container {
   position: relative;
   padding: 0;
@@ -1134,6 +1135,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 .modal-btn.cancel:hover { background-color: var(--gray-300); }
 
+
 /* -------------------------------------- */
 /* 16B. [NOVO v23.9] MODAL VISUALIZADOR DE FOTOS */
 /* -------------------------------------- */
@@ -1219,12 +1221,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   background-color: var(--gray-300);
 }
 
-/* Esconde zoom no mobile */
-@media (max-width: 768px) {
-  .photo-viewer-zoom-controls {
-    display: none;
-  }
-}
 
 /* -------------------------------------- */
 /* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
@@ -1393,6 +1389,11 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   }
   
   .map-photo-zoom {
+    display: none;
+  }
+  
+  /* [NOVO v23.9] Esconde o zoom do visualizador de fotos no mobile */
+  .photo-viewer-zoom-controls {
     display: none;
   }
 }
