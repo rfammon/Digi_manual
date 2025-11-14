@@ -873,7 +873,7 @@ function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  // [CORREÇÃO v23.14] O 'i f' foi corrigido para 'if'
+// [CORREÇÃO v23.14] O 'i f' foi corrigido para 'if'
   if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
@@ -907,7 +907,7 @@ function showPurposeTooltip(event) {
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
   tooltip.style.visibility = 'visible';
-_  tooltip.dataset.currentElement = termElement.textContent;
+  tooltip.dataset.currentElement = termElement.textContent;
 }
 
 function togglePurposeTooltip(event) {
