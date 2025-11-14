@@ -1,15 +1,15 @@
-// js/modal.ui.js (v23.10 - Lógica do Photo Viewer movida para cá)
+// js/modal.ui.js (v23.11 - Lógica do Photo Viewer movida para cá)
 
 // === 1. IMPORTAÇÕES ===
 import { registeredTrees } from './state.js';
 import * as features from './features.js';
 import { showToast } from './utils.js';
-import { getImageFromDB } from './database.js'; // [NOVO v23.10]
+import { getImageFromDB } from './database.js'; // [v23.10]
 
 // === 2. ESTADO DO MÓDULO ===
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-// [NOVO v23.10] Estado do Visualizador de Fotos
+// [v23.10] Estado do Visualizador de Fotos
 const photoViewer = {
   modal: null,
   dialog: null,
@@ -136,11 +136,13 @@ export function showImportModal() {
       text: 'Adicionar à Lista Atual',
       class: 'secondary',
       action: () => {
+        // Atraso para garantir que o primeiro modal feche antes de abrir o segundo.
         setTimeout(() => showImportTypeModal(false), 0);
       }
     }
   ];
   
+  // Só mostra "Substituir" se a lista NÃO estiver vazia.
   if (registeredTrees.length > 0) {
     buttons.push({
       text: 'Substituir Lista Atual',
@@ -173,6 +175,7 @@ function showImportTypeModal(replaceData) {
     return;
   }
   
+  // Define o modo (append ou replace) no dataset dos inputs
   csvInput.dataset.replaceData = replaceData;
   zipInput.dataset.replaceData = replaceData;
   
@@ -207,7 +210,7 @@ function showImportTypeModal(replaceData) {
 
 
 // #####################################################################
-// ### [NOVO v23.10] LÓGICA DO VISUALIZADOR DE FOTOS ###
+// ### LÓGICA DO VISUALIZADOR DE FOTOS (v23.10) ###
 // #####################################################################
 
 /**
