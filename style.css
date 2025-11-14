@@ -1,4 +1,4 @@
-/* style.css (v22.1 - Novo Layout "Sobre o Autor") */
+/* style.css (v22.0 - Correção de Transição de Zoom do InfoBox) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -1246,7 +1246,7 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
         bottom: 0;
         left: 0;
         right: 0;
-        width: 100% !important; /* [CORREÇÃO v22.0] Garante que o zoom JS não afete o mobile */
+        width: 100%;
         border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
         z-index: 1001; 
     }

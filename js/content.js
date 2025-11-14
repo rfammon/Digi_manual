@@ -1,4 +1,6 @@
-// js/content.js (v22.3 - Nova Estrutura "Sobre o Autor")
+// js/content.js (v22.2 - Imagem do Autor Adicionada)
+// (Anteriormente 'data-content.js')
+// A entrada 'calculadora-risco' foi REMOVIDA e movida para o index.html.
 
 // Helper local, usado apenas neste arquivo
 const imgTag = (src, alt) => `<img src="img/${src}" alt="${alt}" class="manual-img">`;
@@ -341,39 +343,45 @@ export const manualContent = {
         `
     },
     
-    // [NOVA VERSÃO v22.3 - Layout de Duas Colunas]
+    // [NOVA VERSÃO v22.2 - Com Imagem]
     'sobre-autor': {
         titulo: '👨‍💻 Sobre o Autor',
         html: `
-            <div class="autor-layout">
-                <div class="autor-texto">
-                    <p>
-                        <strong>Rafael de Andrade Ammon</strong> é Engenheiro Florestal (UFRRJ),
-                        com MBA em Gestão de Projetos (USP/ESALQ) em curso. A sua carreira
-                        foca-se na conservação ambiental, restauração florestal e
-                        sustentabilidade corporativa.
-                    </p>
-                    <p>
-                        Atualmente, atua como Fiscal Operacional em áreas verdes industriais
-                        na RPBC (pela Vinil Engenharia). Possui experiência em projetos
-                        de grande escala, como o Inventário Florestal Nacional (RJ) e a
-                        restauração do COMPERJ, tendo trabalhado em empresas como EGIS
-                        e CTA Meio Ambiente.
-                    </p>
-                    <p>
-                        É certificado em Google Project Management e pela ABRAPLAN,
-                        com competências em Geoprocessamento (QGIS) e Power BI.
-                        Fluente em inglês.
-                    </p>
-                </div>
-                <div class="autor-perfil">
-                    <img src="img/autor.jpg" alt="Foto de Rafael de Andrade Ammon" class="manual-img">
-                    <p class="autor-links">
-                        <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
-                        <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
-                    </p>
+            <div id="sobre-o-autor">    
+                <img src="img/autor.jpg" alt="Foto de Rafael de Andrade Ammon" class="manual-img" style="max-width: 250px; border-radius: 50%; margin: 0 auto 1.5rem auto; display: block;">
+                
+                <div class="autor-container">
+                    <div class="autor-texto" style="text-align: center;">
+                        <p>
+                            <strong>Rafael de Andrade Ammon</strong> é Engenheiro Florestal (UFRRJ),
+                            com MBA em Gestão de Projetos (USP/ESALQ) em curso. A sua carreira
+                            foca-se na conservação ambiental, restauração florestal e
+                            sustentabilidade corporativa.
+                        </p>
+                        <p>
+                            Atualmente, atua como Fiscal Operacional em áreas verdes industriais
+                            na RPBC (pela Vinil Engenharia). Possui experiência em projetos
+                            de grande escala, como o Inventário Florestal Nacional (RJ) e a
+                            restauração do COMPERJ, tendo trabalhado em empresas como EGIS
+                            e CTA Meio Ambiente.
+                        </p>
+                        <p>
+                            É certificado em Google Project Management e pela ABRAPLAN,
+                            com competências em Geoprocessamento (QGIS) e Power BI.
+                            Fluente em inglês.
+                        </p>
+                        <p class="autor-links">
+                            <a href="mailto:rafael.ammon@gmail.com">rafael.ammon@gmail.com</a> |    
+                            <a href="https://www.linkedin.com/in/rafael-andrade-ammon-2527a72a/" target="_blank">LinkedIn</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         `
     }
+    
+    // NOTA DE ARQUITETURA:
+    // A ENTRADA 'calculadora-risco' FOI REMOVIDA.
+    // O HTML estático agora vive no index.html.
+    // A lógica de navegação está no js/main.js.
 };
