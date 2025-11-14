@@ -83,7 +83,6 @@ export function setOpenInfoBoxId(id) {
 }
 
 // === 4. Funções de Persistência (LocalStorage) ===
-// (Sem alterações)
 
 /**
  * Salva o array 'registeredTrees' no LocalStorage.
