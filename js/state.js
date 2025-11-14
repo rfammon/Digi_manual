@@ -1,4 +1,4 @@
-// js/state.js (v23.6 - Adiciona 'openInfoBoxId')
+// js/state.js (v23.16 - Adiciona 'locationWatchId')
 
 // === 1. Chaves de Armazenamento ===
 const STORAGE_KEY = 'manualPodaData';
@@ -24,10 +24,11 @@ export let lastUtmZone = { num: 0, letter: 'Z' };
 export let zoomTargetCoords = null;
 export let highlightTargetId = null;
 export let currentTreePhoto = null;
-export let editingTreeId = null; // (v23.5)
+export let editingTreeId = null; 
+export let openInfoBoxId = null; 
 
-// [NOVO v23.6] ID da árvore para abrir o InfoBox após o zoom
-export let openInfoBoxId = null;
+// [NOVO v23.16] ID do listener de watchPosition (GPS em tempo real)
+export let locationWatchId = null;
 
 
 // === 3. Funções "Setters" ===
@@ -73,20 +74,21 @@ export function setCurrentTreePhoto(photoBlob) {
 export function setEditingTreeId(id) {
   editingTreeId = id;
 }
-
-/**
- * [NOVO v23.6] Define o ID do InfoBox que deve ser aberto no mapa.
- * @param {number | null} id O ID da árvore ou null.
- */
 export function setOpenInfoBoxId(id) {
   openInfoBoxId = id;
 }
 
-// === 4. Funções de Persistência (LocalStorage) ===
-
 /**
- * Salva o array 'registeredTrees' no LocalStorage.
+ * [NOVO v23.16] Define o ID do watcher de localização.
+ * @param {number | null} id O ID do watchPosition ou null.
  */
+export function setLocationWatchId(id) {
+  locationWatchId = id;
+}
+
+
+// === 4. Funções de Persistência (LocalStorage) ===
+// (Sem alterações)
 export function saveDataToStorage() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredTrees));
@@ -94,10 +96,6 @@ export function saveDataToStorage() {
     console.error("Erro ao salvar dados no localStorage:", e);
   }
 }
-
-/**
- * Carrega os dados do LocalStorage para o estado 'registeredTrees'.
- */
 export function loadDataFromStorage() {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -106,14 +104,9 @@ export function loadDataFromStorage() {
     }
   } catch (e) {
     console.error("Erro ao ler dados do localStorage:", e);
-    registeredTrees = []; // Garante que o estado seja limpo em caso de erro
+    registeredTrees = [];
   }
 }
-
-/**
- * Salva a última aba ativa no LocalStorage.
- * @param {string} tabKey O 'data-target' da aba (ex: 'conceitos-basicos')
- */
 export function saveActiveTab(tabKey) {
   try {
     localStorage.setItem(ACTIVE_TAB_KEY, tabKey);
@@ -121,11 +114,6 @@ export function saveActiveTab(tabKey) {
     console.error("Erro ao salvar a aba ativa:", e);
   }
 }
-
-/**
- * Busca a última aba ativa salva no LocalStorage.
- * @returns {string | null} A chave da última aba salva.
- */
 export function getActiveTab() {
   try {
     return localStorage.getItem(ACTIVE_TAB_KEY);
