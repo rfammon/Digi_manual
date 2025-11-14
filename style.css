@@ -1,4 +1,4 @@
-/* style.css (v24.2 - Depuração de Sintaxe) */
+/* style.css (v24.3 - Depuração de Sintaxe) */
 
 /* -------------------------------------- */
 /* 1. VARIÁVEIS GLOBAIS (RAIZ) */
@@ -252,10 +252,8 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   border-radius: var(--border-radius-md);
   padding: var(--space-sm) var(--space-md);
   max-width: 90vw;
-  /* [MODIFICADO v22.1] 'width' agora é controlado pelo JS (para zoom da foto) */
   box-shadow: var(--shadow-lg);
   z-index: 1000;
-  /* [MODIFICADO v22.1] Adiciona 'width' à transição */
   transition: opacity 0.2s, visibility 0.2s, width 0.3s ease-in-out;
   opacity: 0;
   visibility: hidden;
@@ -277,13 +275,11 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 
 #glossary-tooltip .manual-img {
   margin: var(--space-sm) 0;
-  /* [NOVO v22.1] Garante que a imagem se ajuste ao container */
   width: 100%; 
   height: auto;
   display: block;
 }
 
-/* [MODIFICADO v23.9] Apenas tooltips de texto/imagem, não o modal de fotos */
 #tooltip-photo-container {
   position: relative;
   padding: 0;
@@ -356,7 +352,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   color: var(--color-text);
 }
 
-/* Inputs e Textareas Padronizados */
 .contact-form input[type="text"],
 .contact-form input[type="email"],
 .contact-form textarea,
@@ -388,7 +383,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   box-shadow: 0 0 0 3px var(--color-primary-lightest);
 }
 
-/* Chat específico */
 #chat-response-box {
   background-color: var(--bg-surface);
   border: 2px solid var(--gray-300);
@@ -412,7 +406,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* 9. APLICAÇÃO DOS ESTILOS DE BOTÃO */
 /* -------------------------------------- */
 
-/* Formulário de Contato e Chat */
 .send-btn,
 #chat-send-btn {
   padding: var(--space-sm) var(--space-md);
@@ -441,7 +434,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   width: auto;
 }
 
-/* Área de Botões da Calculadora */
 .risk-buttons-area {
   display: flex;
   flex-wrap: wrap;
@@ -471,7 +463,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .export-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 
 
-/* Aplica as classes de cor */
 #add-tree-btn {
   background-color: var(--color-primary-medium);
   color: white;
@@ -485,7 +476,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #reset-risk-form-btn:hover { background-color: var(--gray-300); }
 
-/* Botão Importar e Exportar */
 #import-data-btn,
 #export-data-btn,
 #send-email-btn {
@@ -505,7 +495,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 #clear-all-btn:hover { background-color: var(--color-danger-dark); }
 
-/* Botão de GPS */
 #get-gps-btn {
   background-color: var(--color-primary-dark);
   color: white;
@@ -563,7 +552,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   margin-bottom: var(--space-xs);
 }
 
-/* Tabelas */
 .risk-table, .summary-table, .glossary-table {
   width: 100%;
   border-collapse: collapse;
@@ -579,7 +567,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   vertical-align: middle;
 }
 
-/* Cabeçalhos de Tabela */
 .risk-table th, .glossary-table th {
   background-color: var(--gray-100);
 }
@@ -599,13 +586,12 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 .risk-table td:nth-child(4) { width: 50px; text-align: center; }
 
 .risk-checkbox {
-  width: 1.5rem; /* Alvo maior */
+  width: 1.5rem;
   height: 1.5rem;
   cursor: pointer;
   accent-color: var(--color-primary-medium);
 }
 
-/* Tabela de Resumo */
 #summary-table-container {
   margin-top: var(--space-md);
   overflow-x: auto;
@@ -852,7 +838,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
     justify-content: center;
     cursor: pointer;
     user-select: none;
-    /* [CORREÇÃO v24.1] 'text-align: center;' removido */
   }
   .checklist-card-toggle .mobile-checkbox-proxy { display: none; }
   .checklist-card-toggle .toggle-label {
@@ -1089,7 +1074,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   gap: var(--space-sm);
 }
 
-/* Botões do Modal (Estilizados) */
 .modal-btn {
   padding: var(--space-sm) var(--space-md);
   font-size: 1rem;
@@ -1137,23 +1121,13 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* -------------------------------------- */
 
 .photo-viewer-dialog {
-  /* Tamanho inicial (controlado pelo JS) */
   width: 300px; 
   max-width: 90vw;
-  
-  /* [MODIFICADO v23.12] Remove a lógica de centralização do modal */
-  /* transform: translate(-50%, -50%) scale(0.95); */
-  
-  /* [NOVO v23.12] Define a posição e a aparência de "flutuação" */
   position: fixed;
-  z-index: 1001; /* Acima de todo o conteúdo, exceto outros modais */
-  display: none; /* Controlado pelo JS */
-  box-shadow: var(--shadow-lg); /* Mantém a sombra (pedido de UX) */
-
-  /* Transição para abertura/fechamento (width é para o zoom) */
+  z-index: 1001;
+  display: none;
+  box-shadow: var(--shadow-lg);
   transition: opacity 0.2s, transform 0.2s, width 0.3s ease-in-out;
-  
-  /* Garante que o CSS centralize na abertura (JS irá definir isso) */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) scale(0.95);
@@ -1161,21 +1135,18 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   visibility: hidden;
 }
 
-/* [NOVO v23.12] Estado 'show' para o diálogo flutuante */
 .photo-viewer-dialog.show {
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, -50%) scale(1);
 }
 
-/* Título (Área de Arrastar) */
 .photo-viewer-dialog h3 {
-  padding-right: 30px; /* Espaço para o botão de fechar */
+  padding-right: 30px;
   margin-bottom: var(--space-sm);
-  cursor: move; /* [NOVO v23.12] Define o cursor 'move' */
+  cursor: move;
 }
 
-/* Botão de Fechar (X) */
 .photo-viewer-close {
   position: absolute;
   top: 10px;
@@ -1193,7 +1164,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   color: var(--color-dark);
 }
 
-/* Container da Imagem */
 .photo-viewer-content {
   position: relative;
 }
@@ -1202,10 +1172,9 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   height: auto;
   display: block;
   border-radius: var(--border-radius-md);
-  background-color: var(--gray-100); /* Fundo para imagens transparentes */
+  background-color: var(--gray-100);
 }
 
-/* Controles de Zoom (Copiado do .map-photo-zoom) */
 .photo-viewer-zoom-controls {
   display: flex;
   gap: 5px;
@@ -1213,7 +1182,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   bottom: 10px;
   right: 10px;
   background: rgba(255,255,255,0.8);
-  /* [CORREÇÃO v24.1] Caractere '®' removido */
   padding: 3px;
   border-radius: 4px;
 }
@@ -1236,7 +1204,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 /* 17. [v21.9] LEGENDA E INFOBOX DO MAPA */
 /* -------------------------------------- */
 
-/* Legenda Externa (HTML) */
 #map-legend-filter {
   background: var(--gray-100);
   padding: var(--space-sm) var(--space-md);
@@ -1259,7 +1226,6 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
 }
 .legend-filter label {
   display: flex;
-  /* [CORREÇÃO v24.1] 'align: center' corrigido para 'align-items: center' */
   align-items: center;
   cursor: pointer;
   font-size: 0.9em;
@@ -1276,20 +1242,17 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   border: 1px solid rgba(0,0,0,0.2);
 }
 
-/* O Painel de Informações (InfoBox) */
 #map-info-box {
   position: fixed;
   top: 120px;
   right: 20px;
-  width: 280px; /* Largura Padrão (Zoom 0) */
+  width: 280px;
   background: var(--bg-surface);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 998;
   padding: var(--space-md);
-  /* [CORREÇÃO v22.0]: Adiciona 'width' à transição */
   transition: opacity 0.2s, visibility 0.2s, transform 0.2s, width 0.3s ease-in-out;
-  
   opacity: 0;
   visibility: hidden;
   transform: scale(0.95);
@@ -1327,12 +1290,11 @@ h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space
   line-height: 1;
 }
 #map-info-box #close-info-box:hover {
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   color: var(--color-dark);
 }
 #map-info-photo {
   margin-top: var(--space-sm);
-  position: relative; /* Para os botões de zoom */
+  position: relative;
 }
 #map-info-photo.loading-photo {
   font-style: italic;
@@ -1347,7 +1309,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   transition: none;
 }
 
-/* [NOVO v21.9] Controles de Zoom da Imagem (Desktop) */
 .map-photo-zoom {
   display: flex;
   gap: 5px;
@@ -1356,7 +1317,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
   bottom: 5px;
   right: 5px;
   background: rgba(255,255,255,0.8);
-source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005..pdf"
   padding: 3px;
   border-radius: 4px;
 }
@@ -1375,7 +1335,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
 }
 
 
-/* Responsividade do InfoBox */
 @media (max-width: 768px) {
   #map-info-box {
     top: auto;
@@ -1392,12 +1351,12 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
     width: 100%;
     max-width: 100%;
     object-fit: contain;
+  Módulo/Função: `js/ui.js` -> `_setupTableDelegation`
     max-height: 40vh;
   }
 
   .legend-filter-grid {
     display: grid;
-    /* [CORREÇÃO v24.1] Texto injetado removido */
     grid-template-columns: 1fr 1fr;
     gap: var(--space-sm);
   }
@@ -1406,7 +1365,6 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
     display: none;
   }
   
-  /* [NOVO v23.9] Esconde o zoom do visualizador de fotos no mobile */
   .photo-viewer-zoom-controls {
     display: none;
   }
@@ -1416,35 +1374,21 @@ source_id: "uploaded:DOC-20251114-WA0005..pdf", file_name: "DOC-20251114-WA0005.
 /* 18. [NOVO v24.0] RESPONSIVIDADE DA TABELA */
 /* -------------------------------------- */
 
-/* 1. COMPORTAMENTO DE SCROLL (PADRÃO) */
-/* Isso garante que, mesmo no desktop, se a janela for
-   estreita, a tabela não quebre o layout, mas sim role
-   horizontalmente. (Já deve existir no seu CSS, Seção 10). */
 #summary-table-container {
-só isso mesmo. o código está muito bom.
   overflow-x: auto;
 }
 
-/* 2. PRIORIDADE DE COLUNAS (MOBILE-FIRST) */
-/* Esta é a nova lógica de ocultação responsiva. */
-
-/* P1 (ID, Espécie, Risco, Ações) = Sempre visíveis. */
-
-/* P2 (Data, Foto, Local, Pontos)
-   Ocultos por padrão (Mobile) */
+/* P2 (Ocultos por padrão - Mobile) */
 .summary-table .col-p2 {
   display: none;
 }
 
-/* P3 (Coords, Zona, DAP, Avaliador, Obs)
-   Ocultos por padrão (Mobile) */
+/* P3 (Ocultos por padrão - Mobile) */
 .summary-table .col-p3 {
-  /* [CORREÇÃO v24.1] Texto injetado removido */
   display: none;
 }
 
-/* 3. BREAKPOINT TABLET (>= 768px) */
-/* Mostra P2 (Data, Foto, Local, Pontos) */
+/* BREAKPOINT TABLET (>= 768px) */
 @media (min-width: 768px) {
   .summary-table .col-p2 {
     display: table-cell;
@@ -1452,8 +1396,7 @@ só isso mesmo. o código está muito bom.
   }
 }
 
-/* 4. BREAKPOINT DESKTOP (>= 1024px) */
-/* Mostra P3 (Coords, Zona, DAP, etc.) */
+/* BREAKPOINT DESKTOP (>= 1024px) */
 @media (min-width: 1024px) {
   .summary-table .col-p3 {
     display: table-cell;
