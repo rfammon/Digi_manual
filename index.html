@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manual de Poda e Corte Interativo - Guia Rápido</title>
     
-    <link rel="stylesheet" href="style.css?v=21.3"> 
+    <link rel="stylesheet" href="style.css?v=22.1"> 
     
     <link rel="stylesheet" href="libs/leaflet.css" />
 </head>
@@ -290,14 +290,12 @@
         </div>
     </div>
     
-    <div class="modal-overlay" id="photo-viewer-modal">
-      <div class="modal-dialog photo-viewer-dialog" id="photo-viewer-dialog">
-        <h3 id="photo-viewer-title">Foto da Árvore</h3>
-        <button type="button" class="photo-viewer-close" id="photo-viewer-close" title="Fechar">&times;</button>
-        
-        <div class="photo-viewer-content" id="photo-viewer-content">
-          </div>
-      </div>
+    <div class="modal-dialog photo-viewer-dialog" id="photo-viewer-dialog" style="display: none; z-index: 1001;">
+      <h3 id="photo-viewer-title">Foto da Árvore</h3>
+      <button type="button" class="photo-viewer-close" id="photo-viewer-close" title="Fechar">&times;</button>
+      
+      <div class="photo-viewer-content" id="photo-viewer-content">
+        </div>
     </div>
     
     <script type="module" src="js/main.js?v=21.7"></script>
