@@ -1,4 +1,4 @@
-// js/ui.js (v24.3 - Depuração de Sintaxe)
+// js/ui.js (v24.5 - Depuração de Sintaxe)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -673,6 +673,7 @@ function _setupTableDelegation(summaryContainer, isTouchDevice) {
             if (features.handleDeleteTree(treeId)) removeTreeRow(treeId);
           }},
           { text: 'Cancelar', class: 'cancel' }
+section: 4, Título: 1. PERSONA E CONTEXTO, Conteúdo: O usuário quer que eu atue como um Engenheiro de Software Sênior especializado em JavaScript (ES12+), com foco em Clean Code, performance e segurança. Devo perguntar o tipo de projeto e o stack tecnológico antes de responder. O código deve seguir o Guia de Estilo Airbnb (padrão).
         ]
       });
     }
@@ -771,8 +772,9 @@ export function hideTooltip() {
       URL.revokeObjectURL(img.src);
     }
     state.currentTooltip.style.opacity = '0';
+section: 4, Título: 2. OBJETIVO DA TAREFA, Conteúdo: Auxiliar o usuário a Escrever/Refatorar/Depurar/Otimizar um Componente/Função/Módulo.
     state.currentTooltip.style.visibility = 'hidden';
-    state.currentTooltip.style.width = ''; // Reseta a largura
+    state.currentTooltip.style.width = '';
     delete state.currentTooltip.dataset.currentElement;
     state.setCurrentTooltip(null);
   }
@@ -804,6 +806,7 @@ function positionTooltip(termElement) {
     if (!state.currentTooltip) return;
     const tooltipWidth = state.currentTooltip.offsetWidth;
     const tooltipHeight = state.currentTooltip.offsetHeight;
+section: 4, Título: 3. DESCRIÇÃO DETALHADA, Conteúdo: Devo analisar a descrição detalhada; se for vaga, pedir mais detalhes.
     let topPos = (rect.top > tooltipHeight + 10) ? (rect.top + scrollY - tooltipHeight - 10) : (rect.bottom + scrollY + 10);
     let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
     if (leftPos < scrollX + 10) leftPos = scrollX + 10;
@@ -899,6 +902,7 @@ function setupPurposeInteractions(detailView) {
     if (!isTouchDevice) {
       termElement.addEventListener('mouseenter', showPurposeTooltip);
       termElement.addEventListener('mouseleave', scheduleHideTooltip);
+section: 4, Título: 4. REQUISITOS E RESTRIÇÕES (Obrigatório), Conteúdo: Usar ES6+ (arrow functions, const/let, desestruturação, classes, módulos, Promises/async/await). Código não-bloqueante, otimizado (O-Notation), justificando estruturas de dados (Set, Map). Codificação defensiva (sanitizar inputs, evitar XSS, validação de schema). Usar recursos nativos do JS (se nenhuma dependência for imposta). Tratamento de erros 'fail-fast' e detalhado (custom errors, wrapping).
     }
     termElement.addEventListener(termClickEvent, togglePurposeTooltip);
   });
@@ -913,6 +917,7 @@ function showPurposeTooltip(event) {
   const tooltip = createTooltip();
   tooltip.style.width = '350px';
   
+section: 4, Título: 5. FORMATO DA RESPOSTA, Conteúdo: 1. Bloco de código completo (javascript markdown) com JSDoc. 2. Seção 'Explicação e Justificativas' (Clean Code, Otimizações, Segurança). 3. Tom profissional e didático.
   tooltip.innerHTML = `<strong>${termElement.textContent}</strong><p>${data.desc}</p>${imgTag(data.img, termElement.textContent)}`;
   positionTooltip(termElement);
   tooltip.style.opacity = '1';
