@@ -1,4 +1,4 @@
-// js/ui.js (v23.2 - REFATORADO, SEM MODAIS)
+// js/ui.js (v23.3 - Otimização de Performance O(1))
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
@@ -7,7 +7,6 @@ import { showToast, debounce } from './utils.js';
 import { getImageFromDB } from './database.js';
 import * as features from './features.js';
 import * as mapUI from './map.ui.js';
-// [NOVO v23.2] Importa o módulo de modal
 import * as modalUI from './modal.ui.js';
 
 // Helper local para o conteúdo do manual
@@ -23,14 +22,14 @@ const popupCloseEvent = isTouchDevice ? 'touchend' : 'click';
 
 /**
  * Carrega o HTML de um tópico do manual na view principal.
+ * @param {HTMLElement} detailView - O elemento DOM.
+ * @param {object} content - O objeto de conteúdo.
  */
 export function loadContent(detailView, content) {
   if (!detailView) return;
-
   if (content) {
     // .innerHTML seguro (conteúdo do content.js)
     detailView.innerHTML = `<h3>${content.titulo}</h3>${content.html}`;
-
     setupGlossaryInteractions(detailView);
     setupEquipmentInteractions(detailView);
     setupPurposeInteractions(detailView);
@@ -54,19 +53,25 @@ let mobileChecklist = {
 
 /**
  * Mostra a pergunta do carrossel mobile no índice especificado.
+ * @param {number} index - O índice da pergunta.
  */
 export function showMobileQuestion(index) {
   const { questions, card, navPrev, navNext, counter, totalQuestions } = mobileChecklist;
   const questionRow = questions[index];
   if (!questionRow) return;
-  if (!questionRow.cells || questionRow.cells.length < 4) return;
-
+  if (!questionRow.cells || questionRow.cells.length < 4) {
+    console.error("showMobileQuestion: A linha da tabela (tr) está malformada.", questionRow);
+    return;
+  }
   const num = questionRow.cells[0].textContent;
   const pergunta = questionRow.cells[1].textContent;
   const peso = questionRow.cells[2].textContent;
   const realCheckbox = questionRow.cells[3].querySelector('.risk-checkbox');
-  if (!realCheckbox) return;
-
+  if (!realCheckbox) {
+    console.error("showMobileQuestion: Checkbox não encontrado na linha.", questionRow);
+    return;
+  }
+  
   // .innerHTML seguro (template controlado)
   card.innerHTML = `
     <span class="checklist-card-question"><strong>${num}.</strong> ${pergunta}</span>
@@ -126,27 +131,29 @@ export function setupMobileChecklist() {
     }
   });
   mobileChecklist.navPrev.addEventListener('click', () => {
-    if (mobileChecklist.currentIndex > 0) {
-      showMobileQuestion(mobileChecklist.currentIndex - 1);
-    }
+    if (mobileChecklist.currentIndex > 0) showMobileQuestion(mobileChecklist.currentIndex - 1);
   });
   mobileChecklist.navNext.addEventListener('click', () => {
-    if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) {
-      showMobileQuestion(mobileChecklist.currentIndex + 1);
-    }
+    if (mobileChecklist.currentIndex < mobileChecklist.totalQuestions - 1) showMobileQuestion(mobileChecklist.currentIndex + 1);
   });
 
   showMobileQuestion(0);
 }
 
 
-// --- INÍCIO DA SEÇÃO SEGURA (v23.0) ---
+// #####################################################################
+// ### INÍCIO DA SEÇÃO SEGURA E DE PERFORMANCE (v23.3) ###
+// #####################################################################
 
 /**
  * (v23.0) Cria uma célula de tabela (<td>) com texto seguro.
+ * @param {string | number} text - O conteúdo de texto para a célula.
+ * @param {string} [className] - Uma classe CSS opcional para a célula.
+ * @returns {HTMLTableCellElement}
  */
 function createSafeCell(text, className) {
   const cell = document.createElement('td');
+  // textContent automaticamente sanitiza a entrada, prevenindo XSS.
   cell.textContent = text;
   if (className) {
     cell.className = className;
@@ -156,6 +163,8 @@ function createSafeCell(text, className) {
 
 /**
  * (v23.0) Cria uma célula de tabela (<td>) com um botão de ação.
+ * @param {object} config - Configuração do botão.
+ * @returns {HTMLTableCellElement}
  */
 function createActionCell({ className, icon, treeId, cellClassName }) {
   const cell = document.createElement('td');
@@ -164,13 +173,135 @@ function createActionCell({ className, icon, treeId, cellClassName }) {
   button.type = 'button';
   button.className = className;
   button.dataset.id = treeId;
-  button.innerHTML = icon;
+  button.innerHTML = icon; // Ícones são HTML seguro (controlado por nós)
   cell.appendChild(button);
   return cell;
 }
 
 /**
- * (v23.0) Renderiza a tabela de resumo de árvores usando manipulação segura do DOM.
+ * [NOVO v23.3] Helper privado que constrói um <tr> para uma árvore.
+ * (Usado por renderSummaryTable e appendTreeRow para evitar repetição de código - DRY)
+ * @param {object} tree - O objeto da árvore.
+ * @returns {HTMLTableRowElement} O elemento <tr>.
+ */
+function _createTreeRow(tree) {
+  const row = document.createElement('tr');
+  row.dataset.treeId = tree.id;
+
+  // Formata dados
+  const [y, m, d] = (tree.data || '---').split('-');
+  const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
+  const utmZone = `${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}`;
+
+  // --- Células de Dados (Seguras) ---
+  row.appendChild(createSafeCell(tree.id));
+  row.appendChild(createSafeCell(displayDate));
+  row.appendChild(createSafeCell(tree.especie)); // <-- XSS PREVENIDO
+  
+  // Célula de Foto (Botão)
+  const photoCell = document.createElement('td');
+  photoCell.style.textAlign = 'center';
+  if (tree.hasPhoto) {
+    const photoButton = document.createElement('button');
+    photoButton.type = 'button';
+    photoButton.className = 'photo-preview-btn';
+    photoButton.dataset.id = tree.id;
+    photoButton.innerHTML = '📷';
+    photoCell.appendChild(photoButton);
+  } else {
+    photoCell.textContent = '—';
+  }
+  row.appendChild(photoCell);
+
+  row.appendChild(createSafeCell(tree.coordX));
+  row.appendChild(createSafeCell(tree.coordY));
+  row.appendChild(createSafeCell(utmZone));
+  row.appendChild(createSafeCell(tree.dap));
+  row.appendChild(createSafeCell(tree.local)); // <-- XSS PREVENIDO
+  row.appendChild(createSafeCell(tree.avaliador)); // <-- XSS PREVENIDO
+  row.appendChild(createSafeCell(tree.pontuacao));
+  row.appendChild(createSafeCell(tree.risco, tree.riscoClass));
+  row.appendChild(createSafeCell(tree.observacoes)); // <-- XSS PREVENIDO
+
+  // --- Células de Ação (Seguras) ---
+  row.appendChild(createActionCell({ className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom' }));
+  row.appendChild(createActionCell({ className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit' }));
+  row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
+
+  return row;
+}
+
+/**
+ * [NOVO v23.3] Adiciona uma ÚNICA linha à tabela (Performance O(1)).
+ * Usado ao adicionar uma nova árvore via formulário.
+ * @param {object} tree - O objeto da árvore a ser adicionado.
+ */
+function appendTreeRow(tree) {
+  const container = document.getElementById('summary-table-container');
+  if (!container) return;
+
+  // 1. Remove o placeholder se ele existir
+  const placeholder = document.getElementById('summary-placeholder');
+  if (placeholder) {
+    placeholder.remove();
+    // Se era o placeholder, a tabela não existe, então renderiza a tabela completa.
+    // Esta é uma "saída de emergência" para o primeiro item.
+    renderSummaryTable();
+    return;
+  }
+
+  // 2. Se a tabela já existe, apenas anexa a nova linha
+  const tbody = container.querySelector('.summary-table tbody');
+  if (tbody) {
+    const row = _createTreeRow(tree);
+    tbody.appendChild(row); // Operação O(1)
+  } else {
+    // Fallback: se o tbody não for encontrado, renderiza tudo
+    renderSummaryTable();
+  }
+  
+  // 3. Atualiza o badge
+  const summaryBadge = document.getElementById('summary-badge');
+  if (summaryBadge) {
+     const count = state.registeredTrees.length;
+     summaryBadge.textContent = `(${count})`;
+     summaryBadge.style.display = 'inline';
+  }
+}
+
+/**
+ * [NOVO v23.3] Remove uma ÚNICA linha da tabela (Performance O(1)).
+ * Usado ao deletar uma árvore.
+ * @param {number} id - O ID da árvore a ser removida.
+ */
+function removeTreeRow(id) {
+  const container = document.getElementById('summary-table-container');
+  if (!container) return;
+
+  const row = container.querySelector(`.summary-table tr[data-tree-id="${id}"]`);
+  if (row) {
+    row.remove(); // Operação O(1)
+  }
+
+  // 3. Verifica se a tabela está vazia para adicionar o placeholder
+  const tbody = container.querySelector('.summary-table tbody');
+  const summaryBadge = document.getElementById('summary-badge');
+  
+  if (tbody && tbody.children.length === 0) {
+    // Se ficou vazia, renderiza do zero (para mostrar o placeholder)
+    renderSummaryTable();
+  } else if (summaryBadge) {
+     // Apenas atualiza o badge
+     const count = state.registeredTrees.length;
+     summaryBadge.textContent = count > 0 ? `(${count})` : '';
+     summaryBadge.style.display = count > 0 ? 'inline' : 'none';
+  }
+}
+
+/**
+ * (v23.3 - Otimizado) Renderiza a tabela de resumo de árvores.
+ * Esta função agora é O(N) e só deve ser usada para carga inicial, ordenação,
+ * edição, importação ou limpeza completa.
  */
 export function renderSummaryTable() {
   const container = document.getElementById('summary-table-container');
@@ -179,18 +310,14 @@ export function renderSummaryTable() {
   if (!container) return;
 
   // 1. Atualiza Badge
+  const count = state.registeredTrees.length;
   if (summaryBadge) {
-    if (state.registeredTrees.length > 0) {
-      summaryBadge.textContent = `(${state.registeredTrees.length})`;
-      summaryBadge.style.display = 'inline';
-    } else {
-      summaryBadge.textContent = '';
-      summaryBadge.style.display = 'none';
-    }
+    summaryBadge.textContent = count > 0 ? `(${count})` : '';
+    summaryBadge.style.display = count > 0 ? 'inline' : 'none';
   }
 
   // 2. Lógica de Placeholder/Botões
-  if (state.registeredTrees.length === 0) {
+  if (count === 0) {
     container.innerHTML = '<p id="summary-placeholder">Nenhuma árvore cadastrada ainda.</p>';
     if (importExportControls) {
       document.getElementById('export-data-btn')?.setAttribute('style', 'display:none');
@@ -256,53 +383,22 @@ export function renderSummaryTable() {
 
   // 4c. Cria o Corpo (TBODY)
   const tbody = document.createElement('tbody');
+  
+  // [MODIFICADO v23.3] Usa o helper _createTreeRow
   sortedData.forEach(tree => {
-    const row = document.createElement('tr');
-    row.dataset.treeId = tree.id;
-
-    const [y, m, d] = (tree.data || '---').split('-');
-    const displayDate = (y === '---' || !y) ? 'N/A' : `${d}/${m}/${y}`;
-    const utmZone = `${tree.utmZoneNum || 'N/A'}${tree.utmZoneLetter || ''}`;
-
-    row.appendChild(createSafeCell(tree.id));
-    row.appendChild(createSafeCell(displayDate));
-    row.appendChild(createSafeCell(tree.especie));
-    
-    const photoCell = document.createElement('td');
-    photoCell.style.textAlign = 'center';
-    if (tree.hasPhoto) {
-      const photoButton = document.createElement('button');
-      photoButton.type = 'button';
-      photoButton.className = 'photo-preview-btn';
-      photoButton.dataset.id = tree.id;
-      photoButton.innerHTML = '📷';
-      photoCell.appendChild(photoButton);
-    } else {
-      photoCell.textContent = '—';
-    }
-    row.appendChild(photoCell);
-
-    row.appendChild(createSafeCell(tree.coordX));
-    row.appendChild(createSafeCell(tree.coordY));
-    row.appendChild(createSafeCell(utmZone));
-    row.appendChild(createSafeCell(tree.dap));
-    row.appendChild(createSafeCell(tree.local));
-    row.appendChild(createSafeCell(tree.avaliador));
-    row.appendChild(createSafeCell(tree.pontuacao));
-    row.appendChild(createSafeCell(tree.risco, tree.riscoClass));
-    row.appendChild(createSafeCell(tree.observacoes));
-    row.appendChild(createActionCell({ className: 'zoom-tree-btn', icon: '🔍', treeId: tree.id, cellClassName: 'col-zoom' }));
-    row.appendChild(createActionCell({ className: 'edit-tree-btn', icon: '✎', treeId: tree.id, cellClassName: 'col-edit' }));
-    row.appendChild(createActionCell({ className: 'delete-tree-btn', icon: '✖', treeId: tree.id, cellClassName: 'col-delete' }));
-
+    const row = _createTreeRow(tree);
     tbody.appendChild(row);
   });
+
   table.appendChild(tbody);
   
   // 5. Adiciona a tabela ao container
   container.appendChild(table);
 }
-// --- FIM DA SEÇÃO SEGURA (v23.0) ---
+
+// #####################################################################
+// ### FIM DA SEÇÃO DE PERFORMANCE (v23.3) ###
+// #####################################################################
 
 
 /**
@@ -311,14 +407,12 @@ export function renderSummaryTable() {
 export function showSubTab(targetId) {
   const subTabPanes = document.querySelectorAll('.sub-tab-content');
   subTabPanes.forEach(pane => pane.classList.toggle('active', pane.id === targetId));
-
   const subNavButtons = document.querySelectorAll('.sub-nav-btn');
   subNavButtons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-target') === targetId));
 
   if (targetId === 'tab-content-mapa') {
     setTimeout(() => { mapUI.initializeMap(); }, 50);
   }
-
   if (targetId === 'tab-content-summary' && state.highlightTargetId) {
     highlightTableRow(state.highlightTargetId);
     state.setHighlightTargetId(null);
@@ -350,7 +444,6 @@ function highlightTableRow(id) {
 function setupFileImporters() {
   let zipImporter = document.getElementById('zip-importer');
   let csvImporter = document.getElementById('csv-importer');
-
   if (zipImporter) {
     const newZip = zipImporter.cloneNode(true);
     zipImporter.parentNode.replaceChild(newZip, zipImporter);
@@ -361,20 +454,20 @@ function setupFileImporters() {
     csvImporter.parentNode.replaceChild(newCsv, csvImporter);
     csvImporter = newCsv;
   }
-  
   if (zipImporter) {
     zipImporter.addEventListener('change', (e) => {
       e.replaceData = zipImporter.dataset.replaceData === 'true';
+      // (v23.3) Deve fazer renderização completa após importação
       features.handleImportZip(e).then(() => { renderSummaryTable(); });
     });
   }
   if (csvImporter) {
     csvImporter.addEventListener('change', (e) => {
       e.replaceData = csvImporter.dataset.replaceData === 'true';
+      // (v23.3) Deve fazer renderização completa após importação
       features.handleFileImport(e).then(() => { renderSummaryTable(); });
     });
   }
-  
   return { zipImporter, csvImporter };
 }
 
@@ -409,13 +502,13 @@ async function optimizeImage(imageFile, maxWidth = 800, quality = 0.7) {
 
 
 /**
- * (v23.2 - MODIFICADO) Função principal que inicializa todos os listeners da Calculadora.
+ * (v23.3 - MODIFICADO) Função principal que inicializa todos os listeners da Calculadora.
  */
 export function setupRiskCalculator() {
   
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
-  // --- Conexão de Abas ---
+  // Conexão de Abas
   const subNav = document.querySelector('.sub-nav');
   if (subNav) {
     const subNavHandler = (e) => {
@@ -429,10 +522,10 @@ export function setupRiskCalculator() {
     showSubTab('tab-content-register');
   }
   
-  // --- Inputs de Arquivo ---
+  // Inputs de Arquivo
   setupFileImporters();
 
-  // --- Conexão de Botões e Inputs ---
+  // Conexão de Botões e Inputs
   const form = document.getElementById('risk-calculator-form');
   let summaryContainer = document.getElementById('summary-table-container');
   
@@ -446,7 +539,7 @@ export function setupRiskCalculator() {
   const removePhotoBtn = document.getElementById('remove-photo-btn');
   const resetBtn = document.getElementById('reset-risk-form-btn');
 
-  // [MODIFICADO v23.2] Listeners de Botões (Modais)
+  // Listeners de Botões (Modais)
   if (importDataBtn) importDataBtn.addEventListener('click', modalUI.showImportModal);
   if (exportDataBtn) exportDataBtn.addEventListener('click', modalUI.showExportModal);
   
@@ -454,18 +547,18 @@ export function setupRiskCalculator() {
   if (filterInput) filterInput.addEventListener('keyup', debounce(features.handleTableFilter, 300));
   if (sendEmailBtn) sendEmailBtn.addEventListener('click', features.sendEmailReport);
   
-  // [MODIFICADO v23.1] Chama o setup de listeners do mapa
+  // Setup de listeners do mapa
   mapUI.setupMapListeners();
   
-  // [MODIFICADO v23.2] Confirmação de "Limpar Tudo" (Modal)
+  // Confirmação de "Limpar Tudo" (Modal)
   if (clearAllBtn) clearAllBtn.addEventListener('click', () => {
-    modalUI.showGenericModal({ // Chama o modal genérico
+    modalUI.showGenericModal({
       title: '🗑️ Limpar Tabela',
       description: 'Tem certeza que deseja apagar TODOS os registros? Esta ação não pode ser desfeita e removerá todas as fotos.',
       buttons: [
         { text: 'Sim, Apagar Tudo', class: 'primary', action: () => {
           if (features.handleClearAll()) {
-            renderSummaryTable();
+            renderSummaryTable(); // OK (O(N) é necessário aqui)
           }
         }},
         { text: 'Cancelar', class: 'cancel' }
@@ -509,10 +602,13 @@ export function setupRiskCalculator() {
       getGpsBtn.closest('.gps-button-container')?.setAttribute('style', 'display:none');
     }
     
+    // [MODIFICADO v23.3] Listener de Adicionar (Submit)
     form.addEventListener('submit', (event) => {
-      const submissionSuccessful = features.handleAddTreeSubmit(event);
-      if (submissionSuccessful) {
-        renderSummaryTable();
+      // Chama o features, que agora retorna o objeto newTree ou null
+      const newTree = features.handleAddTreeSubmit(event);
+      
+      if (newTree) {
+        appendTreeRow(newTree); // <-- O(1) PERFORMANCE
         if (isTouchDevice) setupMobileChecklist();
         const gpsStatus = document.getElementById('gps-status');
         if (gpsStatus) { gpsStatus.textContent = ''; gpsStatus.className = ''; }
@@ -536,13 +632,13 @@ export function setupRiskCalculator() {
     }
   }
   
-  // (v23.0) Lógica de clonagem e delegação de eventos
+  // Lógica de clonagem e delegação de eventos
   if (summaryContainer) {
     const newSummaryContainer = summaryContainer.cloneNode(true);
     summaryContainer.parentNode.replaceChild(newSummaryContainer, summaryContainer);
     summaryContainer = newSummaryContainer;
     
-    renderSummaryTable(); // Renderiza a tabela segura
+    renderSummaryTable(); // Renderiza a tabela inicial (O(N))
 
     // Anexa o listener de DELEGAÇÃO DE EVENTOS
     summaryContainer.addEventListener('click', (e) => {
@@ -553,14 +649,15 @@ export function setupRiskCalculator() {
       const photoButton = e.target.closest('.photo-preview-btn');
 
       if (deleteButton) {
-        // [MODIFICADO v23.2] Chama o modal genérico
+        // [MODIFICADO v23.3] Listener de Excluir (Modal)
+        const treeId = parseInt(deleteButton.dataset.id, 10);
         modalUI.showGenericModal({
           title: 'Excluir Registro',
-          description: `Tem certeza que deseja excluir a Árvore ID ${deleteButton.dataset.id}?`,
+          description: `Tem certeza que deseja excluir a Árvore ID ${treeId}?`,
           buttons: [
             { text: 'Sim, Excluir', class: 'primary', action: () => {
-              if (features.handleDeleteTree(parseInt(deleteButton.dataset.id, 10))) {
-                renderSummaryTable();
+              if (features.handleDeleteTree(treeId)) {
+                removeTreeRow(treeId); // <-- O(1) PERFORMANCE
               }
             }},
             { text: 'Cancelar', class: 'cancel' }
@@ -569,10 +666,11 @@ export function setupRiskCalculator() {
       }
       
       if (editButton) {
+        // (v23.3) Edição requer renderização completa
         const needsCarouselUpdate = features.handleEditTree(parseInt(editButton.dataset.id, 10));
         showSubTab('tab-content-register');
         if (needsCarouselUpdate && isTouchDevice) setupMobileChecklist();
-        renderSummaryTable();
+        renderSummaryTable(); // OK (O(N) é necessário aqui)
       }
 
       if (zoomButton) {
@@ -580,8 +678,9 @@ export function setupRiskCalculator() {
       }
       
       if (sortButton) {
+        // (v23.3) Ordenação requer renderização completa
         features.handleSort(sortButton.dataset.sortKey);
-        renderSummaryTable();
+        renderSummaryTable(); // OK (O(N) é necessário aqui)
       }
 
       if (photoButton) {
@@ -598,8 +697,7 @@ export function setupRiskCalculator() {
 
 
 // === 4. LÓGICA DE TOOLTIPS (UI) ===
-
-// (Esta seção permanece inalterada pela refatoração v23.2)
+// (Sem alterações)
 
 export function createTooltip() {
   let tooltip = document.getElementById('glossary-tooltip');
@@ -633,14 +731,11 @@ function positionTooltip(termElement) {
   if (!state.currentTooltip) return;
   const rect = termElement.getBoundingClientRect();
   const scrollY = window.scrollY, scrollX = window.scrollX;
-  
   requestAnimationFrame(() => {
     if (!state.currentTooltip) return;
     const tooltipWidth = state.currentTooltip.offsetWidth;
     const tooltipHeight = state.currentTooltip.offsetHeight;
-    let topPos = (rect.top > tooltipHeight + 10)
-      ? (rect.top + scrollY - tooltipHeight - 10)
-      : (rect.bottom + scrollY + 10);
+    let topPos = (rect.top > tooltipHeight + 10) ? (rect.top + scrollY - tooltipHeight - 10) : (rect.bottom + scrollY + 10);
     let leftPos = rect.left + scrollX + (rect.width / 2) - (tooltipWidth / 2);
     if (leftPos < scrollX + 10) leftPos = scrollX + 10;
     if (leftPos + tooltipWidth > window.innerWidth + scrollX - 10) {
@@ -696,8 +791,7 @@ function toggleGlossaryTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
-    tooltip.dataset.currentElement === event.currentTarget.textContent) {
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
     showGlossaryTooltip(event);
@@ -733,8 +827,7 @@ function toggleEquipmentTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
-    tooltip.dataset.currentElement === event.currentTarget.textContent) {
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
     showEquipmentTooltip(event);
@@ -770,19 +863,12 @@ function togglePurposeTooltip(event) {
   event.preventDefault(); event.stopPropagation();
   const tooltip = document.getElementById('glossary-tooltip');
   const isPhoto = tooltip && tooltip.dataset.currentElement && tooltip.dataset.currentElement.startsWith('photo-');
-  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto &&
-    tooltip.dataset.currentElement === event.currentTarget.textContent) {
+  if (tooltip && tooltip.style.visibility === 'visible' && !isPhoto && tooltip.dataset.currentElement === event.currentTarget.textContent) {
     hideTooltip();
   } else {
     showPurposeTooltip(event);
   }
 }
 
-// ====================================================================
-// [REMOVIDO v23.2] Toda a lógica de modais foi movida para js/modal.ui.js
-// - showActionModal()
-// - hideActionModal()
-// - showExportModal()
-// - showImportModal()
-// - showImportTypeModal()
-// ====================================================================
+// === 5. LÓGICA DO MODAL CUSTOMIZADO ===
+// (Removido no v23.2 - Movido para modal.ui.js)
