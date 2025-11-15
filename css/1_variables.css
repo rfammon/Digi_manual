@@ -1,53 +1,45 @@
-/* css/1_variables.css */
+/* css/1_variables.css (v25.0 - Novo Tema Natureza) */
 
-/* -------------------------------------- */
-/* 1. VARIÁVEIS GLOBAIS (RAIZ) */
-/* -------------------------------------- */
 :root {
-  /* Paleta de Cores Primária (Verde/Tema) */
-  --color-primary-dark: #004d40;
-  --color-primary-medium: #00796b;
-  --color-primary-light: #B2DFDB;
-  --color-primary-lightest: #E0F2F1;
-
-  /* Paleta de Acento (Amarelo/Laranja) */
-  --color-accent: #ffb300;
-  --color-accent-dark: #ffa000;
-  --color-accent-hover: #ffc107;
-
-  /* Paleta de Risco/Destrutivo */
-  --color-danger: #C62828;
-  --color-danger-dark: #B71C1C;
-  --color-danger-light: #FFCDD2;
-
-  /* Paleta Neutra (Texto, Fundo, Bordas) */
-  --color-dark: #212121;
-  --color-text: #333;
-  --color-text-light: #555;
-  --gray-100: #f4f4f9;
-  --gray-200: #eeeeee;
-  --gray-300: #dddddd;
-  --gray-400: #cccccc;
-  
-  /* Fundo */
-  --bg-body: #f4f4f9;
-  --bg-surface: #ffffff;
-  --bg-surface-alt: #fcfcfc;
-
-  /* Tipografia */
-  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  
-  /* Espaçamento */
-  --space-xs: 0.25rem;  /* 4px */
-  --space-sm: 0.5rem;   /* 8px */
-  --space-md: 1rem;     /* 16px */
-  --space-lg: 1.5rem;   /* 24px */
-  --space-xl: 2rem;     /* 32px */
-
-  /* Bordas e Sombras */
-  --border-radius-md: 6px;
-  --border-radius-lg: 10px;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.1);
+    /* === PALETA DE CORES (Natureza Profissional) === */
+    --color-primary-dark: #29473A;    /* Verde Floresta Escuro (Estrutural) */
+    --color-primary-medium: #4A6B5C;  /* Verde Oliva Muted (Nav/Fundo Secundário) */
+    --color-primary-light: #7E9C8A;   /* Verde Claro (Texto/Bordas) */
+    
+    /* Cores Secundárias (Fundo e Contraste) */
+    --color-light-bg: #FAFAFA;        /* Off-White Quente */
+    --color-light-gray: #B0B9AE;      /* Cinza Muted */
+    --color-white: #FFFFFF;
+    --color-dark-text: #212121;
+    
+    /* Cores de Destaque e Risco */
+    --color-accent: #E67E22;          /* Laranja Profundo (Ação/Risco Médio) */
+    --color-accent-light: #F39C12;    /* Amarelo/Ouro (Hover) */
+    --color-success: #27AE60;         /* Verde Folha (Sucesso) */
+    --color-error: #C0392B;           /* Vinho Escuro (Erro/Alto Risco) */
+    --color-risk-high: var(--color-error);
+    --color-risk-medium: var(--color-accent);
+    --color-risk-low: var(--color-success);
+    
+    /* === TIPOGRAFIA E UNIDADES === */
+    --font-family-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+                             Helvetica, Arial, sans-serif;
+    --font-size-base: 16px;
+    --font-unit: 1rem;
+    --font-size-small: 0.875rem;
+    --font-size-medium: 1rem;
+    --font-size-large: 1.25rem;
+    --font-size-xl: 1.75rem;
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-bold: 700;
+    
+    /* === LAYOUT E COMPONENTES === */
+    --header-height: 110px;
+    --nav-height: 50px;
+    --max-width: 1200px;
+    --content-padding: 1.5rem;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --transition-speed: 0.25s ease-in-out;
 }
