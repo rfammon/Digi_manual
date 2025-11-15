@@ -1,70 +1,60 @@
-/* css/2_base.css (v25.0 - Novo Tema Natureza) */
+/* css/2_base.css */
 
-/* === RESET BÁSICO === */
+/* -------------------------------------- */
+/* 2. RESET, BASE E LAYOUT PRINCIPAL */
+/* -------------------------------------- */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* === ESTILOS DO BODY E HTML === */
-html {
-    scroll-behavior: smooth;
-    font-size: var(--font-size-base); /* 16px */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    font-family: var(--font-family-primary);
-    line-height: 1.6;
-    background-color: var(--color-light-bg);
-    color: var(--color-dark-text);
-    min-height: 100vh;
-    overflow-x: hidden;
-    padding-top: var(--header-height); /* Espaço para o header e nav sticky */
+  font-family: var(--font-primary);
+  line-height: 1.6;
+  background-color: var(--bg-body);
+  color: var(--color-text);
+  position: relative;
+  min-height: 100vh;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
-/* === HEADINGS E TIPOGRAFIA === */
+html {
+  scroll-behavior: smooth;
+}
+
+main {
+  padding: var(--space-md);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 h1, h2, h3, h4, h5, h6 {
-    margin: 1rem 0 0.5rem 0;
-    line-height: 1.2;
-    font-weight: var(--font-weight-bold);
-    color: var(--color-primary-dark); /* Verde Escuro */
-}
-h1 { font-size: var(--font-size-xl); }
-h2 { font-size: var(--font-size-large); }
-h3 { font-size: var(--font-size-medium); }
-
-p {
-    margin-bottom: 1rem;
-    color: var(--color-dark-text);
+  font-weight: 700;
+  color: var(--color-dark);
 }
 
-/* Links */
-a {
-    color: var(--color-accent); /* Laranja Destaque */
-    text-decoration: none;
-    transition: color var(--transition-speed);
-}
-a:hover {
-    color: var(--color-accent-light);
-    text-decoration: underline;
+h2 { font-size: 1.5rem; margin-bottom: var(--space-md); }
+h3 { font-size: 1.3rem; margin-bottom: var(--space-md); }
+h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space-sm); }
+
+/* (Originalmente da Seção 5) */
+.conteudo-detalhe,
+.app-view {
+  background-color: var(--bg-surface);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-md);
 }
 
-/* Imagens */
-img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-}
-
-/* Listas */
-ul, ol {
-    list-style-position: inside;
-    padding-left: 1rem;
-    margin-bottom: 1rem;
-}
-
-/* Esconde Input File (usado para foto) */
-input[type="file"] {
-    display: none;
+.manual-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-md);
+  margin: var(--space-md) 0;
+  box-shadow: var(--shadow-sm);
 }
