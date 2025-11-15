@@ -1,181 +1,155 @@
-// js/main.js (v23.11 - Inicializa o Photo Viewer)
-// Ponto de entrada principal da aplicação.
+// js/main.js (V24.4 - LoadContent Corrigido)
 
-// === 1. IMPORTAÇÕES DOS MÓDULOS ===
+// === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
-import * as ui from './ui.js';
+import * as database from './database.js';
 import * as features from './features.js';
-import * as db from './database.js';
-// [NOVO v23.10] Importa o módulo de modal para inicialização
-import * as modalUI from './modal.ui.js'; 
-import { manualContent } from './content.js'; 
-import { showToast } from './utils.js';
+import * as modalUI from './modal.ui.js';
+import * as utils from './utils.js'; 
+import { manualContent } from './content.js';
+import { setupRiskCalculator, loadContent } from './ui.js'; // <<-- CORREÇÃO AQUI: Importa loadContent de ui.js
 
-// === 2. SELETORES GLOBAIS ===
+// === 2. DADOS E ESTADO INTERNO ===
+const MANUAL_KEYS = Object.keys(manualContent);
+const CALCULATOR_KEY = 'calculadora-risco';
+const DEFAULT_TAB = MANUAL_KEYS[0];
 
-const manualView = document.getElementById('manual-view');
-const calculatorView = document.getElementById('calculadora-view');
-const detailView = document.getElementById('detalhe-view');
-const topNavContainer = document.querySelector('.topicos-container');
-
-// === 3. LÓGICA DE NAVEGAÇÃO PRINCIPAL ===
+// === 3. LÓGICA DE NAVEGAÇÃO ===
 
 /**
- * Controla a navegação principal (tópicos vs. calculadora).
+ * Lida com o clique na aba principal.
+ * @param {Event} e 
  */
-function handleMainNavigation(event) {
-  const targetButton = event.target.closest('.topico-btn');
-  if (!targetButton) return;
-
-  // Remove 'active' de todos os botões
-  topNavContainer.querySelectorAll('.topico-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  // Adiciona 'active' ao botão clicado
-  targetButton.classList.add('active');
-
-  const targetId = targetButton.dataset.target;
-  
-  // Salva a aba ativa no localStorage
-  state.saveActiveTab(targetId);
-
-  if (targetId === 'calculadora-risco') {
-    // MOSTRA A VIEW DA CALCULADORA
-    manualView.style.display = 'none';
-    calculatorView.style.display = 'block';
+function handleTabClick(e) {
+    const button = e.target.closest('.main-nav-btn');
+    if (!button) return;
     
-    // Se a aba do mapa estava ativa, ela precisa ser re-renderizada
-    const activeSubTab = document.querySelector('.sub-nav-btn.active')?.dataset.target;
-    if (activeSubTab === 'tab-content-mapa') {
-      ui.showSubTab('tab-content-mapa');
-    }
+    e.preventDefault();
+    const targetKey = button.dataset.target;
 
-  } else {
-    // MOSTRA A VIEW DO MANUAL
-    manualView.style.display = 'block';
-    calculatorView.style.display = 'none';
+    // Remove 'active' de todos os botões e painéis
+    document.querySelectorAll('.main-nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('manual-view').style.display = 'none';
+    document.getElementById('calculator-view').style.display = 'none';
+
+    // Adiciona 'active' ao botão clicado
+    button.classList.add('active');
     
-    // Carrega o conteúdo do manual (ex: 'conceitos-basicos')
-    const content = manualContent[targetId];
-    ui.loadContent(detailView, content);
-  }
-  
-  // Rola a tela para o topo da seção
-  const topElement = document.getElementById('page-top');
-  if (topElement) {
-    topElement.scrollIntoView({ behavior: 'smooth' });
-  }
-}
+    // Salva o estado da aba
+    state.saveActiveTab(targetKey);
 
-// === 4. LÓGICA DE INICIALIZAÇÃO AUXILIAR ===
-
-/**
- * Configura o botão "Voltar ao Topo".
- */
-function setupBackToTop() {
-  const backToTopBtn = document.getElementById('back-to-top-btn');
-  if (!backToTopBtn) return;
-
-  // Otimização de performance (passive: true)
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 300) {
-      backToTopBtn.classList.add('show');
+    // Exibe a view correta
+    if (targetKey === CALCULATOR_KEY) {
+        document.getElementById('calculator-view').style.display = 'block';
     } else {
-      backToTopBtn.classList.remove('show');
+        document.getElementById('manual-view').style.display = 'block';
+        const content = manualContent[targetKey];
+        const detailView = document.getElementById('manual-view');
+        // Usa a função importada
+        loadContent(detailView, content);
     }
-  }, { passive: true });
 }
 
-/**
- * Configura os listeners dos formulários de Chat e Contato.
- */
-function setupForms() {
-  const chatSendBtn = document.getElementById('chat-send-btn');
-  const chatInput = document.getElementById('chat-input');
-  const contactForm = document.getElementById('contact-form');
 
-  if (chatSendBtn) {
-    chatSendBtn.addEventListener('click', features.handleChatSend);
-    chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        features.handleChatSend();
-      }
+/**
+ * Inicializa a navegação da barra superior (chamado apenas uma vez).
+ */
+function initializeTabs() {
+    const mainNav = document.getElementById('main-nav-bar');
+    if (!mainNav) return;
+
+    // 1. Cria os botões do manual
+    MANUAL_KEYS.forEach((key) => {
+        const btn = document.createElement('button');
+        btn.textContent = manualContent[key].titulo;
+        btn.className = 'main-nav-btn';
+        btn.dataset.target = key;
+        mainNav.appendChild(btn);
     });
-  }
 
-  if (contactForm) {
-    contactForm.addEventListener('submit', features.handleContactForm);
-  }
+    // 2. Cria o botão da calculadora
+    const calculatorBtn = document.createElement('button');
+    calculatorBtn.textContent = '📐 Calculadora de Risco';
+    calculatorBtn.className = 'main-nav-btn';
+    calculatorBtn.dataset.target = CALCULATOR_KEY;
+    mainNav.appendChild(calculatorBtn);
 }
 
-/**
- * Define os valores padrão do formulário (Data, Avaliador).
- */
-function initFormDefaults() {
-    try {
-      // Define a data atual
-      const dateInput = document.getElementById('risk-data');
-      if (dateInput && !dateInput.value) {
-        dateInput.value = new Date().toISOString().split('T')[0];
-      }
-      
-      // Define o último avaliador (se existir)
-      const avaliadorInput = document.getElementById('risk-avaliador');
-      if (avaliadorInput && state.lastEvaluatorName) {
-        avaliadorInput.value = state.lastEvaluatorName;
-      }
-    } catch(e) { 
-      console.warn("Erro ao definir padrões do formulário.", e);
-    }
-}
+
+// === 4. INICIALIZAÇÃO E EVENTOS ===
 
 /**
- * Função principal de inicialização da aplicação.
+ * Inicializa a aplicação: carrega dados, constrói a navegação e anexa listeners.
  */
 function initApp() {
-  // O DOM já está carregado (type="module")
-  try {
-    // 1. Carrega dados salvos (LocalStorage)
+    // 1. Inicializa o DB
+    database.initDB();
+    
+    // 2. Carrega estado
     state.loadDataFromStorage();
 
-    // 2. Inicializa o banco de dados de imagens (IndexedDB)
-    db.initImageDB();
-
-    // 3. Configura a navegação principal (Tópicos vs. Calculadora)
-    topNavContainer.addEventListener('click', handleMainNavigation);
-
-    // 4. Inicializa a Calculadora UMA VEZ.
-    ui.setupRiskCalculator();
+    // 3. Monta navegação principal e botões
+    initializeTabs();
     
-    // 5. [v23.10] Inicializa os listeners dos Modais
-    modalUI.initPhotoViewer();
-    
-    // 6. Define os padrões do formulário (Data, Avaliador)
-    initFormDefaults();
-
-    // 7. Configura listeners dos formulários (Chat, Contato)
-    setupForms();
-
-    // 8. Configura o botão "Voltar ao Topo"
-    setupBackToTop();
-
-    // 9. Carrega o conteúdo inicial ou a última aba vista
-    const lastTab = state.getActiveTab() || 'conceitos-basicos';
-    const initialButton = topNavContainer.querySelector(`[data-target="${lastTab}"]`) || topNavContainer.querySelector('.topico-btn');
-    
-    if (initialButton) {
-      initialButton.click(); // Simula o clique para carregar a view correta
-    } else {
-      // Fallback de segurança
-      ui.loadContent(detailView, manualContent['conceitos-basicos']);
+    const mainNav = document.getElementById('main-nav-bar');
+    if (!mainNav) {
+        throw new Error("Elemento '#main-nav-bar' não encontrado.");
     }
     
-  } catch (error) {
-    console.error("Falha crítica ao inicializar a aplicação:", error);
-    showToast("Erro grave ao carregar. Tente recarregar a página.", "error");
-  }
+    // 4. Anexa Listener principal à navegação principal (DELEGAÇÃO)
+    mainNav.addEventListener('click', handleTabClick);
+
+    // 5. Determina a aba inicial
+    const manualDetailView = document.getElementById('manual-view');
+    const calculatorView = document.getElementById('calculator-view');
+    const activeTab = state.getActiveTab() || DEFAULT_TAB;
+
+    // 6. Configura a view ativa
+    if (activeTab === CALCULATOR_KEY) {
+        if (calculatorView) calculatorView.style.display = 'block';
+    } else {
+        const content = manualContent[activeTab];
+        if (manualDetailView && content) {
+            manualDetailView.style.display = 'block';
+            loadContent(manualDetailView, content); // <<-- CORREÇÃO AQUI
+        }
+    }
+    
+    // Garante que o botão ativo seja marcado
+    const activeBtn = document.querySelector(`.main-nav-btn[data-target="${activeTab}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    
+    // --- PONTO DE INTERAÇÃO CRÍTICA ---
+    
+    // 7. Setup da Calculadora (maestro) - [DEFENSIVO]
+    if (typeof setupRiskCalculator === 'function') {
+        setupRiskCalculator(); 
+    } else {
+        console.error("Falha na inicialização da Calculadora: setupRiskCalculator não foi carregado. Verifique os módulos de UI.");
+    }
+
+    // 8. Setup do Visualizador de Fotos - [DEFENSIVO]
+    if (modalUI && typeof modalUI.initPhotoViewer === 'function') {
+        modalUI.initPhotoViewer();
+    } else {
+        console.error("Falha na inicialização do Modal de Fotos: modalUI não foi carregado. Verifique o módulo modal.ui.js.");
+    }
+
+    // 9. Oculta Placeholder
+    const loadingPlaceholder = document.getElementById('loading-placeholder');
+    if (loadingPlaceholder) loadingPlaceholder.style.display = 'none';
 }
 
+
 // === 5. EXECUÇÃO ===
-initApp();
+try {
+    // Adia a inicialização para garantir que o DOM esteja completamente carregado
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+        initApp();
+    }
+} catch (e) {
+    console.error("Falha crítica ao inicializar a aplicação:", e); 
+}

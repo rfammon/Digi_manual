@@ -1,4 +1,4 @@
-// js/state.js (v23.6 - Adiciona 'openInfoBoxId')
+// js/state.js (v24.1 - Adiciona Rastreamento de Localização)
 
 // === 1. Chaves de Armazenamento ===
 const STORAGE_KEY = 'manualPodaData';
@@ -25,9 +25,11 @@ export let zoomTargetCoords = null;
 export let highlightTargetId = null;
 export let currentTreePhoto = null;
 export let editingTreeId = null; // (v23.5)
+export let openInfoBoxId = null; // (v23.6)
 
-// [NOVO v23.6] ID da árvore para abrir o InfoBox após o zoom
-export let openInfoBoxId = null;
+// [NOVO v24.1] Rastreamento de localização do usuário
+export let userLocationWatchId = null;
+export let userLocationMarker = null;
 
 
 // === 3. Funções "Setters" ===
@@ -80,6 +82,14 @@ export function setEditingTreeId(id) {
  */
 export function setOpenInfoBoxId(id) {
   openInfoBoxId = id;
+}
+
+// [NOVO v24.1] Setters de Localização
+export function setUserLocationWatchId(id) {
+  userLocationWatchId = id;
+}
+export function setUserLocationMarker(marker) {
+  userLocationMarker = marker;
 }
 
 // === 4. Funções de Persistência (LocalStorage) ===

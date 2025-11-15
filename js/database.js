@@ -1,186 +1,178 @@
-// js/database.js (v21.6 - Adiciona clearImageDB)
+// js/database.js (v24.3 - Exportação de initDB CORRIGIDA)
 
-// Importa a "caixa de ferramentas" para mostrar erros
+// === 1. IMPORTAÇÕES ===
+import { registeredTrees, setRegisteredTrees, db, setDb, saveDataToStorage, currentTreePhoto, setCurrentTreePhoto } from './state.js';
 import { showToast } from './utils.js';
+import { renderSummaryTable } from './table.ui.js';
 
-// Importa o estado (a variável 'db') e a função para modificá-la ('setDb')
-import { db, setDb } from './state.js';
-
-const DB_NAME = "treeImageDB";
-const STORE_NAME = "treeImages";
+// Constantes
+const DB_NAME = 'TreePhotosDB';
 const DB_VERSION = 1;
+const STORE_NAME = 'photos';
+
+// === 2. FUNÇÕES DE INICIALIZAÇÃO ===
 
 /**
- * Inicializa a conexão com o banco de dados IndexedDB.
- * Em caso de sucesso, armazena a instância do DB no módulo 'state'.
- */
-export function initImageDB() {
-    const request = indexedDB.open(DB_NAME, DB_VERSION); 
-
-    request.onerror = (event) => {
-        console.error("Erro ao abrir IndexedDB:", event.target.error);
-        showToast("Erro: Não foi possível carregar o banco de dados de imagens.", "error");
-    };
-
-    request.onupgradeneeded = (event) => {
-        // Esta função só roda na primeira vez ou se a versão do DB mudar
-        const database = event.target.result;
-        // Cria o "object store" (tabela) para as imagens, usando 'id' como chave
-        if (!database.objectStoreNames.contains(STORE_NAME)) {
-            database.createObjectStore(STORE_NAME, { keyPath: "id" });
-        }
-    };
-
-    request.onsuccess = (event) => {
-        // Conexão bem-sucedida!
-        const database = event.target.result;
-        // Armazena a conexão no estado global para que outras funções possam usá-la
-        setDb(database); 
-        console.log("Banco de dados de imagens carregado com sucesso.");
-        
-        // (v20.0) Tratamento de erro global
-        database.onerror = (event) => {
-            console.error("Erro geral no IndexedDB: ", event.target.error);
-            showToast("Erro inesperado no banco de dados.", "error");
-        };
-    };
-}
-
-/**
- * Salva (ou atualiza) um blob de imagem no IndexedDB.
- * @param {number} id - O ID da árvore (usado como chave).
- * @param {Blob} blob - O arquivo (File ou Blob) da imagem.
- */
-export function saveImageToDB(id, blob) {
-    if (!db) {
-        showToast("Erro: Banco de dados de imagem não está pronto.", "error");
-        return;
-    }
-    try {
-        const transaction = db.transaction([STORE_NAME], "readwrite");
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const request = objectStore.put({ id: id, imageBlob: blob });
-        
-        request.onsuccess = () => {
-            // console.log(`Imagem da Árvore ID ${id} salva no IndexedDB.`);
-        };
-        request.onerror = (event) => {
-            console.error("Erro ao salvar imagem no IndexedDB:", event.target.error);
-            showToast("Erro ao salvar a foto.", "error");
-        };
-    } catch (e) {
-        console.error("Erro na transação de salvar imagem:", e);
-        showToast("Falha ao salvar foto no DB.", "error");
-    }
-}
-
-/**
- * Busca um blob de imagem do IndexedDB por ID.
- * @param {number} id - O ID da árvore.
- * @param {function} callback - Função a ser chamada com o resultado (ex: callback(imageBlob)).
- */
-export function getImageFromDB(id, callback) {
-    if (!db) {
-        callback(null);
-        return;
-    }
-    try {
-        const transaction = db.transaction([STORE_NAME], "readonly");
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const request = objectStore.get(id);
-
-        request.onsuccess = (event) => {
-            if (event.target.result) {
-                callback(event.target.result.imageBlob); // Sucesso: retorna o blob
-            } else {
-                callback(null); // Nada encontrado
-            }
-        };
-        request.onerror = (event) => {
-            console.error("Erro ao buscar imagem:", event.target.error);
-            callback(null);
-        };
-    } catch (e) {
-         console.error("Erro na transação de buscar imagem:", e);
-         callback(null);
-    }
-}
-
-/**
- * Deleta uma imagem do IndexedDB por ID.
- * @param {number} id - O ID da árvore.
- */
-export function deleteImageFromDB(id) {
-    if (!db) return;
-    try {
-        const transaction = db.transaction([STORE_NAME], "readwrite");
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const request = objectStore.delete(id);
-
-        request.onsuccess = () => {
-            // console.log(`Imagem da Árvore ID ${id} deletada do IndexedDB.`);
-        };
-        request.onerror = (event) => {
-            console.error("Erro ao deletar imagem:", event.target.error);
-        };
-    } catch (e) {
-        console.error("Erro na transação de deletar imagem:", e);
-    }
-}
-
-/**
- * (v19.0) Busca TODOS os registros de imagem do IndexedDB.
- * Usado para a exportação .ZIP.
- * @returns {Promise<Array>} Uma promessa que resolve com um array de {id, imageBlob}.
- */
-export function getAllImagesFromDB() {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            console.error("IndexedDB não está pronto.");
-            return reject(new Error("IndexedDB não está pronto."));
-        }
-        
-        const transaction = db.transaction([STORE_NAME], "readonly");
-        const objectStore = transaction.objectStore(STORE_NAME);
-        const request = objectStore.getAll(); // Pega todos os registros
-
-        request.onsuccess = (event) => {
-            resolve(event.target.result); // Retorna o array de {id, imageBlob}
-        };
-        request.onerror = (event) => {
-            console.error("Erro ao buscar todas as imagens:", event.target.error);
-            reject(event.target.error);
-        };
-    });
-}
-
-/**
- * (v21.6 - NOVO) Limpa TODO o banco de dados de imagens.
- * Usado pela função de "Substituir" na importação de ZIP/CSV.
+ * Inicializa o IndexedDB para armazenamento de fotos.
  * @returns {Promise<void>}
  */
-export function clearImageDB() {
-     return new Promise((resolve, reject) => {
-        if (!db) {
-            console.error("IndexedDB não está pronto.");
-            return reject(new Error("IndexedDB não está pronto."));
-        }
-        try {
-            const transaction = db.transaction([STORE_NAME], "readwrite");
-            const objectStore = transaction.objectStore(STORE_NAME);
-            const request = objectStore.clear();
+export function initDB() { // <<-- CORRIGIDO: Adicionado 'export'
+  if (db) {
+    console.log("IndexedDB já está aberto.");
+    return Promise.resolve();
+  }
 
-            request.onsuccess = () => {
-                console.log("Banco de dados de imagens limpo com sucesso.");
-                resolve();
-            };
-            request.onerror = (event) => {
-                console.error("Erro ao limpar o banco de dados de imagens:", event.target.error);
-                reject(event.target.error);
-            };
-        } catch (e) {
-            console.error("Erro na transação de limpar imagens:", e);
-            reject(e);
-        }
-    });
+  return new Promise((resolve, reject) => {
+    // Tenta abrir ou criar o banco de dados
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = (e) => {
+      const error = `Falha ao abrir o IndexedDB: ${e.target.errorCode}`;
+      console.error(error);
+      showToast(error, 'error');
+      reject(new Error(error));
+    };
+
+    request.onsuccess = (e) => {
+      setDb(e.target.result);
+      console.log("Banco de dados de imagens carregado com sucesso.");
+      resolve();
+    };
+
+    // Este evento só dispara na primeira vez ou se a versão for alterada
+    request.onupgradeneeded = (e) => {
+      const database = e.target.result;
+      if (!database.objectStoreNames.contains(STORE_NAME)) {
+        // Cria o object store principal para fotos
+        database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        console.log(`Object Store '${STORE_NAME}' criado.`);
+      }
+    };
+  });
+}
+
+// === 3. FUNÇÕES DE ACESSO A DADOS (Árvores) ===
+
+/**
+ * Salva a lista de árvores (state.registeredTrees) e o estado.
+ */
+export function saveTreesAndState() {
+  saveDataToStorage();
+}
+
+// === 4. FUNÇÕES DE ACESSO A DADOS (Fotos - IndexedDB) ===
+
+/**
+ * Abre o banco de dados e retorna a transação.
+ * @param {'readonly' | 'readwrite'} mode
+ * @returns {IDBObjectStore | null}
+ */
+function _getPhotoStore(mode = 'readonly') {
+  if (!db) {
+    showToast("Erro: Banco de dados de fotos não inicializado.", "error");
+    return null;
+  }
+  try {
+    const transaction = db.transaction([STORE_NAME], mode);
+    return transaction.objectStore(STORE_NAME);
+  } catch (e) {
+    console.error("Erro ao iniciar transação no IndexedDB:", e);
+    showToast("Erro de acesso ao banco de dados.", "error");
+    return null;
+  }
+}
+
+/**
+ * Adiciona uma foto (Blob) ao IndexedDB.
+ * @param {number} treeId O ID da árvore.
+ * @param {Blob} photoBlob O Blob da foto.
+ * @returns {Promise<void>}
+ */
+export function addImageToDB(treeId, photoBlob) {
+  return new Promise((resolve, reject) => {
+    const store = _getPhotoStore('readwrite');
+    if (!store) return reject(new Error("Loja de fotos indisponível."));
+
+    const request = store.put({ id: treeId, photo: photoBlob });
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (e) => {
+      console.error(`Falha ao adicionar foto ID ${treeId}:`, e.target.error);
+      reject(e.target.error);
+    };
+  });
+}
+
+/**
+ * Busca uma foto (Blob) do IndexedDB.
+ * @param {number} treeId O ID da árvore.
+ * @param {function(Blob|null): void} callback O callback para receber o Blob.
+ */
+export function getImageFromDB(treeId, callback) {
+  const store = _getPhotoStore('readonly');
+  if (!store) return callback(null);
+
+  const request = store.get(treeId);
+
+  request.onsuccess = (e) => {
+    const result = e.target.result;
+    if (result && result.photo) {
+      callback(result.photo);
+    } else {
+      callback(null);
+    }
+  };
+
+  request.onerror = (e) => {
+    console.error(`Falha ao buscar foto ID ${treeId}:`, e.target.error);
+    callback(null);
+  };
+}
+
+/**
+ * Remove uma foto do IndexedDB.
+ * @param {number} treeId O ID da árvore.
+ * @returns {Promise<void>}
+ */
+export function deleteImageFromDB(treeId) {
+  return new Promise((resolve, reject) => {
+    const store = _getPhotoStore('readwrite');
+    if (!store) return reject(new Error("Loja de fotos indisponível."));
+
+    const request = store.delete(treeId);
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (e) => {
+      console.error(`Falha ao remover foto ID ${treeId}:`, e.target.error);
+      reject(e.target.error);
+    };
+  });
+}
+
+/**
+ * Limpa o armazenamento de fotos.
+ * @returns {Promise<void>}
+ */
+export function clearAllImages() {
+  return new Promise((resolve, reject) => {
+    const store = _getPhotoStore('readwrite');
+    if (!store) return reject(new Error("Loja de fotos indisponível."));
+
+    const request = store.clear();
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (e) => {
+      console.error("Falha ao limpar armazenamento de fotos:", e.target.error);
+      reject(e.target.error);
+    };
+  });
 }

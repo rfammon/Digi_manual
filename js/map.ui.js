@@ -1,14 +1,17 @@
-// js/map.ui.js (v23.6 - Completo - Correção de Listeners de Interação)
+// js/map.ui.js (v24.1 - Adiciona Localização em Tempo Real)
 
 // === 1. IMPORTAÇÕES ===
 import * as state from './state.js';
 import * as features from './features.js';
 import { getImageFromDB } from './database.js';
+// [NOVO] Importa o showToast
+import { showToast } from './utils.js';
 
 // === 2. ESTADO INTERNO DO MÓDULO ===
 
 // Variáveis de escopo do módulo para detecção de toque
-const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+// const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+// (Nota: isTouchDevice agora é verificado localmente em setupMapListeners)
 
 // Níveis de Zoom da Imagem do InfoBox
 let currentInfoBoxZoom = 0;
@@ -97,7 +100,9 @@ function showMapInfoBox(tree) {
 
   if (tree.hasPhoto) {
     infoHTML += `<div id="map-info-photo" class="loading-photo">Carregando foto...</div>`;
-    if (!isTouchDevice) {
+    // Verifica isTouchDevice para zoom da imagem
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!isTouch) {
       infoHTML += `
         <div class="map-photo-zoom">
           <button id="zoom-out-btn" title="Diminuir Zoom">-</button>
@@ -200,15 +205,139 @@ function renderMapMarkers() {
   return state.mapMarkerGroup.getBounds();
 }
 
-// === 4. FUNÇÕES PÚBLICAS (EXPORTADAS) ===
+// === 4. [NOVO] FUNÇÕES DE LOCALIZAÇÃO (GPS) ===
 
 /**
- * (PÚBLICO) Anexa os listeners aos controles HTML externos (Legenda, Zoom).
+ * [PRIVADO] Para o monitoramento da localização do usuário.
+ * @param {HTMLElement} [btn] O botão de localização (opcional).
+ */
+function _stopWatchingLocation(btn) {
+  const localBtn = btn || document.getElementById('locate-me-btn');
+  if (state.userLocationWatchId !== null) {
+    navigator.geolocation.clearWatch(state.userLocationWatchId);
+    state.setUserLocationWatchId(null);
+  }
+  if (state.userLocationMarker) {
+    state.userLocationMarker.remove();
+    state.setUserLocationMarker(null);
+  }
+  if (localBtn) {
+    localBtn.classList.remove('locate-me-active');
+  }
+  showToast('Localização em tempo real desativada.', 'success');
+}
+
+/**
+ * [PRIVADO] Lida com erros de geolocalização.
+ */
+function _handleLocationError(error) {
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      showToast('Você negou o acesso à localização.', 'error');
+      break;
+    case error.POSITION_UNAVAILABLE:
+      showToast('Sinal de GPS indisponível.', 'error');
+      break;
+    case error.TIMEOUT:
+      showToast('Tempo de busca por GPS esgotado.', 'error');
+      break;
+    default:
+      showToast('Erro desconhecido ao buscar GPS.', 'error');
+      break;
+  }
+  _stopWatchingLocation(); // Desliga o serviço se houver erro
+}
+
+/**
+ * [PRIVADO] Cria ou atualiza o marcador azul da localização do usuário.
+ * @param {number} lat Latitude
+ * @param {number} lon Longitude
+ */
+function _updateUserLocationMarker(lat, lon) {
+  if (!state.mapInstance) return;
+
+  const userCoords = [lat, lon];
+  
+  if (!state.userLocationMarker) {
+    // Cria o marcador (ponto azul)
+    const marker = L.circleMarker(userCoords, {
+      radius: 8,
+      fillColor: '#4A90E2', // Azul vívido
+      color: '#FFFFFF',     // Borda branca
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.9
+    }).addTo(state.mapInstance);
+    
+    marker.bindPopup('Você está aqui.');
+    state.setUserLocationMarker(marker);
+  } else {
+    // Apenas move o marcador
+    state.userLocationMarker.setLatLng(userCoords);
+  }
+}
+
+/**
+ * [PRIVADO] Alterna o monitoramento em tempo real do GPS.
+ */
+function toggleRealTimeLocation(e) {
+  const btn = e.currentTarget;
+
+  // Se já estiver assistindo, pare
+  if (state.userLocationWatchId !== null) {
+    _stopWatchingLocation(btn);
+    return;
+  }
+
+  // Verifica se o navegador suporta geolocalização
+  if (!('geolocation' in navigator)) {
+    showToast('Geolocalização não suportada pelo seu navegador.', 'error');
+    return;
+  }
+
+  showToast('Iniciando GPS... Buscando sinal.', 'success');
+  btn.classList.add('locate-me-active');
+
+  let isFirstUpdate = true;
+
+  const options = {
+    enableHighAccuracy: true, // GPS de alta precisão
+    timeout: 10000,           // 10 segundos
+    maximumAge: 0             // Não usar cache
+  };
+
+  // Inicia o "watch"
+  const watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      // Sucesso
+      const { latitude, longitude } = position.coords;
+      _updateUserLocationMarker(latitude, longitude);
+
+      // Na primeira vez, centraliza o mapa
+      if (isFirstUpdate && state.mapInstance) {
+        state.mapInstance.setView([latitude, longitude], 17); // Zoom de 17
+        isFirstUpdate = false;
+      }
+    },
+    _handleLocationError, // Erro
+    options
+  );
+
+  state.setUserLocationWatchId(watchId);
+}
+
+
+// === 5. FUNÇÕES PÚBLICAS (EXPORTADAS) ===
+
+/**
+ * (PÚBLICO) Anexa os listeners aos controles HTML externos (Legenda, Zoom, GPS).
  * Chamado por ui.js em setupRiskCalculator.
  */
 export function setupMapListeners() {
   const mapLegend = document.getElementById('map-legend-filter');
   const zoomBtn = document.getElementById('zoom-to-extent-btn');
+  // [NOVO] Busca o botão de localização
+  const locateBtn = document.getElementById('locate-me-btn');
 
   if (mapLegend) {
     // Remove listener antigo para evitar duplicatas (defensivo)
@@ -222,6 +351,20 @@ export function setupMapListeners() {
     zoomBtn.removeEventListener('click', features.handleZoomToExtent);
     // Adiciona o novo listener
     zoomBtn.addEventListener('click', features.handleZoomToExtent);
+  }
+
+  // [NOVO] Lógica do botão de localização
+  if (locateBtn) {
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    
+    // 1. Mostra o botão apenas em dispositivos de toque
+    if (isTouch) {
+      locateBtn.classList.add('show-mobile');
+      
+      // 2. Anexa o listener de clique
+      locateBtn.removeEventListener('click', toggleRealTimeLocation);
+      locateBtn.addEventListener('click', toggleRealTimeLocation);
+    }
   }
 }
 
