@@ -1,11 +1,11 @@
-/* css/4_components.css (v21.0 - MODIFICADO v24.1) */
+/* css/4_components.css (v25.0 - Novo Tema Natureza) */
 
-/* === BOTÕES === */
+/* === BOTÕES DE AÇÃO (Formulário e Tabela) === */
 .btn-submit, .btn-secondary, .btn-danger {
     padding: 0.75rem 1.25rem;
     font-size: var(--font-size-medium);
     font-weight: var(--font-weight-bold);
-    border: none;
+    border: 2px solid transparent; /* Borda padrão transparente */
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: var(--transition-speed);
@@ -18,18 +18,18 @@
 }
 
 .btn-submit {
-    background-color: var(--color-primary-medium);
+    background-color: var(--color-primary-dark);
     color: var(--color-white);
 }
 .btn-submit:hover {
-    background-color: var(--color-primary-dark);
-    box-shadow: var(--box-shadow);
+    background-color: #38604C; /* Verde Escuro ligeiramente mais claro */
+    box-shadow: 0 0 10px rgba(41, 71, 58, 0.5);
 }
 
 .btn-secondary {
-    background-color: var(--color-light-bg);
+    background-color: var(--color-light-gray);
     color: var(--color-primary-dark);
-    border: 1px solid var(--color-light-gray);
+    border-color: var(--color-light-gray);
 }
 .btn-secondary:hover {
     background-color: var(--color-light-gray);
@@ -37,11 +37,11 @@
 }
 
 .btn-danger {
-    background-color: var(--color-error);
+    background-color: var(--color-risk-high); /* Vinho Escuro */
     color: var(--color-white);
 }
 .btn-danger:hover {
-    opacity: 0.85;
+    opacity: 0.9;
     box-shadow: var(--box-shadow);
 }
 
@@ -65,7 +65,7 @@
     bottom: 30px;
     transform: translateX(-50%);
     font-size: var(--font-size-medium);
-    box-shadow: var(--box-shadow-heavy);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Animação */
@@ -73,13 +73,12 @@
     visibility: visible;
     animation: fadein 0.5s, fadeout 0.5s 2.5s;
 }
-
 /* Cores do Toast */
 #toast-notification.success {
     background-color: var(--color-success);
 }
 #toast-notification.error {
-    background-color: var(--color-error);
+    background-color: var(--color-risk-high);
 }
 
 @keyframes fadein {
@@ -99,9 +98,8 @@
     color: var(--color-white);
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow-heavy);
+    box-shadow: var(--box-shadow);
     max-width: 90vw;
-    /* width: 350px; (Definido via JS) */
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, visibility 0.2s ease;
@@ -116,19 +114,21 @@
 #glossary-tooltip p {
     margin: 0.5rem 0;
 }
+/* Estilo da imagem no tooltip (se houver) */
 #glossary-tooltip .manual-img {
     margin-top: 0.5rem;
+    border: 1px solid var(--color-primary-medium);
 }
 
 /* === MODAL (Genérico) === */
 .modal-overlay {
-    display: none; /* Escondido por padrão */
+    display: none;
     position: fixed;
     z-index: 1010;
     left: 0; top: 0;
     width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.7); /* Fundo mais escuro */
+    backdrop-filter: blur(4px);
     justify-content: center;
     align-items: center;
 }
@@ -139,7 +139,7 @@
 .modal-dialog {
     background-color: var(--color-white);
     border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow-heavy);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     width: 90%;
     max-width: 500px;
     padding: 1.5rem;
@@ -170,20 +170,20 @@
     border: 1px solid transparent;
 }
 .modal-btn.primary {
-    background-color: var(--color-error); /* Padrão para exclusão */
+    background-color: var(--color-accent); 
     color: var(--color-white);
 }
 .modal-btn.secondary {
-    background-color: var(--color-accent);
-    color: var(--color-dark-text);
+    background-color: var(--color-primary-medium);
+    color: var(--color-white);
 }
 .modal-btn.cancel {
     background-color: var(--color-light-bg);
     color: var(--color-primary-dark);
     border-color: var(--color-light-gray);
 }
-.modal-btn.primary:hover { opacity: 0.85; }
-.modal-btn.secondary:hover { background-color: var(--color-accent-hover); }
+.modal-btn.primary:hover { background-color: var(--color-accent-light); }
+.modal-btn.secondary:hover { background-color: #5d876d; }
 .modal-btn.cancel:hover { background-color: var(--color-light-gray); }
 
 @keyframes modal-scale-in {
@@ -193,14 +193,14 @@
 
 /* === PLACEHOLDER (Spinner) === */
 .loading-container {
-    padding: 2rem;
+    padding: 4rem;
     text-align: center;
     color: var(--color-primary-light);
 }
 .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid var(--color-light-gray);
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--color-light-gray);
     border-top-color: var(--color-primary-medium);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -213,31 +213,11 @@
 /* === BADGE (Contador) === */
 .badge {
     background-color: var(--color-accent);
-    color: var(--color-dark-text);
+    color: var(--color-white);
     font-size: 0.75rem;
     font-weight: var(--font-weight-bold);
     padding: 0.2rem 0.5rem;
     border-radius: 10px;
     margin-left: 0.5rem;
     vertical-align: middle;
-}
-
-/* === [NOVO v24.1] Estilos de Localização do Mapa === */
-
-/* Esconde o botão por padrão em desktops */
-.mobile-only {
-  display: none;
-}
-
-/* O JS (map.ui.js) adicionará esta classe em dispositivos de toque */
-.show-mobile {
-  display: inline-flex !important;
-}
-
-/* Estilo do botão quando o GPS estiver ATIVO */
-#locate-me-btn.locate-me-active {
-  background-color: var(--color-accent);
-  color: var(--color-dark);
-  border-color: var(--color-accent);
-  box-shadow: 0 0 8px var(--color-accent);
 }
