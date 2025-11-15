@@ -1,30 +1,56 @@
-/* css/3_layout.css */
+/* css/3_layout.css (v21.0) */
 
-/* -------------------------------------- */
-/* 3. LAYOUT (HEADER, FOOTER) */
-/* -------------------------------------- */
-
-.header-manual,
-.footer-manual {
-  background-color: var(--color-primary-dark);
-  color: #fff;
-  padding: var(--space-md);
-  text-align: center;
-  box-shadow: var(--shadow-md);
+/* === CONTAINER PRINCIPAL === */
+.main-content {
+    max-width: var(--max-width);
+    margin: 0 auto; /* Centraliza */
+    padding: var(--content-padding-mobile);
 }
 
-.header-manual h1 {
-  font-size: 1.5rem;
-  margin-bottom: var(--space-xs);
-  color: #fff;
+/* === CABEÇALHO === */
+.main-header {
+    background-color: var(--color-primary-dark);
+    color: var(--color-white);
+    padding: 1rem var(--content-padding-mobile);
+    text-align: center;
+    box-shadow: var(--box-shadow-heavy);
 }
-.header-manual p {
-  color: var(--color-primary-lightest);
-  opacity: 0.9;
+.header-content h1 {
+    color: var(--color-white);
+    margin: 0.25rem 0;
+    font-size: var(--font-size-xl);
+}
+.header-content p {
+    font-size: var(--font-size-small);
+    opacity: 0.8;
+    margin-bottom: 0;
 }
 
-.footer-manual {
-  margin-top: var(--space-xl);
-  padding: var(--space-lg);
-  font-size: 0.9rem;
+/* === NAVEGAÇÃO PRINCIPAL === */
+.main-nav {
+    display: flex;
+    justify-content: center;
+    background-color: var(--color-primary-medium);
+    box-shadow: var(--box-shadow);
+    /* [v21.0] Fixa no topo para mobile/PWA */
+    position: sticky;
+    top: 0;
+    z-index: 900;
+}
+.main-nav-btn {
+    padding: 0.75rem 1rem;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-light-gray);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-speed);
+}
+.main-nav-btn:hover {
+    background-color: rgba(0,0,0,0.1);
+}
+.main-nav-btn.active {
+    color: var(--color-white);
+    background-color: var(--color-primary-dark);
 }
