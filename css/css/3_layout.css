@@ -1,30 +1,68 @@
-/* css/3_layout.css */
+/* css/3_layout.css (v25.0 - Novo Tema Natureza) */
 
-/* -------------------------------------- */
-/* 3. LAYOUT (HEADER, FOOTER) */
-/* -------------------------------------- */
-
-.header-manual,
-.footer-manual {
-  background-color: var(--color-primary-dark);
-  color: #fff;
-  padding: var(--space-md);
-  text-align: center;
-  box-shadow: var(--shadow-md);
+/* === CONTAINER PRINCIPAL (MAX-WIDTH) === */
+.main-content {
+    max-width: var(--max-width);
+    margin: 0 auto; /* Centraliza o conteúdo */
+    padding: var(--content-padding);
 }
 
-.header-manual h1 {
-  font-size: 1.5rem;
-  margin-bottom: var(--space-xs);
-  color: #fff;
+/* === CABEÇALHO === */
+.main-header {
+    background-color: var(--color-primary-dark);
+    color: var(--color-white);
+    padding: 1rem var(--content-padding);
+    text-align: center;
+    box-shadow: var(--box-shadow);
+    
+    /* Posição Fixa para ocupar o espaço superior definido no body-padding */
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000; /* Garante que fique acima de tudo */
 }
-.header-manual p {
-  color: var(--color-primary-lightest);
-  opacity: 0.9;
+.header-content h1 {
+    color: var(--color-white);
+    margin: 0.25rem 0;
+    font-size: var(--font-size-xl);
+}
+.header-content p {
+    font-size: var(--font-size-small);
+    opacity: 0.9;
+    margin-bottom: 0;
 }
 
-.footer-manual {
-  margin-top: var(--space-xl);
-  padding: var(--space-lg);
-  font-size: 0.9rem;
+/* === NAVEGAÇÃO PRINCIPAL (Flexbox) === */
+.main-nav {
+    display: flex;
+    justify-content: center; /* Centraliza os botões */
+    background-color: var(--color-primary-medium);
+    box-shadow: var(--box-shadow);
+    
+    /* Posição Sticky logo abaixo do header */
+    position: sticky;
+    top: calc(var(--header-height) - 2.5rem); /* Ajuste dinâmico para ficar abaixo do header */
+    width: 100%;
+    z-index: 950; /* Abaixo do header, mas acima do conteúdo */
+    flex-wrap: wrap; /* Permite que os botões quebrem a linha em telas pequenas */
+}
+.main-nav-btn {
+    padding: 0.75rem 1rem;
+    font-size: var(--font-size-small);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-light-gray); /* Texto em tom de cinza suave */
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition-speed);
+    flex-grow: 1; /* Distribui o espaço igualmente */
+    max-width: 250px;
+}
+.main-nav-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Efeito suave */
+    color: var(--color-white);
+}
+.main-nav-btn.active {
+    color: var(--color-white);
+    background-color: var(--color-primary-dark); /* Fundo mais escuro */
 }
