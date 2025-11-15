@@ -1,0 +1,60 @@
+/* css/2_base.css */
+
+/* -------------------------------------- */
+/* 2. RESET, BASE E LAYOUT PRINCIPAL */
+/* -------------------------------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-primary);
+  line-height: 1.6;
+  background-color: var(--bg-body);
+  color: var(--color-text);
+  position: relative;
+  min-height: 100vh;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+main {
+  padding: var(--space-md);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--color-dark);
+}
+
+h2 { font-size: 1.5rem; margin-bottom: var(--space-md); }
+h3 { font-size: 1.3rem; margin-bottom: var(--space-md); }
+h4 { font-size: 1.15rem; margin-top: var(--space-lg); margin-bottom: var(--space-sm); }
+
+/* (Originalmente da Seção 5) */
+.conteudo-detalhe,
+.app-view {
+  background-color: var(--bg-surface);
+  border: none;
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.manual-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-md);
+  margin: var(--space-md) 0;
+  box-shadow: var(--shadow-sm);
+}

@@ -1,0 +1,30 @@
+/* css/3_layout.css */
+
+/* -------------------------------------- */
+/* 3. LAYOUT (HEADER, FOOTER) */
+/* -------------------------------------- */
+
+.header-manual,
+.footer-manual {
+  background-color: var(--color-primary-dark);
+  color: #fff;
+  padding: var(--space-md);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+
+.header-manual h1 {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-xs);
+  color: #fff;
+}
+.header-manual p {
+  color: var(--color-primary-lightest);
+  opacity: 0.9;
+}
+
+.footer-manual {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  font-size: 0.9rem;
+}
