@@ -1,6 +1,6 @@
-@import url('1_variables.css')
-@import url('2_base.css')
-@import url('3_layout.css')
-@import url('4_components.css')
-@import url('5_sections.css')
-@import url('6_responsive.css')
+@import url('css/1_variables.css');
+@import url('css/2_base.css');
+@import url('css/3_layout.css');
+@import url('css/4_components.css');
+@import url('css/5_sections.css');
+@import url('css/6_responsive.css');
